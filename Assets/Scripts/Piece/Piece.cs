@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using board;
 
-namespace board{
+namespace piece{
     public class Piece {
 
         public PieceType type;

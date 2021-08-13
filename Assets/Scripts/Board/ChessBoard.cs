@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using piece;
 
 namespace board {
     public class ChessBoard

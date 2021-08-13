@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using piece;
 
 namespace board {
 
@@ -14,8 +15,7 @@ namespace board {
         Rook,
     }
 
-    public enum PieceColor
-    {
+    public enum PieceColor {
         White,
         Black
     }
@@ -27,8 +27,11 @@ namespace board {
     }
     
     public class ChessBoardController : MonoBehaviour {
-        
+
         private ChessBoard chessBoard;
+
+        private int xKingPossition;
+        private int yKingPossition;
 
         private int xPossition;
         private int yPossition;
@@ -37,8 +40,6 @@ namespace board {
 
         private Ray ray;
         private RaycastHit hit;
-
-        private bool isCheck;
 
         private Nullable<SelectedPiece> selectedPiece;
 
@@ -50,6 +51,9 @@ namespace board {
         public List<GameObject> pieceList = new List<GameObject>();
         private GameObject[,] pieceGameObjects = new GameObject[8, 8];
         private bool[,] canMoveMap = new bool[8, 8];
+        private bool[,] canMoveMapForKing = new bool[8, 8];
+        private bool[,] checkKingMap = new bool[8, 8];
+        private bool[,] pieceAttakingKing = new bool[8, 8];
 
         void Start() {
             chessBoard = new ChessBoard();
@@ -66,22 +70,26 @@ namespace board {
 
                     if (selectedPiece == null && SelectPiece(xPossition, yPossition) != null) {
 
-                        ClearCanMoveMap();
+                        ClearCanMoveMap(canMoveMap);
                         RemoveCanMoveCells();
                         selectedPiece = SelectPiece(xPossition, yPossition);
-                        GetCanMoveMapForPiece((SelectedPiece)selectedPiece);
-                        ShowCanMoveCells();
-                    }
-                    else if (selectedPiece != null) {
-                        
-                        if(isCheck) {
-                            DestroyCheckCell();
-                        }
+                        GetCanMoveMapForPiece((SelectedPiece)selectedPiece, canMoveMap, chessBoard.board);
+                        canMoveMap = HiddenCheck((SelectedPiece)selectedPiece, canMoveMap);
+                        ShowCanMoveCells(canMoveMap);
+                    } else if (selectedPiece != null) {
+
                         RemoveCanMoveCells();
                         if (Move(xPossition, yPossition, (SelectedPiece)selectedPiece)) {
+
+                            DestroyCheckCell();
                             ChangeMove();
-                            if (Check()) {
-                                isCheck = true;
+                            if (CheckMate())
+                            {
+                                Debug.Log("мат");
+                            }
+                            if (CheckKing(whoseMove, chessBoard.board)) {
+                                chekCell = Instantiate(check, new Vector3(xKingPossition + 0.5f, 0.5f, yKingPossition + 0.5f),
+                                    Quaternion.identity);
                             }
                         }
                         selectedPiece = null;
@@ -90,95 +98,79 @@ namespace board {
                 }
             }
         }
-        
-
         private void AddPiecesOnBoard() {
             for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++)
-                {
-                    if (chessBoard.board[i, j] != null)
-                    {
-                        if (chessBoard.board[i, j].type == PieceType.Pawn)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                for (int j = 0; j < 8; j++) {
+                    if (chessBoard.board[i, j] != null) {
+
+                        if (chessBoard.board[i, j].type == PieceType.Pawn) {
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
 
                                 pieceGameObjects[i, j] = Instantiate(pieceList[7],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
                                 pieceGameObjects[i, j] = Instantiate(pieceList[6],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
                         }
 
-                        if (chessBoard.board[i, j].type == PieceType.Bishop)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                        if (chessBoard.board[i, j].type == PieceType.Bishop) {
+
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
 
                                 pieceGameObjects[i, j] = Instantiate(pieceList[1],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
                                 pieceGameObjects[i, j] = Instantiate(pieceList[0],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
                         }
 
-                        if (chessBoard.board[i, j].type == PieceType.Knight)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                        if (chessBoard.board[i, j].type == PieceType.Knight) {
+
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[5],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
                                 pieceGameObjects[i, j] = Instantiate(pieceList[4],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
                         }
 
-                        if (chessBoard.board[i, j].type == PieceType.King)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                        if (chessBoard.board[i, j].type == PieceType.King) {
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[3],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[2],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
                         }
 
-                        if (chessBoard.board[i, j].type == PieceType.Queen)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                        if (chessBoard.board[i, j].type == PieceType.Queen) {
+
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[9],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[8],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
                         }
 
-                        if (chessBoard.board[i, j].type == PieceType.Rook)
-                        {
-                            if (chessBoard.board[i, j].color == PieceColor.White)
-                            {
+                        if (chessBoard.board[i, j].type == PieceType.Rook) {
+
+                            if (chessBoard.board[i, j].color == PieceColor.White) {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[11],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
-                            }
-                            else
-                            {
+                            } else {
+
                                 pieceGameObjects[i, j] = Instantiate(pieceList[10],
                                     new Vector3(i + 0.5f, 0.5f, j + 0.5f), Quaternion.identity);
                             }
@@ -203,61 +195,62 @@ namespace board {
             return null;
         }
 
-        private void GetCanMoveMapForPiece(SelectedPiece selectedPiece) {
+        private void GetCanMoveMapForPiece(SelectedPiece selectedPiece, bool [,] canMoveMap, Piece[,] piecesMap) {
+
             switch (selectedPiece.piece.type) {
                 case PieceType.Pawn:
-                    PawnMove(selectedPiece);
+                    PawnMove(selectedPiece, canMoveMap, piecesMap);
                     break;
 
                 case PieceType.Bishop:
-                    DiagonalMove(selectedPiece, 7);
+                    DiagonalMove(selectedPiece, 7, canMoveMap, false, piecesMap);
                     break;
 
                 case PieceType.Rook:
-                    VerticalMove(selectedPiece, 7);
+                    VerticalMove(selectedPiece, 7, canMoveMap, false, piecesMap);
                     break;
 
                 case PieceType.Queen:
-                    DiagonalMove(selectedPiece, 7);
-                    VerticalMove(selectedPiece, 7);
+                    DiagonalMove(selectedPiece, 7, canMoveMap, false, piecesMap);
+                    VerticalMove(selectedPiece, 7, canMoveMap, false, piecesMap);
                     break;
 
                 case PieceType.King:
-                    DiagonalMove(selectedPiece, 1);
-                    VerticalMove(selectedPiece, 1);
+                    DiagonalMove(selectedPiece, 1, canMoveMap, false, piecesMap);
+                    VerticalMove(selectedPiece, 1, canMoveMap, false, piecesMap);
                     break;
 
                 case PieceType.Knight:
-                    KnightMove(selectedPiece, 2,1);
-                    KnightMove(selectedPiece, 2, -1);
-                    KnightMove(selectedPiece, 1, 2);
-                    KnightMove(selectedPiece, -1, 2);
-                    KnightMove(selectedPiece, -2, 1);
-                    KnightMove(selectedPiece, 1, -2);
-                    KnightMove(selectedPiece, -2, -1);
-                    KnightMove(selectedPiece, -1, -2);
+                    KnightMove(selectedPiece, 2, 1 , canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, 2, -1, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, 1, 2, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, -1, 2, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, -2, 1, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, 1, -2, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, -2, -1, canMoveMap, false, piecesMap);
+                    KnightMove(selectedPiece, -1, -2, canMoveMap, false, piecesMap);
                     break;
             }
         }
 
-        private void PawnMove(SelectedPiece selectedPiece) {
+        private void PawnMove(SelectedPiece selectedPiece, bool[,] canMoveMap, Piece[,] piecesMap) {
 
-        if (chessBoard.board[selectedPiece.xPossition, selectedPiece.yPossition].color == PieceColor.White) {
+        if (piecesMap[selectedPiece.xPossition, selectedPiece.yPossition].color == PieceColor.White) {
 
                 if (OnChessBoard(selectedPiece.xPossition - 1, selectedPiece.yPossition) 
-                    && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition] != null)
+                    && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition] != null)
                 {
 
                 }else if (selectedPiece.xPossition == 6) {
 
                     if (OnChessBoard(selectedPiece.xPossition - 1, selectedPiece.yPossition) 
-                        && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition] == null) {
+                        && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition] == null) {
 
                         canMoveMap[selectedPiece.xPossition - 1, selectedPiece.yPossition] = true;
                     }
                         
                     if (OnChessBoard(selectedPiece.xPossition - 2, selectedPiece.yPossition) 
-                        && chessBoard.board[selectedPiece.xPossition - 2, selectedPiece.yPossition] == null) {
+                        && piecesMap[selectedPiece.xPossition - 2, selectedPiece.yPossition] == null) {
                         canMoveMap[selectedPiece.xPossition - 2, selectedPiece.yPossition] = true;
                     }  
 
@@ -267,35 +260,35 @@ namespace board {
                 }
 
                 if(OnChessBoard(selectedPiece.xPossition - 1, selectedPiece.yPossition - 1) 
-                    && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition - 1]!=null
-                    && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition - 1].color!=selectedPiece.piece.color) {
+                    && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition - 1]!=null
+                    && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition - 1].color!=selectedPiece.piece.color) {
 
                     canMoveMap[selectedPiece.xPossition - 1, selectedPiece.yPossition - 1] = true;
                 }
 
                 if (OnChessBoard(selectedPiece.xPossition - 1, selectedPiece.yPossition + 1) 
-                    && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition + 1] != null
-                    && chessBoard.board[selectedPiece.xPossition - 1, selectedPiece.yPossition + 1].color != selectedPiece.piece.color) {
+                    && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition + 1] != null
+                    && piecesMap[selectedPiece.xPossition - 1, selectedPiece.yPossition + 1].color != selectedPiece.piece.color) {
 
                     canMoveMap[selectedPiece.xPossition - 1, selectedPiece.yPossition + 1] = true;
                 }
 
             }
-            if(chessBoard.board[selectedPiece.xPossition, selectedPiece.yPossition].color == PieceColor.Black) {
+            if(piecesMap[selectedPiece.xPossition, selectedPiece.yPossition].color == PieceColor.Black) {
 
                 if(OnChessBoard(selectedPiece.xPossition + 1, selectedPiece.yPossition) 
-                    && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition]!=null) {
+                    && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition]!=null) {
 
                 } else if (selectedPiece.xPossition == 1) {
 
                     if (OnChessBoard(selectedPiece.xPossition + 1, selectedPiece.yPossition) 
-                        && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition] == null) {
+                        && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition] == null) {
 
                         canMoveMap[selectedPiece.xPossition + 1, selectedPiece.yPossition] = true;
                     }
                        
                     if (OnChessBoard(selectedPiece.xPossition + 2, selectedPiece.yPossition) 
-                        && chessBoard.board[selectedPiece.xPossition + 2, selectedPiece.yPossition] == null) {
+                        && piecesMap[selectedPiece.xPossition + 2, selectedPiece.yPossition] == null) {
 
                         canMoveMap[selectedPiece.xPossition + 2, selectedPiece.yPossition] = true;
                     }
@@ -307,15 +300,15 @@ namespace board {
                 }
 
                 if (OnChessBoard(selectedPiece.xPossition + 1, selectedPiece.yPossition - 1) 
-                    && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition - 1] != null
-                    && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition - 1].color != selectedPiece.piece.color) {
+                    && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition - 1] != null
+                    && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition - 1].color != selectedPiece.piece.color) {
 
                     canMoveMap[selectedPiece.xPossition + 1, selectedPiece.yPossition - 1] = true;
                 }
 
                 if (OnChessBoard(selectedPiece.xPossition + 1, selectedPiece.yPossition + 1) 
-                    && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition + 1] != null
-                    && chessBoard.board[selectedPiece.xPossition + 1, selectedPiece.yPossition + 1].color != selectedPiece.piece.color) {
+                    && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition + 1] != null
+                    && piecesMap[selectedPiece.xPossition + 1, selectedPiece.yPossition + 1].color != selectedPiece.piece.color) {
 
                     canMoveMap[selectedPiece.xPossition + 1, selectedPiece.yPossition + 1] = true;
                 }
@@ -323,116 +316,149 @@ namespace board {
             
         }
 
-        private void KnightMove(SelectedPiece selectedPiece, int newPossitionX , int newPossitionY) {
+        private void KnightMove(SelectedPiece selectedPiece, int newPossitionX , int newPossitionY,
+            bool[,] canMoveMap, bool isKing, Piece[,] piecesMap) {
 
             int xPossition = selectedPiece.xPossition + newPossitionX;
             int yPossition = selectedPiece.yPossition + newPossitionY;
 
-            if(OnChessBoard(xPossition,yPossition) && chessBoard.board[xPossition, yPossition ] == null) {
+            if(OnChessBoard(xPossition,yPossition) && piecesMap[xPossition, yPossition ] == null) {
 
                 canMoveMap[xPossition, yPossition] = true;
-            } else if(OnChessBoard(xPossition , yPossition) && chessBoard.board[xPossition, yPossition].color
+            } else if(OnChessBoard(xPossition , yPossition) && piecesMap[xPossition, yPossition].color
                 != selectedPiece.piece.color) {
-                canMoveMap[xPossition, yPossition] = true;
+                if(isKing) {
+                    pieceAttakingKing[xPossition, yPossition] = true;
+                } else {
+                    canMoveMap[xPossition, yPossition] = true;
+                }
+                
             }
-
-
         }
 
-        private void DiagonalMove(SelectedPiece selectedPiece , int lenght) {
+        private void DiagonalMove(SelectedPiece selectedPiece , int lenght, bool[,] canMoveMap, bool isKing, Piece[,] piecesMap) {
 
+            
             for(int i = 1; i <= lenght; i++) {
                 int xPossition = selectedPiece.xPossition + i;
                 int yPossition = selectedPiece.yPossition + i ;
-
-                if (OnChessBoard(xPossition, yPossition) &&chessBoard.board[xPossition, yPossition] == null) {
+                
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
 
-                } else if(OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                } else if(OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
+
                     break;
 
-                } else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                } else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if(isKing){
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
-            for (int i = 1; i <= lenght; i++)
-            {
+            for (int i = 1; i <= lenght; i++) {
                 int xPossition = selectedPiece.xPossition + i ;
                 int yPossition = selectedPiece.yPossition - i ;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
-                }
+                } else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
-                }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                } else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else if(OnChessBoard(xPossition, yPossition)) {
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
-            for (int i = 1; i <= lenght; i++)
-            {
+            for (int i = 1; i <= lenght; i++) {
                 int xPossition = selectedPiece.xPossition - i;
                 int yPossition = selectedPiece.yPossition - i;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
-                }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                } else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if (isKing) {
+
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else {
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
-            for (int i = 1; i <= lenght; i++)
-            {
+            for (int i = 1; i <= lenght; i++) {
                 int xPossition = selectedPiece.xPossition - i;
                 int yPossition = selectedPiece.yPossition + i;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
-                }
+                } else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
 
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
         }
 
-        private void VerticalMove(SelectedPiece selectedPiece, int lenght) {
+        private void VerticalMove(SelectedPiece selectedPiece, int lenght, bool[,] canMoveMap, bool isKing, Piece[,] piecesMap) {
             for (int i = 1; i <= lenght; i++)
             {
                 int xPossition = selectedPiece.xPossition + i;
                 int yPossition = selectedPiece.yPossition;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
@@ -441,17 +467,23 @@ namespace board {
                 int xPossition = selectedPiece.xPossition;
                 int yPossition = selectedPiece.yPossition + i;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
@@ -460,17 +492,24 @@ namespace board {
                 int xPossition = selectedPiece.xPossition;
                 int yPossition = selectedPiece.yPossition - i;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
 
@@ -479,31 +518,39 @@ namespace board {
                 int xPossition = selectedPiece.xPossition - i;
                 int yPossition = selectedPiece.yPossition;
 
-                if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition] == null) {
+                if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition] == null) {
                     canMoveMap[xPossition, yPossition] = true;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color == selectedPiece.piece.color) {
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color == selectedPiece.piece.color) {
                     break;
                 }
 
-                else if (OnChessBoard(xPossition, yPossition) && chessBoard.board[xPossition, yPossition].color != selectedPiece.piece.color) {
-                    canMoveMap[xPossition, yPossition] = true;
-                    break;
+                else if (OnChessBoard(xPossition, yPossition) && piecesMap[xPossition, yPossition].color != selectedPiece.piece.color) {
+                    if (isKing) {
+                        pieceAttakingKing[xPossition, yPossition] = true;
+                        break;
+
+                    } else {
+
+                        canMoveMap[xPossition, yPossition] = true;
+                        break;
+                    }
                 }
             }
         }
 
         private bool Move(int xPossition, int yPossition , SelectedPiece selectedPiece) {
             if (canMoveMap[xPossition, yPossition] == true) {
-                
-                if(chessBoard.board[xPossition, yPossition]!=null) {
+
+                if (chessBoard.board[xPossition, yPossition] != null) {
+
                     Destroy(pieceGameObjects[xPossition, yPossition]);
                 }
 
                 chessBoard.board[xPossition, yPossition] = chessBoard.board[selectedPiece.xPossition, selectedPiece.yPossition];
                 pieceGameObjects[xPossition, yPossition] = pieceGameObjects[selectedPiece.xPossition, selectedPiece.yPossition];
-                pieceGameObjects[xPossition, yPossition].transform.position = new Vector3(xPossition+0.5f,0.5f,yPossition+0.5f);
+                pieceGameObjects[xPossition, yPossition].transform.position = new Vector3(xPossition + 0.5f, 0.5f, yPossition + 0.5f);
                 chessBoard.board[selectedPiece.xPossition, selectedPiece.yPossition] = null;
 
                 return true;
@@ -512,59 +559,135 @@ namespace board {
             return false;
         }
 
+  
 
-        private bool Check() {
-            
-            int kingPossitionX = -1;
-            int kingPossitionY = -1;
-            bool[,] checkArray = new bool[8, 8];
-          
+        private bool [,]  HiddenCheck(SelectedPiece selectedPiece, bool [,] canMoveMap) {
+
+            PieceColor whoseMove;
+            Piece[,] cloneChessBoard = (Piece[,])chessBoard.board.Clone();
+            bool[,] cloneCanMoveMap = (bool[,])canMoveMap.Clone();
+
+            if (this.whoseMove == PieceColor.White) {
+                whoseMove = PieceColor.White;
+            } else {
+                whoseMove = PieceColor.Black;
+            }
+
             for (int i = 0; i < 8; i++) {
-                for(int j = 0; j < 8; j++) {
+                for (int j = 0; j < 8; j++) {
 
-                    if (chessBoard.board[i, j]!= null && chessBoard.board[i, j].color != whoseMove){
+                    if (cloneCanMoveMap[i, j]) {
 
-                        SelectedPiece selected = new SelectedPiece();
-                        selected.piece = chessBoard.board[i, j];
-                        selected.xPossition = i;
-                        selected.yPossition = j;
-                        GetCanMoveMapForPiece(selected);
+                        cloneChessBoard[i, j] = cloneChessBoard[selectedPiece.xPossition, selectedPiece.yPossition];
+                        cloneChessBoard[selectedPiece.xPossition, selectedPiece.yPossition] = null;
+                        if (CheckKing(whoseMove, cloneChessBoard)) {
+                           
+                            cloneCanMoveMap[i, j] = false;
+                        }
+                        cloneChessBoard[selectedPiece.xPossition, selectedPiece.yPossition] = cloneChessBoard[i, j];
+                        cloneChessBoard[i, j] = null;
                     }
+                }
+            }
+            return cloneCanMoveMap;
+        }
 
-                    if (chessBoard.board[i, j] != null && chessBoard.board[i, j].type == PieceType.King
-                        && chessBoard.board[i, j].color == whoseMove) {
-                        kingPossitionX = i;
-                        kingPossitionY = j;
+        private bool CheckKing(PieceColor whoseMove, Piece[,] piecesMap) {
+
+            ClearCanMoveMap(checkKingMap);
+            for (int i = 0; i < 8; i++){
+                for(int j = 0; j < 8; j++){
+                    if (piecesMap[i, j] != null && piecesMap[i, j].type == PieceType.King
+                        && piecesMap[i, j].color == whoseMove) {
+
+                        xKingPossition = i;
+                        yKingPossition = j;
                     }
                 }
             }
 
-            if(kingPossitionX != -1 && canMoveMap[kingPossitionX, kingPossitionY] == true) {
+            SelectedPiece selectedKing = new SelectedPiece();
+            selectedKing.piece = piecesMap[xKingPossition, yKingPossition];
+            selectedKing.xPossition = xKingPossition;
+            selectedKing.yPossition = yKingPossition;
 
-                chekCell = Instantiate(check, new Vector3(kingPossitionX + 0.5f, 0.5f, kingPossitionY + 0.5f), Quaternion.identity);
+            DiagonalMove(selectedKing, 7, checkKingMap, true, piecesMap);
+            VerticalMove(selectedKing, 7, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, 2, 1, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, 2, -1, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, 1, 2, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, -1, 2, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, -2, 1, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, 1, -2, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, -2, -1, checkKingMap, true, piecesMap);
+            KnightMove(selectedKing, -1, -2, checkKingMap, true, piecesMap);
+
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (pieceAttakingKing[i,j]) {
+                        SelectedPiece selected = new SelectedPiece();
+                        selected.piece = chessBoard.board[i, j];
+                        selected.xPossition = i;
+                        selected.yPossition = j;
+                        GetCanMoveMapForPiece(selected, canMoveMapForKing,  piecesMap);
+                    }
+                }
+            }
+
+            ClearCanMoveMap(pieceAttakingKing);
+            
+            if (canMoveMapForKing[xKingPossition, yKingPossition] == true) {
+                ClearCanMoveMap(canMoveMapForKing);
                 return true;
-
             } else {
-
                 return false;
             }
+
         }
 
+        private bool CheckMate() {
 
-        private bool OnChessBoard(int i, int j)
-        {
-            if (i > 7 || i < 0)
-            {
+            int count = 0;
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+
+                    if (chessBoard.board[i, j] != null && chessBoard.board[i, j].color == whoseMove) {
+
+                        SelectedPiece piece = new SelectedPiece();
+                        piece.piece = chessBoard.board[i, j];
+                        piece.xPossition = i;
+                        piece.yPossition = j;
+
+                        GetCanMoveMapForPiece(piece, canMoveMap, chessBoard.board);
+                        canMoveMap = HiddenCheck(piece, canMoveMap);
+                        if (canMoveMap.Length != 0) {
+                            count++;
+                        }
+                    }
+                }
+            }
+            if (count == 0) {
+                return true;
+            } else {
                 return false;
             }
-            if (j > 7 || j < 0)
-            {
+        
+        }
+
+        private bool OnChessBoard(int i, int j) {
+            if (i > 7 || i < 0) {
                 return false;
             }
+
+            if (j > 7 || j < 0) {
+                return false;
+            }
+
             return true;
         }
 
-        private void ShowCanMoveCells() {
+        private void ShowCanMoveCells(bool [,] board) {
             for (int i = 0; i < 8; i++) { 
                 for(int j = 0; j < 8; j++) {
                     if(canMoveMap[i,j] == true) {
@@ -588,7 +711,8 @@ namespace board {
             }
         }
 
-        private void ClearCanMoveMap() {
+        private void ClearCanMoveMap(bool [,] canMoveMap) {
+
             for(int i = 0; i < 8; i++){
                 for(int j = 0; j < 8; j++){
                     canMoveMap[i, j] = false;
@@ -612,10 +736,6 @@ namespace board {
 
 
     }
-
-
-    
-
 
 }
 
