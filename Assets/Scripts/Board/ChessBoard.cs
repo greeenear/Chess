@@ -3,8 +3,7 @@ using piece;
 namespace board {
     public class ChessBoard {
         public Piece [,] board = new Piece[8, 8];
-        public void AddPieces() {
-
+        public ChessBoard() {
             board[0, 0] = new Piece(PieceType.Rook, PieceColor.Black);
             board[0, 1] = new Piece(PieceType.Knight, PieceColor.Black);
             board[0, 2] = new Piece(PieceType.Bishop, PieceColor.Black);
