@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using piece;
@@ -32,6 +31,7 @@ namespace board {
 
         private int xKingPossition;
         private int yKingPossition;
+        private bool isCheck;
 
         private int xPossition;
         private int yPossition;
@@ -86,15 +86,24 @@ namespace board {
 
                             DestroyCheckCell();
                             ChangeMove();
-                            if (CheckMate()) {
-                                Debug.Log("мат");
-                            }
+
                             if (CheckKing(whoseMove, chessBoard.board)) {
 
-                                chekCell = Instantiate(check, new 
+                                isCheck = true;
+                                chekCell = Instantiate(check, new
                                     Vector3(xKingPossition + 0.5f, 0.5f, yKingPossition + 0.5f),
                                     Quaternion.identity);
                             }
+
+                            if (CheckMate()) {
+                                if (isCheck) {
+                                    Debug.Log("мат");
+                                } else {
+                                    Debug.Log("пат");
+                                }
+                                
+                            }
+                            
                         }
                         selectedPiece = null;
                     }
@@ -199,6 +208,7 @@ namespace board {
 
 
         private Nullable<SelectedPiece> SelectPiece(int xPossition, int yPossition) {
+
             SelectedPiece selectedPiece = new SelectedPiece();
             selectedPiece.xPossition = xPossition;
             selectedPiece.yPossition = yPossition;
