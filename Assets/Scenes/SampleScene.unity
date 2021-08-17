@@ -389,18 +389,19 @@ MonoBehaviour:
   canMoveCell: {fileID: 6169466877868371687, guid: 28ba2eb344ba1984387386c4f2470078, type: 3}
   check: {fileID: 1527063711133394628, guid: a8bd9aa60866f6240bb2d51e83959785, type: 3}
   pieceList:
-  - {fileID: 1916680518618882, guid: eec17d5f9090c4c949f55d97388bfec8, type: 3}
   - {fileID: 1223592777669084, guid: 3698dddfe4c0a4a8dadcdf81c3255943, type: 3}
-  - {fileID: 1822731811085762, guid: cd47671bc858649ed8445e605149f3e8, type: 3}
+  - {fileID: 1916680518618882, guid: eec17d5f9090c4c949f55d97388bfec8, type: 3}
   - {fileID: 1504342444523766, guid: de5f4888ca0e74c1ba4b9224759334f4, type: 3}
-  - {fileID: 1830534316869998, guid: 396e9ff596f3340a3ba66f31bb9c83f8, type: 3}
+  - {fileID: 1822731811085762, guid: cd47671bc858649ed8445e605149f3e8, type: 3}
   - {fileID: 1943414466066380, guid: 45e10aea18beb495d9489aed31b95270, type: 3}
-  - {fileID: 1555947633139444, guid: 484e214fc05fe436393fd7787991ebfe, type: 3}
+  - {fileID: 1830534316869998, guid: 396e9ff596f3340a3ba66f31bb9c83f8, type: 3}
   - {fileID: 1213357437349106, guid: cb6a8f6d20d524a85bf5d4d1c6ba3d93, type: 3}
-  - {fileID: 1996616484037168, guid: fd58da484cc87433689394934ae1baa1, type: 3}
+  - {fileID: 1555947633139444, guid: 484e214fc05fe436393fd7787991ebfe, type: 3}
   - {fileID: 1097155551969228, guid: 55516a6c49a924127a8b226bfbb3cf46, type: 3}
-  - {fileID: 1764167493807252, guid: 27b957161063143d6a75fad94db1125f, type: 3}
+  - {fileID: 1996616484037168, guid: fd58da484cc87433689394934ae1baa1, type: 3}
   - {fileID: 1037745782791696, guid: ae91a18cadda2480e9478488d2142fde, type: 3}
+  - {fileID: 1764167493807252, guid: 27b957161063143d6a75fad94db1125f, type: 3}
+  - {fileID: 0}
 --- !u!65 &965990728
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -412,5 +413,5 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 20.644712, y: 1.3809378, z: 20.925728}
-  m_Center: {x: -0.1690669, y: 0.6904594, z: -0.11537992}
+  m_Size: {x: 20.23306, y: 1.3809378, z: 20.238615}
+  m_Center: {x: 0.03676292, y: 0.6904594, z: 0.084414236}
