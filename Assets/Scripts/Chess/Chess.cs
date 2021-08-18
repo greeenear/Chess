@@ -348,10 +348,6 @@ namespace chess {
             }
             return true;
         }
-
-
     }
-
-
 }
 

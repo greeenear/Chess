@@ -85,9 +85,9 @@ namespace board {
 
                             if (CheckMate()) {
                                 if (isCheck) {
-                                    Debug.Log("мат");
+                                    Debug.Log("пїЅпїЅпїЅ");
                                 } else {
-                                    Debug.Log("пат");
+                                    Debug.Log("пїЅпїЅпїЅ");
                                 } 
                             }
                         }
@@ -118,7 +118,6 @@ namespace board {
             return pieceGameObjects;
         }
 
- 
         private bool Move(int xPosition, int yPosition , SelectedPiece selectedPiece) {
             var x = selectedPiece.xPosition;
             var y = selectedPiece.yPosition;
