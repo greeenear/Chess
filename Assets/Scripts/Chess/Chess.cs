@@ -141,12 +141,12 @@ namespace chess {
 
         public static bool[,] DiagonalMove(
             SelectedPiece selectedPiece,
-            int lenght,
+            int length,
             bool[,] canMoveMap,
             bool isKing,
             Piece[,] piecesMap
         ) {
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition + i;
                 int y = selectedPiece.yPosition + i;
 
@@ -168,7 +168,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition + i;
                 int y = selectedPiece.yPosition - i;
 
@@ -191,7 +191,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition - i;
                 int y = selectedPiece.yPosition - i;
 
@@ -214,7 +214,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition - i;
                 int y = selectedPiece.yPosition + i;
 
@@ -240,12 +240,12 @@ namespace chess {
 
         public static bool[,] VerticalMove(
             SelectedPiece selectedPiece,
-            int lenght,
+            int length,
             bool[,] canMoveMap,
             bool isKing,
             Piece[,] piecesMap
         ) {
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition + i;
                 int y = selectedPiece.yPosition;
 
@@ -268,7 +268,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition;
                 int y = selectedPiece.yPosition + i;
 
@@ -290,7 +290,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
                 int x = selectedPiece.xPosition;
                 int y = selectedPiece.yPosition - i;
 
@@ -317,7 +317,7 @@ namespace chess {
                 }
             }
 
-            for (int i = 1; i <= lenght; i++) {
+            for (int i = 1; i <= length; i++) {
 
                 int x = selectedPiece.xPosition - i;
                 int y = selectedPiece.yPosition;

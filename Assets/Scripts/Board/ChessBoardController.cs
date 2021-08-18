@@ -82,6 +82,7 @@ namespace board {
                                     Vector3(xKingPosition + 0.5f, 0.5f,
                                     yKingPosition + 0.5f), Quaternion.identity);
                             }
+
                             if (CheckMate()) {
                                 if (isCheck) {
                                     Debug.Log("мат");
@@ -155,7 +156,6 @@ namespace board {
         private OutInfo CheckCastling(SelectedPiece king, bool[,] canMoveMap) {
             var checkInfo = CheckKing(whoseMove, chessBoard.board);
           
-  
             var x = king.xPosition;
             var y = king.yPosition;
 

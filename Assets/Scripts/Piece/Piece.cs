@@ -1,5 +1,4 @@
 namespace piece {
-
     public struct OutInfo {
         public bool flag;
         public bool[,] map;
