@@ -37,32 +37,72 @@ namespace chess {
 
     public static class Chess {
         public static List<Position> GetCanMoveMapForPiece(
-            Piece piece,
             Position piecePos,
             Piece[,] board,
             List<Position> canMovePositions
         ) {
+            Piece piece = board[piecePos.x, piecePos.y];
             switch (piece.type) {
                 case PieceType.Pawn:
-                    GetPawnMove(piece, piecePos, board, canMovePositions);
+                    GetPawnMove(piecePos, board, canMovePositions);
                     break;
 
                 case PieceType.Bishop:
-                    GetDiagonalMove(piece, piecePos, board, canMovePositions, 1, 1, 8);
-                    GetDiagonalMove(piece, piecePos, board, canMovePositions, 1, -1, 8);
-                    GetDiagonalMove(piece, piecePos, board, canMovePositions, -1, -1, 8);
-                    GetDiagonalMove(piece, piecePos, board, canMovePositions, -1, 1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 8);
+                    break;
+
+                case PieceType.Rook:
+                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 8);
+                    break;
+
+                case PieceType.Queen:
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 8);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 8);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 8);
+                    break;
+
+                case PieceType.King:
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 1);
+                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 1);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 1);
+                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 1);
+                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 1);
+                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 1);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 1);
+                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 1);
+                    break;
+
+                case PieceType.Knight:
+                    GetKnightMove(piecePos, board, canMovePositions, 2, 1);
+                    GetKnightMove(piecePos, board, canMovePositions, 2, -1);
+                    GetKnightMove(piecePos, board, canMovePositions, 1, 2);
+                    GetKnightMove(piecePos, board, canMovePositions, -1, 2);
+                    GetKnightMove(piecePos, board, canMovePositions, -2, 1);
+                    GetKnightMove(piecePos, board, canMovePositions, -2, -1);
+                    GetKnightMove(piecePos, board, canMovePositions, 1, -2);
+                    GetKnightMove(piecePos, board, canMovePositions, -1, -2);
                     break;
             }
             return canMovePositions;
         }
 
         public static List<Position> GetPawnMove(
-            Piece pawn,
             Position pawnPosition,
             Piece[,] board,
             List<Position> canMovePositions
         ) {
+            Piece pawn = board[pawnPosition.x, pawnPosition.y];
             int dir;
             int x = pawnPosition.x;
             int y = pawnPosition.y;
@@ -103,7 +143,6 @@ namespace chess {
         }
 
         public static List<Position> GetDiagonalMove(
-            Piece piece,
             Position piecePosition,
             Piece[,] board,
             List<Position> canMovePositions,
@@ -111,13 +150,14 @@ namespace chess {
             int right,
             int length
         ) {
-            Debug.Log(length);
+            Piece piece = board[piecePosition.x, piecePosition.y];
             for (int i = 1; i <= length; i++) {
                 int x = piecePosition.x + up * i;
                 int y = piecePosition.y + right * i;
 
                 if (OnChessBoard(x, y) && board[x, y] == null) {
                     canMovePositions.Add(new Position(x, y));
+
                 } else if (OnChessBoard(x, y) && board[x, y].color == piece.color) {
                     break;
 
@@ -129,290 +169,69 @@ namespace chess {
             return canMovePositions;
         }
 
-        //public static bool[,] PawnMove(
-        //    SelectedPiece selectedPiece,
-        //    bool[,] canMoveMap,
-        //    Piece[,] piecesMap
-        //) {
-        //    var x = selectedPiece.xPosition;
-        //    var y = selectedPiece.yPosition;
+        public static List<Position> GetVerticalMove(
+            Position piecePosition,
+            Piece[,] board,
+            List<Position> canMovePositions,
+            int up,
+            int right,
+            int length
+        ){
+            Piece piece = board[piecePosition.x, piecePosition.y];
+            for (int i = 1; i <= length; i++) {
+                int x = piecePosition.x + i * up;
+                int y = piecePosition.y + i * right;
 
-        //    int dir;
-        //    if (selectedPiece.piece.color == PieceColor.White) {
-        //        dir = -1;
-        //    } else {
-        //        dir = 1;
-        //    }
-        //    if (OnChessBoard(x + dir, y)
-        //            && piecesMap[x + dir, y] != null) {
-        //    } else if (x == 6 && dir == -1 || x == 1 && dir == 1) {
-        //        if (OnChessBoard(x + dir, y)
-        //            && piecesMap[x + dir, y] == null) {
-        //            canMoveMap[x + dir, y] = true;
-        //        }
-        //        if (OnChessBoard(x + dir * 2, y)
-        //            && piecesMap[x + dir * 2, y] == null) {
-        //            canMoveMap[x + dir * 2, y] = true;
-        //        }
-        //    } else if(OnChessBoard(x + dir, y)) {
-        //        canMoveMap[x + dir, y] = true;
-        //    }
-        //    if (OnChessBoard(x + dir, y - 1)
-        //        && piecesMap[x + dir, y - 1] != null
-        //        && piecesMap[x + dir, y - 1].color != selectedPiece.piece.color) {
-        //        canMoveMap[x + dir, y - 1] = true;
-        //    }
-        //    if (OnChessBoard(x, y - 1)
-        //        && piecesMap[x, y - 1] != null
-        //        && piecesMap[x, y - 1].color != selectedPiece.piece.color 
-        //        && piecesMap[x, y - 1].moveCount == 1) {
-        //        canMoveMap[x + dir, y - 1] = true;
-        //    }
-        //    if (OnChessBoard(x, y + 1)
-        //        && piecesMap[x, y + 1] != null
-        //        && piecesMap[x, y + 1].color != selectedPiece.piece.color
-        //        && piecesMap[x, y + 1].moveCount == 1) {
-        //        canMoveMap[x + dir, y + 1] = true;
-        //    }
-        //    if (OnChessBoard(x + dir, y + 1)
-        //        && piecesMap[x + dir, y + 1] != null
-        //        && piecesMap[x + dir, y + 1].color != selectedPiece.piece.color) {
-        //        canMoveMap[x + dir, y + 1] = true;
-        //    }
-        //    ñhangePawn?.Invoke();
-        //    return canMoveMap;
-        //}
+                if (OnChessBoard(x, y) && board[x, y] == null) {
+                    canMovePositions.Add(new Position(x, y));
 
-        //public static bool[,] KnightMove(
-        //    SelectedPiece selectedPiece,
-        //    int newPossitionX,
-        //    int newPossitionY,
-        //    bool[,] canMoveMap,
-        //    bool isKing,
-        //    Piece[,] piecesMap
-        //) {
-        //    int xPossition = selectedPiece.xPosition + newPossitionX;
-        //    int yPossition = selectedPiece.yPosition + newPossitionY;
+                } else if (OnChessBoard(x, y) && board[x, y].color == piece.color) {
+                    break;
 
-        //    if (OnChessBoard(xPossition, yPossition)
-        //        && piecesMap[xPossition, yPossition] == null) {
-        //        canMoveMap[xPossition, yPossition] = true;
+                } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
+                    canMovePositions.Add(new Position(x, y));
+                    break;
+                    
+                }
+            }
+            return canMovePositions;
+        }
 
-        //    } else if (OnChessBoard(xPossition, yPossition)
-        //        && piecesMap[xPossition, yPossition].color
-        //        != selectedPiece.piece.color) {
-        //        if (isKing) {
-        //            pieceAttakingKing[xPossition, yPossition] = true;
-        //        } else {
-        //            canMoveMap[xPossition, yPossition] = true;
-        //        }
-        //    }
-        //    return canMoveMap;
-        //}
+        public static List<Position> GetKnightMove(
+            Position piecePosition,
+            Piece[,] board,
+            List<Position> canMovePositions,
+            int up,
+            int right
+        ) {
+            Piece piece = board[piecePosition.x, piecePosition.y];
+            int x = piecePosition.x + up;
+            int y = piecePosition.y + right;
 
-        //public static bool[,] DiagonalMove(
-        //    SelectedPiece selectedPiece,
-        //    int length,
-        //    bool[,] canMoveMap,
-        //    bool isKing,
-        //    Piece[,] piecesMap
-        //) {
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition + i;
-        //        int y = selectedPiece.yPosition + i;
+            if (OnChessBoard(x, y) && board[x, y] == null) {
+                canMovePositions.Add(new Position(x, y));
 
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
+            } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
+                canMovePositions.Add(new Position(x, y));
+            }
+            return canMovePositions;
+        }
 
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition + i;
-        //        int y = selectedPiece.yPosition - i;
+        public static Position? FindKing(Piece[,] board, PieceColor whoseMove) {
+            for(int i = 0; i < 8; i++) {
+                for(int j = 0; j < 8; j++) {
+                    if (board[i, j] != null && board[i, j].type == PieceType.King 
+                        && board[i, j].color == whoseMove) {
+                        return new Position(i, j);
+                    }
+                }
+            }
+            return null;
+        }
+        public static bool CheckKing() {
 
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color != selectedPiece.piece.color) {
-
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else if (OnChessBoard(x, y)) {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition - i;
-        //        int y = selectedPiece.yPosition - i;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition - i;
-        //        int y = selectedPiece.yPosition + i;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //            && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-        //    return canMoveMap;
-        //}
-
-        //public static bool[,] VerticalMove(
-        //    SelectedPiece selectedPiece,
-        //    int length,
-        //    bool[,] canMoveMap,
-        //    bool isKing,
-        //    Piece[,] piecesMap
-        //) {
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition + i;
-        //        int y = selectedPiece.yPosition;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //                if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition;
-        //        int y = selectedPiece.yPosition + i;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //            } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-
-        //    for (int i = 1; i <= length; i++) {
-        //        int x = selectedPiece.xPosition;
-        //        int y = selectedPiece.yPosition - i;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color == selectedPiece.piece.color) {
-
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-
-        //            if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-
-        //            } else {
-
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //            }
-        //        }
-        //    }
-
-        //    for (int i = 1; i <= length; i++) {
-
-        //        int x = selectedPiece.xPosition - i;
-        //        int y = selectedPiece.yPosition;
-
-        //        if (OnChessBoard(x, y)
-        //            && piecesMap[x, y] == null) {
-        //            canMoveMap[x, y] = true;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color == selectedPiece.piece.color) {
-        //            break;
-        //        } else if (OnChessBoard(x, y)
-        //              && piecesMap[x, y].color != selectedPiece.piece.color) {
-        //                if (isKing) {
-        //                pieceAttakingKing[x, y] = true;
-        //                break;
-        //                } else {
-        //                canMoveMap[x, y] = true;
-        //                break;
-        //                }
-        //          }
-        //    }
-        //    return canMoveMap;
-        //}
-
+            return true;
+        }
         public static bool OnChessBoard(int i, int j) {
             if (i > 7 || i < 0 || j > 7 || j < 0) {
                 return false;

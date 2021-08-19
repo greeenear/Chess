@@ -1,4 +1,5 @@
 using chess;
+
 namespace controller {
     public class ChessBoard {
         public Piece [,] board = new Piece[8, 8];
