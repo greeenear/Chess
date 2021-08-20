@@ -67,7 +67,7 @@ namespace controller {
                                 Debug.Log("CheckMate");
                             }
 
-                            if (CheckKing(chessBoard.board)) {
+                            if (Chess.CheckKing(chessBoard.board, whoseMove)) {
                                 Debug.Log("Check");
                             }
                         }
@@ -120,61 +120,26 @@ namespace controller {
             return false;
         }
 
-        private bool CheckKing(Piece[,] board) {
-            Position kingPosition = Chess.FindKing(board, whoseMove).Value;
-
-            List<Position> canAttackKing = new List<Position>();
-            List<Position> attackPositions = new List<Position>();
-            board[kingPosition.x, kingPosition.y].type = PieceType.Queen;
-            canAttackKing = Chess.GetCanMoveMapForPiece(
-                kingPosition,
-                board,
-                canAttackKing);
-            board[kingPosition.x, kingPosition.y].type = PieceType.Knight;
-
-            canAttackKing = Chess.GetCanMoveMapForPiece(
-                kingPosition,
-                board,
-                canAttackKing);
-
-            foreach (var pos in canAttackKing) {
-                if (board[pos.x, pos.y]!=null) {
-                    attackPositions = Chess.GetCanMoveMapForPiece(
-                        new Position(pos.x, pos.y),
-                        board,
-                        attackPositions);
-                }
-            }
-            board[kingPosition.x, kingPosition.y].type = PieceType.King;
-
-            foreach (var attackPosition in attackPositions) {
-                if (Equals(kingPosition, attackPosition)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private bool CheckMate() {
             List<Position> canMovePosition = new List<Position>();
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     if (chessBoard.board[i, j] != null
                         && chessBoard.board[i, j].color == whoseMove) {
-
                         canMovePosition = Chess.GetCanMoveMapForPiece(
                             new Position(i, j),
                             chessBoard.board,
-                            canMovePosition);
+                            canMovePosition
+                        );
                         canMovePosition = HiddenCheck(canMovePosition, new Position(i, j));
+                        if (canMovePosition.Count != 0) {
+                            return false;
+                        }
+
                     }
                 }
             }
-
-            if (canMovePosition.Count == 0) {
-                return true;
-            }
-            return false;
+            return true;
         }
 
         private List<Position> HiddenCheck(
@@ -186,11 +151,13 @@ namespace controller {
             foreach (var pos in canMovePositions) {
                 board[pos.x, pos.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = null;
-                if(!CheckKing(board)) {
+                if(!Chess.CheckKing(board, whoseMove)) {
                     newCanMovePositions.Add(pos);
                 }
                 board[piecePos.x, piecePos.y] = board[pos.x, pos.y];
                 board[pos.x, pos.y] = null;
+            }
+            foreach (var a in newCanMovePositions) {
             }
             return newCanMovePositions;
         }

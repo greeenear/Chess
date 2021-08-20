@@ -228,10 +228,42 @@ namespace chess {
             }
             return null;
         }
-        public static bool CheckKing() {
 
-            return true;
+        public static bool CheckKing(Piece[,] board, PieceColor whoseMove) {
+            Position kingPosition = Chess.FindKing(board, whoseMove).Value;
+
+            List<Position> canAttackKing = new List<Position>();
+            List<Position> attackPositions = new List<Position>();
+            board[kingPosition.x, kingPosition.y].type = PieceType.Queen;
+            canAttackKing = Chess.GetCanMoveMapForPiece(
+                kingPosition,
+                board,
+                canAttackKing);
+            board[kingPosition.x, kingPosition.y].type = PieceType.Knight;
+
+            canAttackKing = Chess.GetCanMoveMapForPiece(
+                kingPosition,
+                board,
+                canAttackKing);
+
+            foreach (var pos in canAttackKing) {
+                if (board[pos.x, pos.y] != null) {
+                    attackPositions = Chess.GetCanMoveMapForPiece(
+                        new Position(pos.x, pos.y),
+                        board,
+                        attackPositions);
+                }
+            }
+            board[kingPosition.x, kingPosition.y].type = PieceType.King;
+
+            foreach (var attackPosition in attackPositions) {
+                if (Equals(kingPosition, attackPosition)) {
+                    return true;
+                }
+            }
+            return false;
         }
+
         public static bool OnChessBoard(int i, int j) {
             if (i > 7 || i < 0 || j > 7 || j < 0) {
                 return false;
