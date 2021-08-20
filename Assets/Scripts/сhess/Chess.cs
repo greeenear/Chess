@@ -20,187 +20,145 @@ namespace chess {
         public PieceType type;
         public PieceColor color;
 
-        public Piece(PieceType type, PieceColor color) {
-            this.type = type;
-            this.color = color;
+        public static Piece mk(PieceType type, PieceColor color) {
+            return new Piece { type = type, color = color };
         }
     }
 
-    public struct Position {
-        public int x;
-        public int y;
-        public Position(int x, int y) {
-            this.x = x;
-            this.y = y;
+    public struct LineMove {
+        public Vector2Int dir;
+        public int length;
+
+        public static LineMove mk(Vector2Int dir, int length) {
+            return new LineMove {dir = dir, length = length};
+        }
+    }
+
+    public struct CircleMove {
+        public float radius;
+
+        public static CircleMove mk(float radius) {
+            return new CircleMove { radius = radius };
         }
     }
 
     public static class Chess {
-        public static List<Position> GetCanMoveMapForPiece(
-            Position piecePos,
-            Piece[,] board,
-            List<Position> canMovePositions
+        public static List<Vector2Int> CalcPossibleMoves(
+            Vector2Int pos,
+            Piece[,] board
         ) {
-            Piece piece = board[piecePos.x, piecePos.y];
+            List<Vector2Int> moves = new List<Vector2Int>();
+            Piece piece = board[pos.x, pos.y];
             switch (piece.type) {
                 case PieceType.Pawn:
-                    GetPawnMove(piecePos, board, canMovePositions);
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, -1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, -1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 0), 2)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 0), 2)));
                     break;
-
                 case PieceType.Bishop:
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 8);
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 1), 8)));
                     break;
-
                 case PieceType.Rook:
-                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 8);
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 0), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 0), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, 1), 8)));
                     break;
-
                 case PieceType.Queen:
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 8);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 8);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 8);
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 0), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 0), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, -1), 8)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, 1), 8)));
                     break;
-
                 case PieceType.King:
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, 1, 1);
-                    GetDiagonalMove(piecePos, board, canMovePositions, 1, -1, 1);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, -1, 1);
-                    GetDiagonalMove(piecePos, board, canMovePositions, -1, 1, 1);
-                    GetVerticalMove(piecePos, board, canMovePositions, 1, 0, 1);
-                    GetVerticalMove(piecePos, board, canMovePositions, -1, 0, 1);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, -1, 1);
-                    GetVerticalMove(piecePos, board, canMovePositions, 0, 1, 1);
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, -1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, -1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 0), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 0), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, -1), 1)));
+                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, 1), 1)));
                     break;
-
                 case PieceType.Knight:
-                    GetKnightMove(piecePos, board, canMovePositions, 2, 1);
-                    GetKnightMove(piecePos, board, canMovePositions, 2, -1);
-                    GetKnightMove(piecePos, board, canMovePositions, 1, 2);
-                    GetKnightMove(piecePos, board, canMovePositions, -1, 2);
-                    GetKnightMove(piecePos, board, canMovePositions, -2, 1);
-                    GetKnightMove(piecePos, board, canMovePositions, -2, -1);
-                    GetKnightMove(piecePos, board, canMovePositions, 1, -2);
-                    GetKnightMove(piecePos, board, canMovePositions, -1, -2);
+                    moves.AddRange(CalcCircleMove(board, pos, CircleMove.mk(2f)));
                     break;
             }
-            return canMovePositions;
+
+            return moves;
         }
 
-        public static List<Position> GetPawnMove(
-            Position pawnPosition,
+        public static List<Vector2Int> CalcLineMove(
             Piece[,] board,
-            List<Position> canMovePositions
-        ) {
-            Piece pawn = board[pawnPosition.x, pawnPosition.y];
-            int dir;
-            int x = pawnPosition.x;
-            int y = pawnPosition.y;
-
-            if (pawn.color == PieceColor.White) {
-                dir = -1;
-            } else {
-                dir = 1;
-            }
-
-            if (OnChessBoard(x + dir, y)
-                    && board[x + dir, y] != null) {
-            } else if (x == 6 && dir == -1 || x == 1 && dir == 1) {
-                if (OnChessBoard(x + dir, y)
-                    && board[x + dir, y] == null) {
-                    canMovePositions.Add(new Position(x + dir, y));
-                }
-                if (OnChessBoard(x + dir * 2, y)
-                    && board[x + dir * 2, y] == null) {
-                    canMovePositions.Add(new Position(x + dir * 2, y));
-                }
-            } else if (OnChessBoard(x + dir, y)) {
-                canMovePositions.Add(new Position(x + dir, y));
-            }
-
-            if (OnChessBoard(x + dir, y - 1)
-                && board[x + dir, y - 1] != null
-                && board[x + dir, y - 1].color != pawn.color) {
-                canMovePositions.Add(new Position(x + dir, y - 1));
-            }
-            
-            if (OnChessBoard(x + dir, y + 1)
-                && board[x + dir, y + 1] != null
-                && board[x + dir, y + 1].color != pawn.color) {
-                canMovePositions.Add(new Position(x + dir, y + 1));
-            }
-            return canMovePositions;
-        }
-
-        public static List<Position> GetDiagonalMove(
-            Position piecePosition,
-            Piece[,] board,
-            List<Position> canMovePositions,
-            int up,
-            int right,
-            int length
+            Vector2Int piecePosition,
+            LineMove lineMove
         ) {
             Piece piece = board[piecePosition.x, piecePosition.y];
-            for (int i = 1; i <= length; i++) {
-                int x = piecePosition.x + up * i;
-                int y = piecePosition.y + right * i;
+            List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            for (int i = 1; i <= lineMove.length; i++) {
+                int x = piecePosition.x + lineMove.dir.x * i;
+                int y = piecePosition.y + lineMove.dir.y * i;
 
                 if (OnChessBoard(x, y) && board[x, y] == null) {
-                    canMovePositions.Add(new Position(x, y));
+                    canMovePositions.Add(new Vector2Int(x, y));
 
                 } else if (OnChessBoard(x, y) && board[x, y].color == piece.color) {
                     break;
 
                 } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
-                    canMovePositions.Add(new Position(x, y));
+                    canMovePositions.Add(new Vector2Int(x, y));
                     break;
                 }
             }
             return canMovePositions;
         }
 
-        public static List<Position> GetVerticalMove(
-            Position piecePosition,
+        public static List<Vector2Int> CalcCircleMove(
             Piece[,] board,
-            List<Position> canMovePositions,
-            int up,
-            int right,
-            int length
-        ){
-            Piece piece = board[piecePosition.x, piecePosition.y];
-            for (int i = 1; i <= length; i++) {
-                int x = piecePosition.x + i * up;
-                int y = piecePosition.y + i * right;
+            Vector2Int pos,
+            CircleMove circleMove
+        ) {
+            List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            for (int i = 1; i < 16; i += 2) {
+                var x = Mathf.Sin(22.5f * i * Mathf.PI / 180) * circleMove.radius + 0.5f + pos.x;
+                var y = Mathf.Cos(22.5f * i * Mathf.PI / 180) * circleMove.radius + 0.5f + pos.y;
 
-                if (OnChessBoard(x, y) && board[x, y] == null) {
-                    canMovePositions.Add(new Position(x, y));
-
-                } else if (OnChessBoard(x, y) && board[x, y].color == piece.color) {
-                    break;
-
-                } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
-                    canMovePositions.Add(new Position(x, y));
-                    break;
-                    
+                if(x < 0) {
+                    x -= 1;
                 }
-            }
+                if (y < 0) {
+                    y -= 1;
+                }
+
+                if(OnChessBoard((int)x, (int)y)) {
+                    var possipleCell = board[(int)x, (int)y];
+
+                    if (possipleCell == null) {
+                        canMovePositions.Add(new Vector2Int((int)x, (int)y));
+                    }
+
+                    if (possipleCell != null && possipleCell.color != board[pos.x, pos.y].color) {
+                        canMovePositions.Add(new Vector2Int((int)x, (int)y));
+                    }
+                }
+            }  
             return canMovePositions;
         }
 
-        public static List<Position> GetKnightMove(
-            Position piecePosition,
+            public static List<Vector2Int> GetKnightMove(
+            Vector2Int piecePosition,
             Piece[,] board,
-            List<Position> canMovePositions,
+            List<Vector2Int> canMovePositions,
             int up,
             int right
         ) {
@@ -209,59 +167,24 @@ namespace chess {
             int y = piecePosition.y + right;
 
             if (OnChessBoard(x, y) && board[x, y] == null) {
-                canMovePositions.Add(new Position(x, y));
+                canMovePositions.Add(new Vector2Int(x, y));
 
             } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
-                canMovePositions.Add(new Position(x, y));
+                canMovePositions.Add(new Vector2Int(x, y));
             }
             return canMovePositions;
         }
 
-        public static Position? FindKing(Piece[,] board, PieceColor whoseMove) {
+        public static Vector2Int? FindKing(Piece[,] board, PieceColor whoseMove) {
             for(int i = 0; i < 8; i++) {
                 for(int j = 0; j < 8; j++) {
                     if (board[i, j] != null && board[i, j].type == PieceType.King 
                         && board[i, j].color == whoseMove) {
-                        return new Position(i, j);
+                        return new Vector2Int(i, j);
                     }
                 }
             }
             return null;
-        }
-
-        public static bool CheckKing(Piece[,] board, PieceColor whoseMove) {
-            Position kingPosition = Chess.FindKing(board, whoseMove).Value;
-
-            List<Position> canAttackKing = new List<Position>();
-            List<Position> attackPositions = new List<Position>();
-            board[kingPosition.x, kingPosition.y].type = PieceType.Queen;
-            canAttackKing = Chess.GetCanMoveMapForPiece(
-                kingPosition,
-                board,
-                canAttackKing);
-            board[kingPosition.x, kingPosition.y].type = PieceType.Knight;
-
-            canAttackKing = Chess.GetCanMoveMapForPiece(
-                kingPosition,
-                board,
-                canAttackKing);
-
-            foreach (var pos in canAttackKing) {
-                if (board[pos.x, pos.y] != null) {
-                    attackPositions = Chess.GetCanMoveMapForPiece(
-                        new Position(pos.x, pos.y),
-                        board,
-                        attackPositions);
-                }
-            }
-            board[kingPosition.x, kingPosition.y].type = PieceType.King;
-
-            foreach (var attackPosition in attackPositions) {
-                if (Equals(kingPosition, attackPosition)) {
-                    return true;
-                }
-            }
-            return false;
         }
 
         public static bool OnChessBoard(int i, int j) {

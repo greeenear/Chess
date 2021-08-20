@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace resource {
+namespace controller {
     public class Resource : MonoBehaviour {
         public List<GameObject> pieceList = new List<GameObject>();
     }
