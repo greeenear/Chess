@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using option;
 
 namespace chess {
     public enum PieceType {
@@ -19,7 +20,7 @@ namespace chess {
     public class Piece {
         public PieceType type;
         public PieceColor color;
-
+        
         public static Piece mk(PieceType type, PieceColor color) {
             return new Piece { type = type, color = color };
         }
@@ -45,10 +46,10 @@ namespace chess {
     public static class Chess {
         public static List<Vector2Int> CalcPossibleMoves(
             Vector2Int pos,
-            Piece[,] board
+            Option<Piece>[,] board
         ) {
             List<Vector2Int> moves = new List<Vector2Int>();
-            Piece piece = board[pos.x, pos.y];
+            Piece piece = board[pos.x, pos.y].Peel();
             switch (piece.type) {
                 case PieceType.Pawn:
                     moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 1)));
@@ -99,23 +100,23 @@ namespace chess {
         }
 
         public static List<Vector2Int> CalcLineMove(
-            Piece[,] board,
+            Option<Piece>[,] board,
             Vector2Int piecePosition,
             LineMove lineMove
         ) {
-            Piece piece = board[piecePosition.x, piecePosition.y];
+            Piece piece = board[piecePosition.x, piecePosition.y].Peel();
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             for (int i = 1; i <= lineMove.length; i++) {
                 int x = piecePosition.x + lineMove.dir.x * i;
                 int y = piecePosition.y + lineMove.dir.y * i;
 
-                if (OnChessBoard(x, y) && board[x, y] == null) {
+                if (OnChessBoard(x, y) && board[x, y].IsNone()) {
                     canMovePositions.Add(new Vector2Int(x, y));
 
-                } else if (OnChessBoard(x, y) && board[x, y].color == piece.color) {
+                } else if (OnChessBoard(x, y) && board[x, y].Peel().color == piece.color) {
                     break;
 
-                } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
+                } else if (OnChessBoard(x, y) && board[x, y].Peel().color != piece.color) {
                     canMovePositions.Add(new Vector2Int(x, y));
                     break;
                 }
@@ -124,7 +125,7 @@ namespace chess {
         }
 
         public static List<Vector2Int> CalcCircleMove(
-            Piece[,] board,
+            Option<Piece>[,] board,
             Vector2Int pos,
             CircleMove circleMove
         ) {
@@ -143,11 +144,12 @@ namespace chess {
                 if(OnChessBoard((int)x, (int)y)) {
                     var possipleCell = board[(int)x, (int)y];
 
-                    if (possipleCell == null) {
+                    if (possipleCell.IsNone()) {
                         canMovePositions.Add(new Vector2Int((int)x, (int)y));
                     }
 
-                    if (possipleCell != null && possipleCell.color != board[pos.x, pos.y].color) {
+                    if (possipleCell.IsSome() && possipleCell.Peel().color
+                        != board[pos.x, pos.y].Peel().color) {
                         canMovePositions.Add(new Vector2Int((int)x, (int)y));
                     }
                 }
@@ -157,29 +159,29 @@ namespace chess {
 
             public static List<Vector2Int> GetKnightMove(
             Vector2Int piecePosition,
-            Piece[,] board,
+            Option<Piece>[,] board,
             List<Vector2Int> canMovePositions,
             int up,
             int right
         ) {
-            Piece piece = board[piecePosition.x, piecePosition.y];
+            Piece piece = board[piecePosition.x, piecePosition.y].Peel();
             int x = piecePosition.x + up;
             int y = piecePosition.y + right;
 
-            if (OnChessBoard(x, y) && board[x, y] == null) {
+            if (OnChessBoard(x, y) && board[x, y].IsNone()) {
                 canMovePositions.Add(new Vector2Int(x, y));
 
-            } else if (OnChessBoard(x, y) && board[x, y].color != piece.color) {
+            } else if (OnChessBoard(x, y) && board[x, y].Peel().color != piece.color) {
                 canMovePositions.Add(new Vector2Int(x, y));
             }
             return canMovePositions;
         }
 
-        public static Vector2Int? FindKing(Piece[,] board, PieceColor whoseMove) {
+        public static Vector2Int? FindKing(Option<Piece>[,] board, PieceColor whoseMove) {
             for(int i = 0; i < 8; i++) {
                 for(int j = 0; j < 8; j++) {
-                    if (board[i, j] != null && board[i, j].type == PieceType.King 
-                        && board[i, j].color == whoseMove) {
+                    if (board[i, j].IsSome() && board[i, j].Peel().type == PieceType.King 
+                        && board[i, j].Peel().color == whoseMove) {
                         return new Vector2Int(i, j);
                     }
                 }
