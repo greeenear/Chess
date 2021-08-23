@@ -37,9 +37,10 @@ namespace chess {
 
     public struct CircleMove {
         public float radius;
+        public float startingAngle;
 
-        public static CircleMove mk(float radius) {
-            return new CircleMove { radius = radius };
+        public static CircleMove mk(float radius, float startingAngle) {
+            return new CircleMove { radius = radius, startingAngle = startingAngle };
         }
     }
 
@@ -82,17 +83,10 @@ namespace chess {
                     moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, 1), 8)));
                     break;
                 case PieceType.King:
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 1), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, -1), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, -1), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 1), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(1, 0), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(-1, 0), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, -1), 1)));
-                    moves.AddRange(CalcLineMove(board, pos, LineMove.mk(new Vector2Int(0, 1), 1)));
+                    moves.AddRange(CalcCircleMove(board, pos, CircleMove.mk(1f, 20f)));
                     break;
                 case PieceType.Knight:
-                    moves.AddRange(CalcCircleMove(board, pos, CircleMove.mk(2f)));
+                    moves.AddRange(CalcCircleMove(board, pos, CircleMove.mk(2f, 22.5f)));
                     break;
             }
 
@@ -131,8 +125,10 @@ namespace chess {
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             for (int i = 1; i < 16; i += 2) {
-                var x = Mathf.Sin(22.5f * i * Mathf.PI / 180) * circleMove.radius + 0.5f + pos.x;
-                var y = Mathf.Cos(22.5f * i * Mathf.PI / 180) * circleMove.radius + 0.5f + pos.y;
+                var x = Mathf.Sin(circleMove.startingAngle * i * Mathf.PI / 180)
+                    * circleMove.radius + 0.51f + pos.x;
+                var y = Mathf.Cos(circleMove.startingAngle * i * Mathf.PI / 180)
+                    * circleMove.radius + 0.51f + pos.y;
 
                 if(x < 0) {
                     x -= 1;
@@ -153,7 +149,7 @@ namespace chess {
                         canMovePositions.Add(new Vector2Int((int)x, (int)y));
                     }
                 }
-            }  
+            }
             return canMovePositions;
         }
 

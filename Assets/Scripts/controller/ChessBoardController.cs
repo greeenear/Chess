@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -6,25 +7,26 @@ using option;
 namespace controller {  
 
     public class ChessBoardController : MonoBehaviour {
-        public Option<Piece>[,] board = new Option<Piece>[8, 8];
-
+        public static Option<Piece>[,] board = new Option<Piece>[8, 8];
+        
         public GameObject boardObj;
 
         private int xPosition;
         private int yPosition;
         Vector2Int selectedPosition;
 
-        private PieceColor whoseMove = PieceColor.White;
+        public PieceColor whoseMove = PieceColor.White;
 
         private Ray ray;
         private RaycastHit hit;
 
+        public GameObject menu;
         public GameObject canMoveCell;
         public GameObject checkKingCell;
 
         private List<GameObject> canMoveCells = new List<GameObject>();
 
-        private GameObject[,] pieceGameObjects = new GameObject[8, 8];
+        public GameObject[,] pieceGameObjects = new GameObject[8, 8];
 
         private List<Vector2Int> canMovePositions = new List<Vector2Int>();
 
@@ -54,14 +56,8 @@ namespace controller {
             for (int i = 0; i < 8; i++) {
                 board[6, i] = Option<Piece>.Some(Piece.mk(PieceType.Pawn, PieceColor.White));
             }
-
-
-            for(int i = 0; i < 8; i++) {
-                for(int j = 0; j < 8; j++) {
-                    Debug.Log(board[i, j].IsSome()); ;
-                }
-            }
         }
+
         private void Start() {
             AddPiecesOnBoard(
             pieceGameObjects,
@@ -113,12 +109,22 @@ namespace controller {
                     }
                 }
             }
+
+            if(Input.GetKeyDown(KeyCode.Escape)) {
+                if(menu.activeSelf == true) {
+                    menu.SetActive(false);
+                } else {
+                    menu.SetActive(true);
+                }
+                
+            }
         }
 
-        private void AddPiecesOnBoard(
+        public void AddPiecesOnBoard(
             GameObject[,] pieceGameObjects,
             List<GameObject> pieceList
         ) {
+            DestroyPieces();
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     if (board[i, j].IsSome()) {
@@ -165,13 +171,13 @@ namespace controller {
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y + dir))
-                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color 
+                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color
                         != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
-                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color 
+                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color
                         != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
@@ -262,9 +268,10 @@ namespace controller {
             List<Vector2Int> canMovePositions,
             Vector2Int piecePos
         ) {
-            Option<Piece>[,] board = (Option<Piece>[,])this.board.Clone();
+            Option<Piece>[,] board;
             List<Vector2Int> newCanMovePositions = new List<Vector2Int>();
             foreach (var pos in canMovePositions) {
+                board = (Option<Piece>[,])ChessBoardController.board.Clone();
                 board[pos.x, pos.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
                 if (!CheckKing(board, whoseMove)) {
@@ -292,6 +299,13 @@ namespace controller {
             }
         }
 
+        private void DestroyPieces() {
+            for(int i = 0; i < 8; i++) {
+                for(int j = 0; j < 8; j++) {
+                    Destroy(pieceGameObjects[i,j]);
+                }
+            }
+        }
         private void ShowCanMoveCells(List<Vector2Int> canMovePositions) {
             foreach (var pos in canMovePositions) {
                 if (board[pos.x, pos.y].IsSome()) {
