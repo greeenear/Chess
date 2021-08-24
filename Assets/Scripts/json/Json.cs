@@ -81,8 +81,8 @@ namespace json {
                     }
                 }
                 foreach (var PieceInfo in piecesPos) {
-                    var board = ChessBoardController.board[PieceInfo.xPos, PieceInfo.yPos];
-                    board = Option<Piece>.Some(PieceInfo.piece);
+                    var board = ChessBoardController.board;
+                    board[PieceInfo.xPos, PieceInfo.yPos] = Option<Piece>.Some(PieceInfo.piece);
                 }
 
                 gameObject.GetComponent<ChessBoardController>().AddPiecesOnBoard(

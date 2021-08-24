@@ -64,6 +64,7 @@ namespace controller {
         private void Update() {
             if (Input.GetMouseButtonDown(0)) {
                 ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
                 if (Physics.Raycast(ray, out hit)) {
                     x = (int)(hit.point.x - (boardObj.transform.position.x - 4));
                     y = (int)(hit.point.z - (boardObj.transform.position.z - 4));
@@ -311,15 +312,18 @@ namespace controller {
             }
         }
         private void ShowCanMoveCells(List<Vector2Int> canMovePos) {
+            var boardPos = boardObj.transform.position;
+
             foreach (var pos in canMovePos) {
                 if (board[pos.x, pos.y].IsSome()) {
                     canMoveCell.transform.localScale = new Vector3(0.9f, 0.01f, 0.9f);
+
                     canMoveCells.Add(Instantiate(
                         canMoveCell,
                         new Vector3(
-                            pos.x + boardObj.transform.position.x - 4 + 0.5f,
-                            boardObj.transform.position.y + 0.5f,
-                            pos.y + boardObj.transform.position.z - 4 + 0.5f),
+                            pos.x + boardPos.x - 4 + 0.5f,
+                            boardPos.y + 0.5f,
+                            pos.y + boardPos.z - 4 + 0.5f),
                         Quaternion.identity)
                     );
                     canMoveCell.transform.localScale = new Vector3(0.2f, 0.01f, 0.2f);
@@ -327,9 +331,9 @@ namespace controller {
                 canMoveCells.Add(Instantiate(
                     canMoveCell,
                     new Vector3(
-                        pos.x + boardObj.transform.position.x - 4 + 0.5f,
-                        boardObj.transform.position.y + 0.5f,
-                        pos.y + boardObj.transform.position.z - 4 + 0.5f),
+                        pos.x + boardPos.x - 4 + 0.5f,
+                        boardPos.y + 0.5f,
+                        pos.y + boardPos.z - 4 + 0.5f),
                     Quaternion.identity)
                 );
             }

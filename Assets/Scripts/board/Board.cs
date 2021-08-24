@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using option;
 
 namespace board {
     public struct Circle {
@@ -71,5 +72,23 @@ namespace board {
 
             return canMovePositions;
         }
+
+        public static List<T> FindAllPieces<T>(Option<T>[,] board) {
+            List<T> piecesList = new List<T>();
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    var pieceOpt = board[i, j];
+                    var piece = board[i, j].Peel();
+
+                    if (pieceOpt.IsSome()) {
+                        piecesList.Add(piece);
+                    }
+                }
+            }
+
+            return piecesList;
+        }
     }
 }
+
