@@ -15,7 +15,7 @@ namespace controller {
         private int yPosition;
         Vector2Int selectedPosition;
 
-        public PieceColor whoseMove = PieceColor.White;
+        public static PieceColor whoseMove = PieceColor.White;
 
         private Ray ray;
         private RaycastHit hit;

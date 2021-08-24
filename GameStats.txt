@@ -1,1 +1,1 @@
-text
+{"whoseMove":0}
