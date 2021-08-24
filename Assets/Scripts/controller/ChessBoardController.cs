@@ -1,19 +1,17 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
 using option;
 
-namespace controller {  
-
+namespace controller {
     public class ChessBoardController : MonoBehaviour {
         public static Option<Piece>[,] board = new Option<Piece>[8, 8];
-        
+
         public GameObject boardObj;
 
-        private int xPosition;
-        private int yPosition;
-        Vector2Int selectedPosition;
+        private int x;
+        private int y;
+        Vector2Int selectedPos;
 
         public static PieceColor whoseMove = PieceColor.White;
 
@@ -22,13 +20,11 @@ namespace controller {
 
         public GameObject menu;
         public GameObject canMoveCell;
-        public GameObject checkKingCell;
-
         private List<GameObject> canMoveCells = new List<GameObject>();
 
         public GameObject[,] pieceGameObjects = new GameObject[8, 8];
 
-        private List<Vector2Int> canMovePositions = new List<Vector2Int>();
+        private List<Vector2Int> canMovePos = new List<Vector2Int>();
 
         private void Awake() {
             board[0, 0] = Option<Piece>.Some(Piece.mk(PieceType.Rook, PieceColor.Black));
@@ -60,43 +56,39 @@ namespace controller {
 
         private void Start() {
             AddPiecesOnBoard(
-            pieceGameObjects,
-            gameObject.GetComponent<Resource>().pieceList);
+                pieceGameObjects,
+                gameObject.GetComponent<Resource>().pieceList
+            );
         }
 
         private void Update() {
             if (Input.GetMouseButtonDown(0)) {
                 ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out hit)) {
-                    xPosition = (int)(hit.point.x - (boardObj.transform.position.x - 4));
-                    yPosition = (int)(hit.point.z - (boardObj.transform.position.z - 4));
+                    x = (int)(hit.point.x - (boardObj.transform.position.x - 4));
+                    y = (int)(hit.point.z - (boardObj.transform.position.z - 4));
 
-                    var piece = board[xPosition, yPosition];
+                    var piece = board[x, y];
 
                     if (piece.IsSome() && piece.Peel().color == whoseMove) {
                         RemoveCanMoveCells();
-                        canMovePositions.Clear();
+                        canMovePos.Clear();
 
-                        selectedPosition = new Vector2Int(xPosition, yPosition);
-                        canMovePositions = Chess.CalcPossibleMoves(
-                            selectedPosition,
-                            board);
+                        selectedPos = new Vector2Int(x, y);
+                        canMovePos = Chess.CalcPossibleMoves(selectedPos, board);
+
                         if (piece.Peel().type == PieceType.Pawn) {
-                            canMovePositions = SelectPawnMoves(
-                                board,
-                                selectedPosition,
-                                canMovePositions
-                            );
+                            canMovePos = SelectPawnMoves(board, selectedPos, canMovePos);
                         }
-                        canMovePositions = HiddenCheck(canMovePositions, selectedPosition);
-                        ShowCanMoveCells(canMovePositions);
+                        canMovePos = HiddenCheck(canMovePos, selectedPos);
+                        ShowCanMoveCells(canMovePos);
 
                     } else {
                         RemoveCanMoveCells();
 
-                        if (Move(selectedPosition,
-                            new Vector2Int(xPosition, yPosition), canMovePositions)) {
+                        if (Move(selectedPos, new Vector2Int(x, y), canMovePos)) {
                             ChangeMove();
+
                             if (CheckMate()) {
                                 Debug.Log("CheckMate");
                             }
@@ -105,38 +97,39 @@ namespace controller {
                                 Debug.Log("Check");
                             }
                         }
-                        canMovePositions.Clear();
+                        canMovePos.Clear();
                     }
                 }
             }
 
-            if(Input.GetKeyDown(KeyCode.Escape)) {
-                if(menu.activeSelf == true) {
+            if (Input.GetKeyDown(KeyCode.Escape)) {
+                if (menu.activeSelf == true) {
                     menu.SetActive(false);
                 } else {
                     menu.SetActive(true);
                 }
-                
             }
         }
 
-        public void AddPiecesOnBoard(
-            GameObject[,] pieceGameObjects,
-            List<GameObject> pieceList
-        ) {
+        public void AddPiecesOnBoard(GameObject[,] pieceGameObjects, List<GameObject> pieceList) {
             DestroyPieces();
+            var boardPos = boardObj.transform.position;
+
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
+                    var piece = board[i, j].Peel();
+
                     if (board[i, j].IsSome()) {
                         pieceGameObjects[i, j] = Instantiate(
-                            pieceList[(int)board[i, j].Peel().type * 2 
-                                + (int)board[i, j].Peel().color],
+                            pieceList[(int)piece.type * 2 + (int)piece.color],
                             new Vector3(
-                                i + boardObj.transform.position.x - 4 + 0.5f,
-                                0.5f,
-                                j + boardObj.transform.position.z - 4 + 0.5f
+                                i + boardPos.x - 4 + 0.5f,
+                                boardPos.y + 0.5f,
+                                j + boardPos.z - 4 + 0.5f
                             ),
-                            Quaternion.identity, boardObj.transform);
+                            Quaternion.identity,
+                            boardObj.transform
+                        );
                     }
                 }
             }
@@ -171,38 +164,41 @@ namespace controller {
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y + dir))
-                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color
-                        != pawn.color) {
+                    && board[pos.x, pos.y].IsSome() 
+                    && board[pos.x, pos.y].Peel().color != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
-                    && board[pos.x, pos.y].IsSome() && board[pos.x, pos.y].Peel().color
-                        != pawn.color) {
+                    && board[pos.x, pos.y].IsSome()
+                    && board[pos.x, pos.y].Peel().color != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
             }
+
             return newPossibleMoves;
         }
 
-        public bool Move(Vector2Int start, Vector2Int end, List<Vector2Int> canMovePositions) {
-            foreach (var pos in canMovePositions) {
+        public bool Move(Vector2Int start, Vector2Int end, List<Vector2Int> canMovePos) {
+            var offset = boardObj.transform.position;
+
+            foreach (var pos in canMovePos) {
                 if (pos.x == end.x && pos.y == end.y) {
                     if (board[end.x, end.y].IsSome()) {
                         Destroy(pieceGameObjects[end.x, end.y]);
                     }
+
                     board[end.x, end.y] = board[start.x, start.y];
                     board[start.x, start.y] = Option<Piece>.None();
                     pieceGameObjects[end.x, end.y] = pieceGameObjects[start.x, start.y];
 
                     pieceGameObjects[end.x, end.y].transform.position =
-                    new Vector3(
-                        xPosition + boardObj.transform.position.x - 4 + 0.5f,
-                        boardObj.transform.position.y + 0.5f,
-                        yPosition + boardObj.transform.position.z - 4 + 0.5f);
+                    new Vector3(x + offset.x - 4 + 0.5f, offset.y + 0.5f, y + offset.z - 4 + 0.5f);
+
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -210,78 +206,86 @@ namespace controller {
             Vector2Int kingPosition = Chess.FindKing(board, whoseMove).Value;
 
             List<Vector2Int> canAttackKing = new List<Vector2Int>();
-            List<Vector2Int> attackPositions = new List<Vector2Int>();
-            board[kingPosition.x, kingPosition.y].Peel().type = PieceType.Queen;
-            canAttackKing.AddRange(Chess.CalcPossibleMoves(
-                kingPosition,
-                board));
-            board[kingPosition.x, kingPosition.y].Peel().type = PieceType.Knight;
+            List<Vector2Int> attack = new List<Vector2Int>();
+            var king = board[kingPosition.x, kingPosition.y].Peel();
 
+            king.type = PieceType.Queen;
+            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
             canAttackKing.AddRange(Chess.CalcPossibleMoves(
                 kingPosition,
-                board));
+                board
+            ));
+
+            king.type = PieceType.Queen;
+            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
+            canAttackKing.AddRange(Chess.CalcPossibleMoves(kingPosition, board));
 
             foreach (var pos in canAttackKing) {
                 if (board[pos.x, pos.y].IsSome()) {
                     if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                        attackPositions.AddRange(SelectPawnMoves(board, pos, Chess.CalcPossibleMoves(
+                        attack.AddRange(SelectPawnMoves(board, pos, Chess.CalcPossibleMoves(
                            new Vector2Int(pos.x, pos.y),
-                           board)));
+                           board
+                        )));
                         continue;
                     }
-                    attackPositions.AddRange(Chess.CalcPossibleMoves(
-                        new Vector2Int(pos.x, pos.y),
-                        board));
+                    attack.AddRange(Chess.CalcPossibleMoves(new Vector2Int(pos.x, pos.y), board));
                 }
             }
-            board[kingPosition.x, kingPosition.y].Peel().type = PieceType.King;
+            king.type = PieceType.King;
+            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
 
-            foreach (var attackPosition in attackPositions) {
-                if (Equals(kingPosition, attackPosition)) {
+            foreach (var attackition in attack) {
+                if (Equals(kingPosition, attackition)) {
+
                     return true;
                 }
             }
+
             return false;
         }
+
         private bool CheckMate() {
             List<Vector2Int> canMovePosition = new List<Vector2Int>();
+
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     if (board[i, j].IsSome()
-                        && board[i, j].Peel().color == whoseMove) {
-                        canMovePosition = Chess.CalcPossibleMoves(
-                            new Vector2Int(i, j),
-                            board
-                        );
+                    && board[i, j].Peel().color == whoseMove) {
+                            canMovePosition = Chess.CalcPossibleMoves(
+                                new Vector2Int(i, j),
+                                board
+                            );
+
                         canMovePosition = HiddenCheck(canMovePosition, new Vector2Int(i, j));
                         if (canMovePosition.Count != 0) {
+
                             return false;
                         }
-
                     }
                 }
             }
+
             return true;
         }
 
-        private List<Vector2Int> HiddenCheck(
-            List<Vector2Int> canMovePositions,
-            Vector2Int piecePos
-        ) {
+        private List<Vector2Int> HiddenCheck(List<Vector2Int> canMovePos, Vector2Int piecePos) {
             Option<Piece>[,] board;
             List<Vector2Int> newCanMovePositions = new List<Vector2Int>();
-            foreach (var pos in canMovePositions) {
+
+            foreach (var pos in canMovePos) {
                 board = (Option<Piece>[,])ChessBoardController.board.Clone();
                 board[pos.x, pos.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
+
                 if (!CheckKing(board, whoseMove)) {
                     newCanMovePositions.Add(pos);
                 }
+
                 board[piecePos.x, piecePos.y] = board[pos.x, pos.y];
                 board[pos.x, pos.y] = Option<Piece>.None();
             }
-            foreach (var a in newCanMovePositions) {
-            }
+
             return newCanMovePositions;
         }
 
@@ -300,14 +304,14 @@ namespace controller {
         }
 
         private void DestroyPieces() {
-            for(int i = 0; i < 8; i++) {
-                for(int j = 0; j < 8; j++) {
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
                     Destroy(pieceGameObjects[i,j]);
                 }
             }
         }
-        private void ShowCanMoveCells(List<Vector2Int> canMovePositions) {
-            foreach (var pos in canMovePositions) {
+        private void ShowCanMoveCells(List<Vector2Int> canMovePos) {
+            foreach (var pos in canMovePos) {
                 if (board[pos.x, pos.y].IsSome()) {
                     canMoveCell.transform.localScale = new Vector3(0.9f, 0.01f, 0.9f);
                     canMoveCells.Add(Instantiate(
