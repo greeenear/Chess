@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using controller;
 using chess;
+using board;
 using option;
 using jonson;
 using jonson.reflect;
@@ -31,7 +32,7 @@ namespace json {
         List<PieceInfo> pieceList = new List<PieceInfo>();
         private string outputPiecePos;
         private string outputGameStats;
-        
+
         public void Save() {
             var whoseMove = ChessBoardController.whoseMove;
             gameStats = GameStats.mk(whoseMove);
@@ -75,11 +76,8 @@ namespace json {
                 var piecesPos  = Reflect.FromJSON(pieceList, personRes.AsOk());
 
                 ChessBoardController.whoseMove = gameStats.whoseMove;
-                for (int i = 0; i < 8; i++) {
-                    for (int j = 0; j < 8; j++) {
-                        ChessBoardController.board[i, j] = Option<Piece>.None();
-                    }
-                }
+                ChessBoardController.board = Board.СleanBoard<Piece>();
+                
                 foreach (var PieceInfo in piecesPos) {
                     var board = ChessBoardController.board;
                     board[PieceInfo.xPos, PieceInfo.yPos] = Option<Piece>.Some(PieceInfo.piece);

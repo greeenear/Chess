@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -6,9 +7,9 @@ using option;
 namespace controller {
     public class ChessBoardController : MonoBehaviour {
         public static Option<Piece>[,] board = new Option<Piece>[8, 8];
-
         public GameObject boardObj;
 
+        public List<GameObject> piecesObjList;
         private int x;
         private int y;
         Vector2Int selectedPos;
@@ -18,13 +19,16 @@ namespace controller {
         private Ray ray;
         private RaycastHit hit;
 
-        public GameObject menu;
+        public GameObject gameMenu;
+        public GameObject changePawn;
         public GameObject canMoveCell;
         private List<GameObject> canMoveCells = new List<GameObject>();
 
         public GameObject[,] pieceGameObjects = new GameObject[8, 8];
 
         private List<Vector2Int> canMovePos = new List<Vector2Int>();
+
+        private bool isPaused;
 
         private void Awake() {
             board[0, 0] = Option<Piece>.Some(Piece.mk(PieceType.Rook, PieceColor.Black));
@@ -55,9 +59,10 @@ namespace controller {
         }
 
         private void Start() {
+            piecesObjList =  gameObject.GetComponent<Resource>().pieceList;
             AddPiecesOnBoard(
                 pieceGameObjects,
-                gameObject.GetComponent<Resource>().pieceList
+                piecesObjList
             );
         }
 
@@ -71,7 +76,7 @@ namespace controller {
 
                     var piece = board[x, y];
 
-                    if (piece.IsSome() && piece.Peel().color == whoseMove) {
+                    if (piece.IsSome() && piece.Peel().color == whoseMove && !isPaused) {
                         RemoveCanMoveCells();
                         canMovePos.Clear();
 
@@ -88,14 +93,8 @@ namespace controller {
                         RemoveCanMoveCells();
 
                         if (Move(selectedPos, new Vector2Int(x, y), canMovePos)) {
-                            ChangeMove();
-
-                            if (CheckMate()) {
-                                Debug.Log("CheckMate");
-                            }
-
-                            if (CheckKing(board, whoseMove)) {
-                                Debug.Log("Check");
+                            if(!isPaused) {
+                                ChangeMove();
                             }
                         }
                         canMovePos.Clear();
@@ -104,10 +103,10 @@ namespace controller {
             }
 
             if (Input.GetKeyDown(KeyCode.Escape)) {
-                if (menu.activeSelf == true) {
-                    menu.SetActive(false);
+                if (gameMenu.activeSelf == true) {
+                    gameMenu.SetActive(false);
                 } else {
-                    menu.SetActive(true);
+                    gameMenu.SetActive(true);
                 }
             }
         }
@@ -196,11 +195,46 @@ namespace controller {
                     pieceGameObjects[end.x, end.y].transform.position =
                     new Vector3(x + offset.x - 4 + 0.5f, offset.y + 0.5f, y + offset.z - 4 + 0.5f);
 
+                    if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                        if (end.x == 7 || end.x == 0) {
+                            selectedPos = new Vector2Int(end.x, end.y);
+                            isPaused = true;
+                            changePawn.SetActive(true);
+                        }
+                        
+                    }
+
                     return true;
                 }
             }
 
             return false;
+        }
+
+        public void ChangePawn(int type) {
+            var boardPos = boardObj.transform.position;
+            var x = selectedPos.x;
+            var y = selectedPos.y;
+
+            Destroy(pieceGameObjects[x,y]);
+            PieceType pieceType = (PieceType)type;
+            board[x, y] = Option<Piece>.Some(Piece.mk(pieceType, whoseMove));
+
+            var piece = board[x, y].Peel();
+            pieceGameObjects[selectedPos.x, selectedPos.y] = Instantiate(
+                piecesObjList[(int)piece.type * 2 + (int)piece.color],
+                new Vector3(
+                    x + boardPos.x - 4 + 0.5f,
+                    boardPos.y + 0.5f,
+                    y + boardPos.z - 4 + 0.5f
+                ),
+                Quaternion.identity,
+                boardObj.transform
+            );
+
+            isPaused = false;
+            changePawn.SetActive(false);
+            ChangeMove();
         }
 
         public static bool CheckKing(Option<Piece>[,] board, PieceColor whoseMove) {
@@ -212,12 +246,9 @@ namespace controller {
 
             king.type = PieceType.Queen;
             board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
-            canAttackKing.AddRange(Chess.CalcPossibleMoves(
-                kingPosition,
-                board
-            ));
+            canAttackKing.AddRange(Chess.CalcPossibleMoves(kingPosition, board));
 
-            king.type = PieceType.Queen;
+            king.type = PieceType.Knight;
             board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
             canAttackKing.AddRange(Chess.CalcPossibleMoves(kingPosition, board));
 
@@ -257,7 +288,9 @@ namespace controller {
                                 new Vector2Int(i, j),
                                 board
                             );
-
+                        if (board[i, j].Peel().type == PieceType.Pawn) {
+                            canMovePosition = SelectPawnMoves(board, selectedPos, canMovePosition);
+                        }
                         canMovePosition = HiddenCheck(canMovePosition, new Vector2Int(i, j));
                         if (canMovePosition.Count != 0) {
 
@@ -301,6 +334,14 @@ namespace controller {
                 whoseMove = PieceColor.Black;
             } else {
                 whoseMove = PieceColor.White;
+            }
+
+            if (CheckMate()) {
+                Debug.Log("CheckMate");
+            }
+
+            if (CheckKing(board, whoseMove)) {
+                Debug.Log("Check");
             }
         }
 

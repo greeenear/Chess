@@ -205,7 +205,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 28703201}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 965990727}
+        m_TargetAssemblyTypeName: controller.ChessBoardController, controller
+        m_MethodName: ChangePawn
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &28703201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -395,7 +407,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 198014914}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 965990727}
+        m_TargetAssemblyTypeName: controller.ChessBoardController, controller
+        m_MethodName: ChangePawn
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &198014914
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -944,10 +968,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boardObj: {fileID: 965990723}
-  whoseMove: 0
-  menu: {fileID: 1923249195}
+  piecesObjList: []
+  gameMenu: {fileID: 1923249195}
+  changePawn: {fileID: 1612427839}
   canMoveCell: {fileID: 6169466877868371687, guid: 28ba2eb344ba1984387386c4f2470078, type: 3}
-  checkKingCell: {fileID: 1527063711133394628, guid: a8bd9aa60866f6240bb2d51e83959785, type: 3}
 --- !u!65 &965990728
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1564,7 +1588,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1779674851}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 965990727}
+        m_TargetAssemblyTypeName: controller.ChessBoardController, controller
+        m_MethodName: ChangePawn
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 5
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1779674851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1766,13 +1802,13 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 965990727}
-        m_TargetAssemblyTypeName: board.ChessBoardController, Assembly-CSharp
-        m_MethodName: Selected
+        m_TargetAssemblyTypeName: controller.ChessBoardController, controller
+        m_MethodName: ChangePawn
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 4
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0

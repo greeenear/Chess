@@ -34,6 +34,7 @@ namespace chess {
         ) {
             List<Vector2Int> moves = new List<Vector2Int>();
             Piece piece = board[pos.x, pos.y].Peel();
+
             switch (piece.type) {
                 case PieceType.Pawn:
                     moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 1), 1)));
@@ -127,18 +128,14 @@ namespace chess {
         }
 
         public static Vector2Int? FindKing(Option<Piece>[,] board, PieceColor whoseMove) {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    var pieceOpt = board[i, j];
-                    var piece = board[i, j].Peel();
+            Dictionary<Vector2Int, Piece> allPieces = new Dictionary<Vector2Int, Piece>();
+            allPieces = Board.FindAllPieces(board);
 
-                    if (pieceOpt.IsSome()
-                        && piece.type == PieceType.King
-                        && piece.color == whoseMove
-                    ) {
-                        return new Vector2Int(i, j);
+            foreach(var piece in allPieces) {
+                if (piece.Value.type == PieceType.King && piece.Value.color == whoseMove) {
+
+                        return new Vector2Int(piece.Key.x, piece.Key.y);
                     }
-                }
             }
 
             return null;

@@ -55,8 +55,8 @@ namespace board {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             for (int i = 1; i < 16; i += 2) {
                 var angle = circleMove.startingAngle * i * Mathf.PI / 180;
-                int x = (int)(Mathf.Sin(angle) * circleMove.radius + 0.51f + pos.x);
-                int y = (int)(Mathf.Cos(angle) * circleMove.radius + 0.51f + pos.y);
+                float x = Mathf.Sin(angle) * circleMove.radius + 0.51f + pos.x;
+                float y = Mathf.Cos(angle) * circleMove.radius + 0.51f + pos.y;
 
                 if (x < 0) {
                     x -= 1;
@@ -64,30 +64,30 @@ namespace board {
                 if (y < 0) {
                     y -= 1;
                 }
-
-                if (OnChessBoard(x, y)) {
-                    canMovePositions.Add(new Vector2Int(x, y));
+                if (OnChessBoard((int)x, (int)y)) {
+                    canMovePositions.Add(new Vector2Int((int)x, (int)y));
                 }
             }
 
             return canMovePositions;
         }
 
-        public static List<T> FindAllPieces<T>(Option<T>[,] board) {
-            List<T> piecesList = new List<T>();
+        public static Option<T>[,] СleanBoard<T>() {
+            return new Option<T>[8,8];
+        }
+
+        public static Dictionary<Vector2Int, T> FindAllPieces<T>(Option<T>[,] board) {
+            Dictionary<Vector2Int, T> pieces = new Dictionary<Vector2Int, T>();
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    var pieceOpt = board[i, j];
-                    var piece = board[i, j].Peel();
-
-                    if (pieceOpt.IsSome()) {
-                        piecesList.Add(piece);
+                    if (board[i, j].IsSome()) {
+                        pieces.Add(new Vector2Int(i, j), board[i, j].Peel());
                     }
                 }
             }
 
-            return piecesList;
+            return pieces;
         }
     }
 }
