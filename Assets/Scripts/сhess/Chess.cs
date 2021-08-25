@@ -131,11 +131,11 @@ namespace chess {
             Dictionary<Vector2Int, Piece> allPieces = new Dictionary<Vector2Int, Piece>();
             allPieces = Board.FindAllPieces(board);
 
-            foreach(var piece in allPieces) {
+            foreach (var piece in allPieces) {
                 if (piece.Value.type == PieceType.King && piece.Value.color == whoseMove) {
 
-                        return new Vector2Int(piece.Key.x, piece.Key.y);
-                    }
+                    return new Vector2Int(piece.Key.x, piece.Key.y);
+                }
             }
 
             return null;

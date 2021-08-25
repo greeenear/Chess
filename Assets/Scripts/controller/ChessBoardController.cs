@@ -60,10 +60,7 @@ namespace controller {
 
         private void Start() {
             piecesObjList =  gameObject.GetComponent<Resource>().pieceList;
-            AddPiecesOnBoard(
-                pieceGameObjects,
-                piecesObjList
-            );
+            AddPiecesOnBoard(pieceGameObjects, piecesObjList);
         }
 
         private void Update() {
@@ -257,8 +254,8 @@ namespace controller {
                     if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                         attack.AddRange(SelectPawnMoves(board, pos, Chess.CalcPossibleMoves(
                            new Vector2Int(pos.x, pos.y),
-                           board
-                        )));
+                           board))
+                        );
                         continue;
                     }
                     attack.AddRange(Chess.CalcPossibleMoves(new Vector2Int(pos.x, pos.y), board));
