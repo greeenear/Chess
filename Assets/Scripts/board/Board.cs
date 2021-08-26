@@ -94,20 +94,6 @@ namespace board {
         public static Option<T>[,] СleanBoard<T>() {
             return new Option<T>[8,8];
         }
-
-        public static Dictionary<Vector2Int, T> FindAllPieces<T>(Option<T>[,] board) {
-            Dictionary<Vector2Int, T> pieces = new Dictionary<Vector2Int, T>();
-
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    if (board[i, j].IsSome()) {
-                        pieces.Add(new Vector2Int(i, j), board[i, j].Peel());
-                    }
-                }
-            }
-
-            return pieces;
-        }
     }
 }
 

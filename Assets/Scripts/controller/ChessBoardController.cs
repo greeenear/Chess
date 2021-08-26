@@ -276,7 +276,7 @@ namespace controller {
         }
 
         public bool CheckKing(Option<Piece>[,] board, PieceColor whoseMove) {
-            Vector2Int kingPosition = Chess.FindKing(board, whoseMove).Value;
+            Vector2Int kingPosition = FindKing(board, whoseMove).Value;
 
             List<Vector2Int> canAttackKing = new List<Vector2Int>();
             List<Vector2Int> attack = new List<Vector2Int>();
@@ -285,16 +285,17 @@ namespace controller {
             king.type = PieceType.Queen;
             List<Movment> movmentList = movment[king.type];
 
-            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
             canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition));
 
             king.type = PieceType.Knight;
             movmentList = movment[king.type];
-            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
-            canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition));
-
+            //canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition));
+            foreach(var a in canAttackKing) {
+                Debug.Log(a.x + "  " + a.y);
+            }
             foreach (var pos in canAttackKing) {
                 if (board[pos.x, pos.y].IsSome()) {
+                //Debug.Log(pos.x + " " + pos.y + " " + board[pos.x, pos.y].Peel().type);
                     movmentList = movment[board[pos.x, pos.y].Peel().type];
                     Vector2Int piecePos = new Vector2Int(pos.x, pos.y);
 
@@ -309,8 +310,6 @@ namespace controller {
                     attack.AddRange(GetPossibleMovePosition(movmentList, piecePos));
                 }
             }
-            king.type = PieceType.King;
-            board[kingPosition.x, kingPosition.y] = Option<Piece>.Some(king);
 
             foreach (var attackition in attack) {
                 if (Equals(kingPosition, attackition)) {
@@ -409,6 +408,21 @@ namespace controller {
             if (CheckKing(board, whoseMove)) {
                 Debug.Log("Check");
             }
+        }
+
+        public static Vector2Int? FindKing(Option<Piece>[,] board, PieceColor color) {
+            Vector2Int kingPosition = new Vector2Int();
+
+            for(int i = 0; i < board.GetLength(0); i++) {
+                for(int j = 0; j < board.GetLength(1); j++) {
+                    var piece = board[i, j].Peel();
+                    if (piece.type == PieceType.King && piece.color == color) {
+                        kingPosition.x = i;
+                        kingPosition.y = j;
+                    }
+                }
+            }
+            return kingPosition;
         }
 
         private void DestroyPieces() {
