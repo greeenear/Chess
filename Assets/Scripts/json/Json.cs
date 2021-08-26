@@ -14,7 +14,7 @@ namespace json {
         public int xPos;
         public int yPos;
 
-        public static PieceInfo mk(Piece piece, int xPos, int yPos) {
+        public static PieceInfo Mk(Piece piece, int xPos, int yPos) {
             return new PieceInfo {piece = piece, xPos = xPos, yPos = yPos};
         }
     }
@@ -22,7 +22,7 @@ namespace json {
     public struct GameStats {
         public PieceColor whoseMove;
 
-        public static GameStats mk(PieceColor whoseMove) {
+        public static GameStats Mk(PieceColor whoseMove) {
             return new GameStats{whoseMove = whoseMove};
         }
     }
@@ -35,14 +35,14 @@ namespace json {
 
         public void Save() {
             var whoseMove = ChessBoardController.whoseMove;
-            gameStats = GameStats.mk(whoseMove);
+            gameStats = GameStats.Mk(whoseMove);
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     var board = ChessBoardController.board[i,j];
 
                     if (ChessBoardController.board[i,j].IsSome()) {
-                        pieceList.Add(PieceInfo.mk(board.Peel(), i, j));
+                        pieceList.Add(PieceInfo.Mk(board.Peel(), i, j));
                     }
                 }
             }

@@ -22,97 +22,54 @@ namespace chess {
         public PieceType type;
         public PieceColor color;
 
-        public static Piece mk(PieceType type, PieceColor color) {
+        public static Piece Mk(PieceType type, PieceColor color) {
             return new Piece { type = type, color = color };
         }
     }
 
     public static class Chess {
-        public static List<Vector2Int> CalcPossibleMoves(
-            Vector2Int pos,
-            Option<Piece>[,] board
-        ) {
-            List<Vector2Int> moves = new List<Vector2Int>();
-            Piece piece = board[pos.x, pos.y].Peel();
-
-            switch (piece.type) {
-                case PieceType.Pawn:
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 1), 1)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, -1), 1)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, -1), 1)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 1), 1)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 0), 2)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 0), 2)));
-                    break;
-                case PieceType.Bishop:
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 1), 8)));
-                    break;
-                case PieceType.Rook:
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 0), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 0), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(0, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(0, 1), 8)));
-                    break;
-                case PieceType.Queen:
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(1, 0), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(-1, 0), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(0, -1), 8)));
-                    moves.AddRange(CalcLinear(board, pos, Linear.mk(new Vector2Int(0, 1), 8)));
-                    break;
-                case PieceType.King:
-                    moves.AddRange(CalcCircle(board, pos, Circle.mk(1f, 20f)));
-                    break;
-                case PieceType.Knight:
-                    moves.AddRange(CalcCircle(board, pos, Circle.mk(2f, 22.5f)));
-                    break;
-            }
-
-            return moves;
-        }
-
-        public static List<Vector2Int> CalcLinear(
+        public static List<Vector2Int> GetLinearMoves(
             Option<Piece>[,] board,
-            Vector2Int pos,
+            Vector2Int piecePos,
             Linear linear
         ) {
-            Piece piece = board[pos.x, pos.y].Peel();
+            Piece piece = board[piecePos.x, piecePos.y].Peel();
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
 
-            allCanMovePositions = Board.CalcAllLinearMove(pos, linear);
-            foreach(var movePos in allCanMovePositions) {
-                if (board[movePos.x, movePos.y].IsNone()) {
-                    canMovePositions.Add(movePos);
+            int length = Board.GetLinearLength<Piece>(piecePos, linear, board);
 
-                } else if (board[movePos.x, movePos.y].Peel().color == piece.color) {
-                    break;
-
-                } else if (board[movePos.x, movePos.y].Peel().color != piece.color) {
-                    canMovePositions.Add(movePos);
-                    break;
+            for (int i = 1; i <= length; i++) {
+                Vector2Int pos = piecePos + linear.dir * i;
+                if (board[pos.x, pos.y].IsSome()) {
+                    if (board[pos.x, pos.y].Peel().color == piece.color) {
+                        break;
+                    } else {
+                        canMovePositions.Add(new Vector2Int(pos.x, pos.y));
+                        break;
+                    }
+                    
                 }
+                canMovePositions.Add(new Vector2Int(pos.x, pos.y));
             }
 
             return canMovePositions;
         }
 
-        public static List<Vector2Int> CalcCircle(
+        public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            Circle circleMove
+            Circular circlularMove
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
+            Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            float startAngle = 22.5f;
 
-            allCanMovePositions = Board.CalcAllCircleMove(pos,circleMove);
+            allCanMovePositions = Board.GetAllCircularMoves(pos,circlularMove, startAngle);
             foreach (var movePos in allCanMovePositions) {
+                if(!Board.OnBoard(movePos, boardSize)) {
+                    continue;
+                }
                 var piece = board[movePos.x, movePos.y];
 
                 if (piece.IsNone()) {

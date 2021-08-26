@@ -1,74 +1,91 @@
+using System.Numerics;
 using System.Collections.Generic;
 using UnityEngine;
 using option;
 
 namespace board {
-    public struct Circle {
+    public struct Circular {
         public float radius;
-        public float startingAngle;
 
-        public static Circle mk(float radius, float startingAngle) {
-            return new Circle { radius = radius, startingAngle = startingAngle };
+        public static Circular Mk(float radius) {
+            return new Circular { radius = radius };
         }
     }
 
     public struct Linear {
         public Vector2Int dir;
-        public int length;
 
-        public static Linear mk(Vector2Int dir, int length) {
-            return new Linear {dir = dir, length = length};
+        public static Linear Mk(Vector2Int dir) {
+            return new Linear { dir = dir };
+        }
+    }
+
+    public struct Movment {
+        public Linear? linear;
+        public Circular? circular;
+
+        public static Movment Mk(Linear? linear, Circular? circular) {
+            return new Movment { linear = linear, circular = circular };
         }
     }
 
     public static class Board {
-        public static bool OnChessBoard(int i, int j) {
-            if (i > 7 || i < 0 || j > 7 || j < 0) {
-
+        public static bool OnBoard(Vector2Int pos, Vector2Int boardSize) {
+            if (pos.x < 0 || pos.x > boardSize.x - 1 || pos.y < 0 || pos.y > boardSize.y - 1) {
                 return false;
             }
 
             return true;
         }
 
-        public static List<Vector2Int> CalcAllLinearMove(
-            Vector2Int piecePosition,
-            Linear Linear
+        public static int GetLinearLength<T>(
+            Vector2Int startPosition,
+            Linear linear,
+            Option<T>[,] board
         ) {
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            for (int i = 1; i <= Linear.length; i++) {
-                int x = piecePosition.x + Linear.dir.x * i;
-                int y = piecePosition.y + Linear.dir.y * i;
+            int length = 0;
 
-                if (Board.OnChessBoard(x, y)) {
-                    canMovePositions.Add(new Vector2Int(x, y));
+            for (int i = 1; i <= board.GetLength(0); i++) {
+                Vector2Int pos = startPosition + linear.dir * i;
+
+                if (!Board.OnBoard(pos,new Vector2Int(board.GetLength(0), board.GetLength(1)))) {
+                    break;
+                }
+                if (board[pos.x, pos.y].IsSome()) {
+                    length++;
+                    break;
+                }
+                if (board[pos.x, pos.y].IsNone()) {
+                    length++;
                 }
             }
 
-            return canMovePositions;
+            return length;
         }
 
-        public static List<Vector2Int> CalcAllCircleMove(
-            Vector2Int pos,
-            Circle circleMove
+        public static List<Vector2Int> GetAllCircularMoves(
+            Vector2Int center,
+            Circular circular,
+            float startAngle
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            for (int i = 1; i < 16; i += 2) {
-                var angle = circleMove.startingAngle * i * Mathf.PI / 180;
-                float x = Mathf.Sin(angle) * circleMove.radius + 0.51f + pos.x;
-                float y = Mathf.Cos(angle) * circleMove.radius + 0.51f + pos.y;
+            float angle = 0;
 
-                if (x < 0) {
-                    x -= 1;
+            for (int i = 1; angle < Mathf.PI * 2; i += 2) {
+                angle = startAngle * i * Mathf.PI / 180;
+                var pos = new UnityEngine.Vector2(
+                    Mathf.Sin(angle) * circular.radius + 0.51f + center.x,
+                    Mathf.Cos(angle) * circular.radius + 0.51f + center.y
+                );
+
+                if (pos.x < 0) {
+                    pos.x -= 1;
                 }
 
-                if (y < 0) {
-                    y -= 1;
+                if (pos.y < 0) {
+                    pos.y -= 1;
                 }
-
-                if (OnChessBoard((int)x, (int)y)) {
-                    canMovePositions.Add(new Vector2Int((int)x, (int)y));
-                }
+                canMovePositions.Add(new Vector2Int((int)pos.x, (int)pos.y));
             }
 
             return canMovePositions;
