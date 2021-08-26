@@ -161,7 +161,7 @@ namespace controller {
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y + dir))
-                    && board[pos.x, pos.y].IsSome() 
+                    && board[pos.x, pos.y].IsSome()
                     && board[pos.x, pos.y].Peel().color != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
@@ -198,7 +198,6 @@ namespace controller {
                             isPaused = true;
                             changePawn.SetActive(true);
                         }
-                        
                     }
 
                     return true;
@@ -349,6 +348,7 @@ namespace controller {
                 }
             }
         }
+
         private void ShowCanMoveCells(List<Vector2Int> canMovePos) {
             var boardPos = boardObj.transform.position;
 
@@ -371,9 +371,10 @@ namespace controller {
                     new Vector3(
                         pos.x + boardPos.x - 4 + 0.5f,
                         boardPos.y + 0.5f,
-                        pos.y + boardPos.z - 4 + 0.5f),
-                    Quaternion.identity)
-                );
+                        pos.y + boardPos.z - 4 + 0.5f
+                    ),
+                    Quaternion.identity
+                ));
             }
         }
     }

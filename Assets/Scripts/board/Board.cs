@@ -61,9 +61,11 @@ namespace board {
                 if (x < 0) {
                     x -= 1;
                 }
+
                 if (y < 0) {
                     y -= 1;
                 }
+
                 if (OnChessBoard((int)x, (int)y)) {
                     canMovePositions.Add(new Vector2Int((int)x, (int)y));
                 }

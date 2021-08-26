@@ -66,12 +66,12 @@ namespace json {
                 if (personRes.IsErr()) {
                     return;
                 }
-                
+
                 Result<JSONType, JSONError> gameStatsRes = Jonson.Parse(outputGameStats, 1024);
                 if (gameStatsRes.IsErr()) {
                     return;
                 }
-                
+
                 var loadGameStats =  Reflect.FromJSON(gameStats, gameStatsRes.AsOk());
                 var piecesPos  = Reflect.FromJSON(pieceList, personRes.AsOk());
 
