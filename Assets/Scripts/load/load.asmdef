@@ -1,15 +1,10 @@
 {
-    "name": "controller",
+    "name": "load",
     "rootNamespace": "",
     "references": [
-        "GUID:ef50fa20aa560a140ad6dad01c58a764",
-        "GUID:2082608e637271ce183980079a785a90",
-        "GUID:c52c25d77f3669542a27a1f7cb2442ef",
-        "GUID:7c7b1eb68a4808a4480dffebaa153bcd",
-        "GUID:7047e4689d6fa594b975c44745733226",
         "GUID:8e091a86c2876e3539f69dbdf6752fd7",
-        "GUID:ec2dcccce3d00ec428dae057768c4d12",
-        "GUID:51df06e9343a58348ab474561e727765"
+        "GUID:c4ca9ab9a0c41223db7f69385ae4a8cc",
+        "GUID:2082608e637271ce183980079a785a90"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

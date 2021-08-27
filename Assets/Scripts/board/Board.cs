@@ -79,20 +79,15 @@ namespace board {
                 );
 
                 if (pos.x < 0) {
-                    pos.x -= 1;
+                    pos.x--;
                 }
-
                 if (pos.y < 0) {
-                    pos.y -= 1;
+                    pos.y--;
                 }
                 canMovePositions.Add(new Vector2Int((int)pos.x, (int)pos.y));
             }
 
             return canMovePositions;
-        }
-
-        public static Option<T>[,] СleanBoard<T>() {
-            return new Option<T>[8,8];
         }
     }
 }

@@ -58,12 +58,12 @@ namespace chess {
         public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            Circular circlularMove
+            Circular circlularMove,
+            float startAngle
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
             Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            float startAngle = 22.5f;
 
             allCanMovePositions = Board.GetAllCircularMoves(pos,circlularMove, startAngle);
             foreach (var movePos in allCanMovePositions) {

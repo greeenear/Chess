@@ -1,0 +1,16 @@
+{
+    "name": "save",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8e091a86c2876e3539f69dbdf6752fd7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

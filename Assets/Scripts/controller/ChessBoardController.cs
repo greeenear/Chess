@@ -1,13 +1,15 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
 using option;
 using board;
+using stats;
+using type;
+using load;
 
 namespace controller {
     public class ChessBoardController : MonoBehaviour {
-        public static Option<Piece>[,] board = new Option<Piece>[8, 8];
+        public Option<Piece>[,] board = new Option<Piece>[8, 8];
         public GameObject boardObj;
 
         public List<GameObject> piecesObjList;
@@ -15,7 +17,7 @@ namespace controller {
         private int y;
         private Vector2Int selectedPos;
 
-        public static PieceColor whoseMove = PieceColor.White;
+        public PieceColor whoseMove = PieceColor.White;
 
         private Ray ray;
         private RaycastHit hit;
@@ -30,6 +32,10 @@ namespace controller {
         private List<Vector2Int> canMovePos = new List<Vector2Int>();
 
         private bool isPaused;
+
+        JsonObject jsonObject;
+        GameStats gameStats;
+        List<PieceInfo> pieceList = new List<PieceInfo>();
 
         Dictionary<PieceType, List<Movment>> movment = new Dictionary<PieceType, List<Movment>>() {
             { PieceType.Pawn, new List<Movment> {
@@ -71,35 +77,39 @@ namespace controller {
         };
 
         private void Awake() {
-            board[0, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.Black));
-            board[0, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.Black));
-            board[0, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.Black));
-            board[0, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, PieceColor.Black));
-            board[0, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, PieceColor.Black));
-            board[0, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.Black));
-            board[0, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.Black));
-            board[0, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.Black));
-
-            for (int i = 0; i < 8; i++) {
-                board[1, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, PieceColor.Black));
-            }
-
-            board[7, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.White));
-            board[7, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.White));
-            board[7, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.White));
-            board[7, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, PieceColor.White));
-            board[7, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, PieceColor.White));
-            board[7, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.White));
-            board[7, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.White));
-            board[7, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.White));
-
-            for (int i = 0; i < 8; i++) {
-                board[6, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, PieceColor.White));
-            }
+           CreateBoard();
         }
 
         private void Start() {
             piecesObjList =  gameObject.GetComponent<Resource>().pieceList;
+            AddPiecesOnBoard(pieceGameObjects, piecesObjList);
+        }
+
+        public void Save() {
+            var whoseMove = this.whoseMove;
+            gameStats = GameStats.Mk(whoseMove);
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    var board = this.board[i,j];
+
+                    if (this.board[i,j].IsSome()) {
+                        pieceList.Add(PieceInfo.Mk(board.Peel(), i, j));
+                    }
+                }
+            }
+            jsonObject = JsonObject.Mk(pieceList, gameStats);
+            save.Save.WriteJson(FillJsonType.GetJsonType<JsonObject>(jsonObject), "json.json");
+        }
+
+        public void Load() {
+            var gameInfo = Load<JsonObject>.LoadFromJson("json.json",jsonObject);
+            board = new Option<Piece>[8,8];
+            
+            whoseMove = gameInfo.gameStats.whoseMove;
+            foreach(var pieceInfo in gameInfo.pieceInfo) {
+                board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
+            }
             AddPiecesOnBoard(pieceGameObjects, piecesObjList);
         }
 
@@ -120,7 +130,7 @@ namespace controller {
                         selectedPos = new Vector2Int(x, y);
                         List<Movment> movmentList = movment[piece.Peel().type];
 
-                        canMovePos = GetPossibleMovePosition(movmentList, selectedPos);
+                        canMovePos = GetPossibleMovePosition(movmentList, selectedPos, board);
 
                         if (piece.Peel().type == PieceType.Pawn) {
                             canMovePos = SelectPawnMoves(board, selectedPos, canMovePos);
@@ -285,17 +295,14 @@ namespace controller {
             king.type = PieceType.Queen;
             List<Movment> movmentList = movment[king.type];
 
-            canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition));
+            canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition, board));
 
             king.type = PieceType.Knight;
             movmentList = movment[king.type];
-            //canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition));
-            foreach(var a in canAttackKing) {
-                Debug.Log(a.x + "  " + a.y);
-            }
+            canAttackKing.AddRange(GetPossibleMovePosition(movmentList, kingPosition, board));
+
             foreach (var pos in canAttackKing) {
                 if (board[pos.x, pos.y].IsSome()) {
-                //Debug.Log(pos.x + " " + pos.y + " " + board[pos.x, pos.y].Peel().type);
                     movmentList = movment[board[pos.x, pos.y].Peel().type];
                     Vector2Int piecePos = new Vector2Int(pos.x, pos.y);
 
@@ -303,11 +310,11 @@ namespace controller {
                         attack.AddRange(SelectPawnMoves(
                             board, 
                             pos, 
-                            GetPossibleMovePosition(movmentList, piecePos))
+                            GetPossibleMovePosition(movmentList, piecePos, board))
                         );
                         continue;
                     }
-                    attack.AddRange(GetPossibleMovePosition(movmentList, piecePos));
+                    attack.AddRange(GetPossibleMovePosition(movmentList, piecePos, board));
                 }
             }
 
@@ -331,7 +338,7 @@ namespace controller {
                         List<Movment> movmentList = movment[board[i, j].Peel().type];
                         Vector2Int pos = new Vector2Int(i, j);
 
-                        canMovePosition = GetPossibleMovePosition(movmentList, pos);
+                        canMovePosition = GetPossibleMovePosition(movmentList, pos, board);
                         if (board[i, j].Peel().type == PieceType.Pawn) {
                             canMovePosition = SelectPawnMoves(board, selectedPos, canMovePosition);
                         }
@@ -352,7 +359,7 @@ namespace controller {
             List<Vector2Int> newCanMovePositions = new List<Vector2Int>();
 
             foreach (var pos in canMovePos) {
-                board = (Option<Piece>[,])ChessBoardController.board.Clone();
+                board = (Option<Piece>[,])this.board.Clone();
                 board[pos.x, pos.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
 
@@ -367,8 +374,12 @@ namespace controller {
             return newCanMovePositions;
         }
 
-        private List<Vector2Int> GetPossibleMovePosition(List<Movment> moveList, Vector2Int pos) {
+        private List<Vector2Int> GetPossibleMovePosition(
+                List<Movment> moveList,
+                Vector2Int pos,
+                Option<Piece>[,] board) {
             var possibleMovePositions = new List<Vector2Int>();
+            float startAngle;
             foreach (var movment in moveList) {
                 if (movment.linear.HasValue) {
                     possibleMovePositions.AddRange(Chess.GetLinearMoves(
@@ -377,10 +388,16 @@ namespace controller {
                         movment.linear.Value
                     ));
                 } else {
+                    if (board[pos.x, pos.y].Peel().type == PieceType.Knight) {
+                        startAngle = 22.5f;
+                    } else {
+                        startAngle = 20f;
+                    }
                     possibleMovePositions = Chess.GetCirclularMoves(
                         board,
                         pos,
-                        movment.circular.Value
+                        movment.circular.Value,
+                        startAngle
                     );
                 }
             }
@@ -430,6 +447,34 @@ namespace controller {
                 for (int j = 0; j < 8; j++) {
                     Destroy(pieceGameObjects[i,j]);
                 }
+            }
+        }
+
+        private void CreateBoard() {
+            board[0, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.Black));
+            board[0, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.Black));
+            board[0, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.Black));
+            board[0, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, PieceColor.Black));
+            board[0, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, PieceColor.Black));
+            board[0, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.Black));
+            board[0, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.Black));
+            board[0, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.Black));
+
+            for (int i = 0; i < 8; i++) {
+                board[1, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, PieceColor.Black));
+            }
+
+            board[7, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.White));
+            board[7, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.White));
+            board[7, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.White));
+            board[7, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, PieceColor.White));
+            board[7, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, PieceColor.White));
+            board[7, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, PieceColor.White));
+            board[7, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, PieceColor.White));
+            board[7, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, PieceColor.White));
+
+            for (int i = 0; i < 8; i++) {
+                board[6, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, PieceColor.White));
             }
         }
 
