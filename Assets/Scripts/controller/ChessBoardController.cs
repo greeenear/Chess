@@ -32,6 +32,7 @@ namespace controller {
         private List<Vector2Int> canMovePos = new List<Vector2Int>();
 
         private bool isPaused;
+        private bool isEnPassant;
 
         JsonObject jsonObject;
         GameStats gameStats;
@@ -142,6 +143,7 @@ namespace controller {
                         RemoveCanMoveCells();
 
                         if (Move(selectedPos, new Vector2Int(x, y), canMovePos)) {
+
                             if(!isPaused) {
                                 ChangeMove();
                             }
@@ -184,7 +186,7 @@ namespace controller {
             }
         }
 
-        public static List<Vector2Int> SelectPawnMoves(
+        public List<Vector2Int> SelectPawnMoves(
             Option<Piece>[,] board,
             Vector2Int position,
             List<Vector2Int> possibleMoves
@@ -223,12 +225,24 @@ namespace controller {
                     && board[pos.x, pos.y].Peel().color != pawn.color) {
                     newPossibleMoves.Add(pos);
                 }
+
+                if(Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
+                    && board[position.x, position.y - dir].IsSome() && isEnPassant
+                    && board[position.x, position.y - dir].Peel().type == PieceType.Pawn) {
+                    newPossibleMoves.Add(pos);
+                }
+
+                if (Equals(pos, new Vector2Int(position.x + dir, position.y + dir))
+                    && board[position.x, position.y + dir].IsSome() && isEnPassant
+                    && board[position.x, position.y + dir].Peel().type == PieceType.Pawn) {
+                    newPossibleMoves.Add(pos);
+                }
             }
 
             return newPossibleMoves;
         }
 
-        public bool Move(Vector2Int start, Vector2Int end, List<Vector2Int> canMovePos) {
+        private bool Move(Vector2Int start, Vector2Int end, List<Vector2Int> canMovePos) {
             var offset = boardObj.transform.position;
 
             foreach (var pos in canMovePos) {
@@ -245,6 +259,14 @@ namespace controller {
                     new Vector3(x + offset.x - 4 + 0.5f, offset.y + 0.5f, y + offset.z - 4 + 0.5f);
 
                     if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                        if(isEnPassant && end.y != start.y) {
+                            Debug.Log("EnPassant");
+                            board[start.x, end.y] = Option<Piece>.None();
+                            Destroy(pieceGameObjects[start.x, end.y]);
+                        }
+                        if(Mathf.Abs(start.x - end.x) == 2) {
+                            isEnPassant = CheckEnPassant(end, board);
+                        }
                         if (end.x == 7 || end.x == 0) {
                             selectedPos = new Vector2Int(end.x, end.y);
                             isPaused = true;
@@ -254,6 +276,21 @@ namespace controller {
 
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        private bool CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
+            var leftPiece = board[endPos.x, endPos.y - 1];
+            var rigthPiece = board[endPos.x, endPos.y + 1];
+
+            if (leftPiece.IsSome() && leftPiece.Peel().type == PieceType.Pawn) {
+                return true;
+            }
+
+            if (rigthPiece.IsSome() && rigthPiece.Peel().type == PieceType.Pawn) {
+                return true;
             }
 
             return false;
