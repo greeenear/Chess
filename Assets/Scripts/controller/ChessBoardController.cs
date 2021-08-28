@@ -32,7 +32,8 @@ namespace controller {
         private List<Vector2Int> canMovePos = new List<Vector2Int>();
 
         private bool isPaused;
-        private bool isEnPassant;
+
+        private Vector2Int? enPassant;
 
         JsonObject jsonObject;
         GameStats gameStats;
@@ -227,14 +228,14 @@ namespace controller {
                 }
 
                 if(Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
-                    && board[position.x, position.y - dir].IsSome() && isEnPassant
-                    && board[position.x, position.y - dir].Peel().type == PieceType.Pawn) {
+                    && enPassant != null
+                    && Equals(new Vector2Int(position.x, position.y - dir), enPassant)) {
                     newPossibleMoves.Add(pos);
                 }
 
                 if (Equals(pos, new Vector2Int(position.x + dir, position.y + dir))
-                    && board[position.x, position.y + dir].IsSome() && isEnPassant
-                    && board[position.x, position.y + dir].Peel().type == PieceType.Pawn) {
+                    && enPassant != null
+                    && Equals(new Vector2Int(position.x, position.y + dir), enPassant)) {
                     newPossibleMoves.Add(pos);
                 }
             }
@@ -259,13 +260,15 @@ namespace controller {
                     new Vector3(x + offset.x - 4 + 0.5f, offset.y + 0.5f, y + offset.z - 4 + 0.5f);
 
                     if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
-                        if(isEnPassant && end.y != start.y) {
-                            Debug.Log("EnPassant");
+                        var possibleEnPassant = new Vector2Int(start.x, end.y);
+
+                        if (enPassant != null && Equals(enPassant, possibleEnPassant)) {
                             board[start.x, end.y] = Option<Piece>.None();
                             Destroy(pieceGameObjects[start.x, end.y]);
                         }
                         if(Mathf.Abs(start.x - end.x) == 2) {
-                            isEnPassant = CheckEnPassant(end, board);
+                            enPassant = CheckEnPassant(end, board);
+                            return true;
                         }
                         if (end.x == 7 || end.x == 0) {
                             selectedPos = new Vector2Int(end.x, end.y);
@@ -273,7 +276,7 @@ namespace controller {
                             changePawn.SetActive(true);
                         }
                     }
-
+                    enPassant = null;
                     return true;
                 }
             }
@@ -281,19 +284,19 @@ namespace controller {
             return false;
         }
 
-        private bool CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
+        private Vector2Int? CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
             var leftPiece = board[endPos.x, endPos.y - 1];
             var rigthPiece = board[endPos.x, endPos.y + 1];
 
             if (leftPiece.IsSome() && leftPiece.Peel().type == PieceType.Pawn) {
-                return true;
+                return new Vector2Int(endPos.x, endPos.y);
             }
 
             if (rigthPiece.IsSome() && rigthPiece.Peel().type == PieceType.Pawn) {
-                return true;
+                return new Vector2Int(endPos.x, endPos.y);
             }
 
-            return false;
+            return null;
         }
 
         public void ChangePawn(int type) {
