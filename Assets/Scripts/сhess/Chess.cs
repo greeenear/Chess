@@ -47,7 +47,6 @@ namespace chess {
                         canMovePositions.Add(new Vector2Int(pos.x, pos.y));
                         break;
                     }
-                    
                 }
                 canMovePositions.Add(new Vector2Int(pos.x, pos.y));
             }
@@ -67,15 +66,14 @@ namespace chess {
 
             allCanMovePositions = Board.GetAllCircularMoves(pos,circlularMove, startAngle);
             foreach (var movePos in allCanMovePositions) {
-                if(!Board.OnBoard(movePos, boardSize)) {
+                if (!Board.OnBoard(movePos, boardSize)) {
                     continue;
                 }
-                var piece = board[movePos.x, movePos.y];
 
+                var piece = board[movePos.x, movePos.y];
                 if (piece.IsNone()) {
                     canMovePositions.Add(movePos);
                 }
-
                 if (piece.IsSome() && piece.Peel().color != board[pos.x, pos.y].Peel().color) {
                     canMovePositions.Add(movePos);
                 }

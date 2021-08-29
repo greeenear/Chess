@@ -35,11 +35,11 @@ namespace controller {
 
         private Vector2Int? enPassant;
 
-        JsonObject jsonObject;
-        GameStats gameStats;
-        List<PieceInfo> pieceList = new List<PieceInfo>();
+        private JsonObject jsonObject;
+        private GameStats gameStats;
+        private List<PieceInfo> pieceList = new List<PieceInfo>();
 
-        Dictionary<PieceType, List<Movment>> movment = new Dictionary<PieceType, List<Movment>>() {
+        private Dictionary<PieceType, List<Movment>> movment = new Dictionary<PieceType, List<Movment>>() {
             { PieceType.Pawn, new List<Movment> {
                 Movment.Mk(Linear.Mk(new Vector2Int(1, 1)), null),
                 Movment.Mk(Linear.Mk(new Vector2Int(1, -1)), null),
@@ -83,7 +83,7 @@ namespace controller {
         }
 
         private void Start() {
-            piecesObjList =  gameObject.GetComponent<Resource>().pieceList;
+            piecesObjList = gameObject.GetComponent<Resource>().pieceList;
             AddPiecesOnBoard(pieceGameObjects, piecesObjList);
         }
 
@@ -105,9 +105,9 @@ namespace controller {
         }
 
         public void Load() {
-            var gameInfo = Load<JsonObject>.LoadFromJson("json.json",jsonObject);
+            var gameInfo = Load<JsonObject>.LoadFromJson("json.json", jsonObject);
             board = new Option<Piece>[8,8];
-            
+
             whoseMove = gameInfo.gameStats.whoseMove;
             foreach(var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
@@ -227,7 +227,7 @@ namespace controller {
                     newPossibleMoves.Add(pos);
                 }
 
-                if(Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
+                if (Equals(pos, new Vector2Int(position.x + dir, position.y - dir))
                     && enPassant != null
                     && Equals(new Vector2Int(position.x, position.y - dir), enPassant)) {
                     newPossibleMoves.Add(pos);
@@ -266,7 +266,7 @@ namespace controller {
                             board[start.x, end.y] = Option<Piece>.None();
                             Destroy(pieceGameObjects[start.x, end.y]);
                         }
-                        if(Mathf.Abs(start.x - end.x) == 2) {
+                        if (Mathf.Abs(start.x - end.x) == 2) {
                             enPassant = CheckEnPassant(end, board);
                             return true;
                         }
@@ -291,7 +291,6 @@ namespace controller {
             if (leftPiece.IsSome() && leftPiece.Peel().type == PieceType.Pawn) {
                 return new Vector2Int(endPos.x, endPos.y);
             }
-
             if (rigthPiece.IsSome() && rigthPiece.Peel().type == PieceType.Pawn) {
                 return new Vector2Int(endPos.x, endPos.y);
             }
@@ -417,7 +416,8 @@ namespace controller {
         private List<Vector2Int> GetPossibleMovePosition(
                 List<Movment> moveList,
                 Vector2Int pos,
-                Option<Piece>[,] board) {
+                Option<Piece>[,] board
+            ) {
             var possibleMovePositions = new List<Vector2Int>();
             float startAngle;
             foreach (var movment in moveList) {
@@ -470,8 +470,8 @@ namespace controller {
         public static Vector2Int? FindKing(Option<Piece>[,] board, PieceColor color) {
             Vector2Int kingPosition = new Vector2Int();
 
-            for(int i = 0; i < board.GetLength(0); i++) {
-                for(int j = 0; j < board.GetLength(1); j++) {
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
                     var piece = board[i, j].Peel();
                     if (piece.type == PieceType.King && piece.color == color) {
                         kingPosition.x = i;

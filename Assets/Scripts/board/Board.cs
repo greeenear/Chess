@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.Collections.Generic;
 using UnityEngine;
 using option;
@@ -74,10 +73,9 @@ namespace board {
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = startAngle * i * Mathf.PI / 180;
                 var pos = new UnityEngine.Vector2(
-                    Mathf.Sin(angle) * circular.radius + 0.51f + center.x,
-                    Mathf.Cos(angle) * circular.radius + 0.51f + center.y
+                    Mathf.Sin(angle) * circular.radius + 0.5f + center.x,
+                    Mathf.Cos(angle) * circular.radius + 0.5f + center.y
                 );
-
                 if (pos.x < 0) {
                     pos.x--;
                 }
