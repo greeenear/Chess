@@ -19,12 +19,16 @@ namespace board {
         }
     }
 
-    public struct Movment {
+    public struct Movement {
         public Linear? linear;
         public Circular? circular;
 
-        public static Movment Mk(Linear? linear, Circular? circular) {
-            return new Movment { linear = linear, circular = circular };
+        public static Movement Linear(Linear? linear) {
+            return new Movement { linear = linear };
+        }
+
+        public static Movement Circular(Circular? circular) {
+            return new Movement { circular = circular };
         }
     }
 
@@ -62,27 +66,35 @@ namespace board {
             return length;
         }
 
-        public static List<Vector2Int> GetAllCircularMoves(
+        public static List<Vector2Int> GetAllCircularMoves<T>(
             Vector2Int center,
             Circular circular,
-            float startAngle
+            float startAngle,
+            Option<T>[,] board
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             float angle = 0;
+            var offset = new Vector2(0.5f + center.x, 0.5f + center.y);
 
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = startAngle * i * Mathf.PI / 180;
-                var pos = new UnityEngine.Vector2(
-                    Mathf.Sin(angle) * circular.radius + 0.5f + center.x,
-                    Mathf.Cos(angle) * circular.radius + 0.5f + center.y
+                var pos = new Vector2(
+                    Mathf.Sin(angle) * circular.radius,
+                    Mathf.Cos(angle) * circular.radius
                 );
+                pos = pos + offset;
+
                 if (pos.x < 0) {
                     pos.x--;
                 }
                 if (pos.y < 0) {
                     pos.y--;
                 }
-                canMovePositions.Add(new Vector2Int((int)pos.x, (int)pos.y));
+                var movePos = new Vector2Int((int)pos.x, (int)pos.y);
+                if (Board.OnBoard(movePos, boardSize)) {
+                    canMovePositions.Add(movePos);
+                }
             }
 
             return canMovePositions;

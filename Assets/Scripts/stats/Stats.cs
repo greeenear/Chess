@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using chess;
+using rules;
 
 namespace stats {
     public struct PieceInfo {

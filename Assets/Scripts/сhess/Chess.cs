@@ -1,86 +1,55 @@
 using UnityEngine;
-using System.Collections.Generic;
+using rules;
 using option;
+using check;
 using board;
+using System.Collections.Generic;
 
 namespace chess {
-    public enum PieceType {
-        Bishop,
-        King,
-        Knight,
-        Pawn,
-        Queen,
-        Rook
-    }
+    public class Chess : MonoBehaviour {
+        public static Vector2Int? CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
+            var leftPiece = board[endPos.x, endPos.y - 1];
+            var rigthPiece = board[endPos.x, endPos.y + 1];
 
-    public enum PieceColor {
-        White,
-        Black
-    }
-
-    public struct Piece {
-        public PieceType type;
-        public PieceColor color;
-
-        public static Piece Mk(PieceType type, PieceColor color) {
-            return new Piece { type = type, color = color };
-        }
-    }
-
-    public static class Chess {
-        public static List<Vector2Int> GetLinearMoves(
-            Option<Piece>[,] board,
-            Vector2Int piecePos,
-            Linear linear
-        ) {
-            Piece piece = board[piecePos.x, piecePos.y].Peel();
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
-
-            int length = Board.GetLinearLength<Piece>(piecePos, linear, board);
-
-            for (int i = 1; i <= length; i++) {
-                Vector2Int pos = piecePos + linear.dir * i;
-                if (board[pos.x, pos.y].IsSome()) {
-                    if (board[pos.x, pos.y].Peel().color == piece.color) {
-                        break;
-                    } else {
-                        canMovePositions.Add(new Vector2Int(pos.x, pos.y));
-                        break;
-                    }
-                }
-                canMovePositions.Add(new Vector2Int(pos.x, pos.y));
+            if (leftPiece.IsSome() && leftPiece.Peel().type == PieceType.Pawn) {
+                return new Vector2Int(endPos.x, endPos.y);
+            }
+            if (rigthPiece.IsSome() && rigthPiece.Peel().type == PieceType.Pawn) {
+                return new Vector2Int(endPos.x, endPos.y);
             }
 
-            return canMovePositions;
+            return null;
         }
 
-        public static List<Vector2Int> GetCirclularMoves(
+        public static string Check(
             Option<Piece>[,] board,
-            Vector2Int pos,
-            Circular circlularMove,
-            float startAngle
-        ) {
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
-            Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            Vector2Int selectedPos,
+            PieceColor whoseMove,
+            Dictionary<PieceType,List<Movement>> movement,
+            Vector2Int? enPassant
+            ) {
+            string checkRes = null;
 
-            allCanMovePositions = Board.GetAllCircularMoves(pos,circlularMove, startAngle);
-            foreach (var movePos in allCanMovePositions) {
-                if (!Board.OnBoard(movePos, boardSize)) {
-                    continue;
-                }
-
-                var piece = board[movePos.x, movePos.y];
-                if (piece.IsNone()) {
-                    canMovePositions.Add(movePos);
-                }
-                if (piece.IsSome() && piece.Peel().color != board[pos.x, pos.y].Peel().color) {
-                    canMovePositions.Add(movePos);
-                }
+            if(check.Check.CheckKing(board, whoseMove, movement,enPassant)) {
+                checkRes = "CheckKing";
+            }
+            if(check.Check.CheckMate(board, selectedPos, whoseMove, movement, enPassant)) {
+                checkRes = "CheckMate";
             }
 
-            return canMovePositions;
+            return checkRes;
+        }
+
+        public static PieceColor ChangeMove(PieceColor whoseMove) {
+            if (whoseMove == PieceColor.White) {
+                whoseMove = PieceColor.Black;
+            } else {
+                whoseMove = PieceColor.White;
+            }
+
+            return whoseMove;
         }
     }
 }
+
 
