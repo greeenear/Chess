@@ -39,7 +39,8 @@ namespace controller {
         private GameStats gameStats;
         private List<PieceInfo> pieceList = new List<PieceInfo>();
 
-        private Dictionary<PieceType, List<Movment>> movment = new Dictionary<PieceType, List<Movment>>() {
+        private Dictionary<PieceType, List<Movment>> movment = 
+            new Dictionary<PieceType, List<Movment>>() {
             { PieceType.Pawn, new List<Movment> {
                 Movment.Mk(Linear.Mk(new Vector2Int(1, 1)), null),
                 Movment.Mk(Linear.Mk(new Vector2Int(1, -1)), null),
