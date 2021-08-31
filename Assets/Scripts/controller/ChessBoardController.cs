@@ -6,7 +6,6 @@ using board;
 using rules;
 using json;
 using check;
-using move;
 
 namespace controller {
     public class ChessBoardController : MonoBehaviour {
@@ -39,52 +38,16 @@ namespace controller {
         private GameStats gameStats;
         private List<PieceInfo> pieceInfoList = new List<PieceInfo>();
 
-        private Dictionary<PieceType, List<Movement>> movement = 
-            new Dictionary<PieceType, List<Movement>>() {
-            { PieceType.Pawn, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0)))
-                }
-            },
-            { PieceType.Bishop, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1)))
-                }
-            },
-            { PieceType.Rook, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, 1)))
-                }
-            },
-            { PieceType.Queen, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1)))
-                }
-            },
-            { PieceType.Knight, new List<Movement> { Movement.Circular(Circular.Mk(2f)) } },
-            { PieceType.King, new List<Movement> { Movement.Circular(Circular.Mk(1f)) } }
-        };
+        private Dictionary<PieceType, List<Movement>> movement;
 
         private void Awake() {
            board = Chess.CreateBoard();
         }
 
         private void Start() {
-            pieceList = gameObject.GetComponent<Resource>().pieceList;
+            var resources = gameObject.GetComponent<Resource>();
+            pieceList = resources.pieceList;
+            movement = resources.movement;
             Chess.AddPiecesOnBoard(piecesMap, boardObj, pieceList, board);
         }
 
@@ -110,7 +73,7 @@ namespace controller {
             board = new Option<Piece>[8,8];
 
             whoseMove = gameStats.whoseMove;
-            foreach(var pieceInfo in gameInfo.pieceInfo) {
+            foreach (var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
             Chess.AddPiecesOnBoard(piecesMap, boardObj, pieceList, board);
@@ -162,21 +125,26 @@ namespace controller {
                             canMoveCell,
                             canMoveCells
                         );
-
                     } else {
                         Chess.RemoveCanMoveCells(canMoveCells);
 
-                        if (Chess.Move(
+                        var moveRes = Chess.Move(
                                 selectedPos,
                                 new Vector2Int(x, y),
                                 enPassant,
                                 canMovePos,
                                 board,
                                 boardObj,
-                                piecesMap )
-                            ) {
-
-                            if(!isPaused) {
+                                piecesMap
+                        );
+                        if (moveRes.pos != null) {
+                            enPassant = moveRes.enPassant;
+                            if (moveRes.isPawnChange) {
+                                selectedPos = new Vector2Int(x, y);
+                                isPaused = true;
+                                changePawn.SetActive(true);
+                            }
+                            if (!isPaused) {
                                 whoseMove = Chess.ChangeMove(whoseMove);
                                 var checkInfo = Chess.Check(
                                     board,
@@ -185,7 +153,7 @@ namespace controller {
                                     movement,
                                     enPassant
                                 );
-                                if(checkInfo != null) {
+                                if (checkInfo != null) {
                                     Debug.Log(checkInfo);
                                 }
                             }
@@ -210,7 +178,5 @@ namespace controller {
             changePawn.SetActive(false);
             whoseMove = Chess.ChangeMove(whoseMove);
         }
-
     }
 }
-

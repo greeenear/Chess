@@ -7,9 +7,9 @@ using option;
 namespace move {
     public struct MoveRes {
         public Vector2Int? pos;
+        public Vector2Int? enPassant;
         public bool isPieceOnPos;
         public bool isPawnChange;
-
     }
 
     public static class Move {
@@ -35,7 +35,7 @@ namespace move {
                     }
                 }
             }
-            
+
             return moveRes;
         }
 
@@ -126,7 +126,6 @@ namespace move {
             }
 
             return newPossibleMoves;
-        } 
+        }
     }
 }
-

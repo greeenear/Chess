@@ -22,7 +22,7 @@ namespace chess {
             return null;
         }
 
-        public static bool Move(
+        public static MoveRes Move(
             Vector2Int start,
             Vector2Int end,
             Vector2Int? enPassant,
@@ -56,27 +56,22 @@ namespace chess {
                         Destroy(piecesMap[start.x, y]);
                     }
                     if (Mathf.Abs(start.x - x) == 2) {
-                        enPassant = Chess.CheckEnPassant(end, board);
-                        return true;
-                    }
-                    if (x == 7 || x == 0) {
-                        //selectedPos = new Vector2Int(x, y);
-                        //isPaused = true;
-                        //changePawn.SetActive(true);
+                        moveRes.enPassant = Chess.CheckEnPassant(end, board);
+                        return moveRes;
                     }
                 }
-                enPassant = null;
+                moveRes.enPassant = null;
 
-                return true;
+                return moveRes;
             }
 
-            return false;
+            return moveRes;
         }
         public static string Check(
             Option<Piece>[,] board,
             Vector2Int selectedPos,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement ,
+            Dictionary<PieceType,List<Movement>> movement,
             Vector2Int? enPassant
         ) {
             string checkRes = null;
