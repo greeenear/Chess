@@ -7,11 +7,9 @@ using option;
 namespace move {
     public struct MoveRes {
         public Vector2Int? pos;
-        public bool pieceOnPos;
-        
-        public static MoveRes Mk(Vector2Int? pos, bool pieceOnPos) {
-            return new MoveRes { pos = pos, pieceOnPos = pieceOnPos};
-        }
+        public bool isPieceOnPos;
+        public bool isPawnChange;
+
     }
 
     public static class Move {
@@ -21,16 +19,24 @@ namespace move {
             List<Vector2Int> movePos,
             Option<Piece>[,] board
         ) {
+            MoveRes moveRes = new MoveRes();
             foreach (var pos in movePos) {
                 if (Equals(pos, end)) {
+                    if (board[start.x, start.y].Peel().type == PieceType.Pawn) {
+                        if (end.x == 7 || end.x == 0) {
+                            moveRes.isPawnChange = true;
+                        }
+                    }
                     if (board[end.x, end.y].IsSome()) {
-                        return MoveRes.Mk(new Vector2Int(end.x, end.y), true);
+                        moveRes.isPieceOnPos = true;
+                        moveRes.pos = new Vector2Int(end.x, end.y);
                     } else {
-                        return MoveRes.Mk(new Vector2Int(end.x, end.y), false);
+                        moveRes.pos = new Vector2Int(end.x, end.y);
                     }
                 }
             }
-            return MoveRes.Mk(null, false);
+            
+            return moveRes;
         }
 
         public static List<Vector2Int> GetPossibleMovePosition(
@@ -120,7 +126,7 @@ namespace move {
             }
 
             return newPossibleMoves;
-        }
+        } 
     }
 }
 

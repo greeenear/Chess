@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using rules;
 
-namespace stats {
+namespace json {
     public struct PieceInfo {
         public Piece piece;
         public int xPos;
@@ -28,6 +28,6 @@ namespace stats {
             return new JsonObject { pieceInfo = pieceInfo, gameStats = gameStats};
         }
     }
+    
 }
-
 

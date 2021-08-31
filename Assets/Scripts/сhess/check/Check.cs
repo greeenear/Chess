@@ -13,7 +13,7 @@ namespace check {
             Dictionary<PieceType,List<Movement>> movement,
             Vector2Int? enPassant
         ) {
-            Vector2Int kingPosition = FindKing(board, whoseMove).Value;
+            Vector2Int kingPosition = FindKing(board, whoseMove);
 
             List<Vector2Int> canAttackKing = new List<Vector2Int>();
             List<Vector2Int> attack = new List<Vector2Int>();
@@ -55,7 +55,7 @@ namespace check {
             return false;
         }
 
-        public static Vector2Int? FindKing(Option<Piece>[,] board, PieceColor color) {
+        public static Vector2Int FindKing(Option<Piece>[,] board, PieceColor color) {
             Vector2Int kingPosition = new Vector2Int();
 
             for (int i = 0; i < board.GetLength(0); i++) {
@@ -103,7 +103,6 @@ namespace check {
                             enPassant
                         );
                         if (canMovePosition.Count != 0) {
-
                             return false;
                         }
                     }
