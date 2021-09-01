@@ -13,19 +13,15 @@ namespace check {
             Dictionary<PieceType,List<Movement>> movement,
             Vector2Int? enPassant
         ) {
-            Vector2Int kingPosition = FindKing(board, whoseMove);
+            var kingPosition = FindKing(board, whoseMove);
 
             List<Vector2Int> canAttackKing = new List<Vector2Int>();
             List<Vector2Int> attack = new List<Vector2Int>();
 
-            var king = board[kingPosition.x, kingPosition.y].Peel();
-            king.type = PieceType.Queen;
-            List<Movement> movmentList = movement[king.type];
-
+            List<Movement> movmentList = movement[PieceType.Queen];
             canAttackKing.AddRange(Move.GetPossibleMovePosition(movmentList, kingPosition, board));
 
-            king.type = PieceType.Knight;
-            movmentList = movement[king.type];
+            movmentList = movement[PieceType.Knight];
             canAttackKing.AddRange(Move.GetPossibleMovePosition(movmentList, kingPosition, board));
 
             foreach (var pos in canAttackKing) {

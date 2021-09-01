@@ -1,7 +1,6 @@
 using UnityEngine;
 using rules;
 using option;
-using check;
 using move;
 using board;
 using System.Collections.Generic;
@@ -23,23 +22,24 @@ namespace chess {
         }
 
         public static MoveRes Move(
-            Vector2Int start,
-            Vector2Int end,
-            Vector2Int? enPassant,
+            MoveRes res,
             List<Vector2Int> canMovePos,
             Option<Piece>[,] board,
             GameObject boardObj,
             GameObject[,] piecesMap
         ) {
             var offset = boardObj.transform.position;
+            var start = res.start.Value;
+            var end = res.end.Value;
+
             var moveRes = move.Move.CheckMove(start, end, canMovePos, board);
             
-            if(moveRes.pos != null) {
-                var x = moveRes.pos.Value.x;
-                var y = moveRes.pos.Value.y;
+            if(res.end != null) {
+                var x = end.x;
+                var y = end.y;
 
                 if (moveRes.isPieceOnPos) {
-                    Destroy(piecesMap[moveRes.pos.Value.x, moveRes.pos.Value.y]);
+                    Destroy(piecesMap[x, y]);
                 }
                 board[x, y] = board[start.x, start.y];
                 board[start.x, start.y] = Option<Piece>.None();
@@ -51,7 +51,7 @@ namespace chess {
                 if (board[x, y].Peel().type == PieceType.Pawn) {
                     var possibleEnPassant = new Vector2Int(start.x, y);
 
-                    if (enPassant != null && Equals(enPassant, possibleEnPassant)) {
+                    if (res.enPassant != null && Equals(res.enPassant, possibleEnPassant)) {
                         board[start.x, y] = Option<Piece>.None();
                         Destroy(piecesMap[start.x, y]);
                     }
@@ -67,6 +67,7 @@ namespace chess {
 
             return moveRes;
         }
+
         public static string Check(
             Option<Piece>[,] board,
             Vector2Int selectedPos,

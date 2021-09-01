@@ -6,7 +6,8 @@ using option;
 
 namespace move {
     public struct MoveRes {
-        public Vector2Int? pos;
+        public Vector2Int? start;
+        public Vector2Int? end;
         public Vector2Int? enPassant;
         public bool isPieceOnPos;
         public bool isPawnChange;
@@ -20,6 +21,7 @@ namespace move {
             Option<Piece>[,] board
         ) {
             MoveRes moveRes = new MoveRes();
+            moveRes.start = start;
             foreach (var pos in movePos) {
                 if (Equals(pos, end)) {
                     if (board[start.x, start.y].Peel().type == PieceType.Pawn) {
@@ -29,9 +31,9 @@ namespace move {
                     }
                     if (board[end.x, end.y].IsSome()) {
                         moveRes.isPieceOnPos = true;
-                        moveRes.pos = new Vector2Int(end.x, end.y);
+                        moveRes.end = new Vector2Int(end.x, end.y);
                     } else {
-                        moveRes.pos = new Vector2Int(end.x, end.y);
+                        moveRes.end = new Vector2Int(end.x, end.y);
                     }
                 }
             }
@@ -67,7 +69,7 @@ namespace move {
                     );
                 }
             }
- 
+
             return possibleMovePositions;
         }
 

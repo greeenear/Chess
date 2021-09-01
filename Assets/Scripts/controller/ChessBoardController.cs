@@ -128,16 +128,17 @@ namespace controller {
                     } else {
                         Chess.RemoveCanMoveCells(canMoveCells);
 
+                        var end = new Vector2Int(x, y);
+                        var moveInfo = move.Move.CheckMove(selectedPos, end, canMovePos, board);
+                        moveInfo.enPassant = enPassant;
                         var moveRes = Chess.Move(
-                                selectedPos,
-                                new Vector2Int(x, y),
-                                enPassant,
+                                moveInfo,
                                 canMovePos,
                                 board,
                                 boardObj,
                                 piecesMap
                         );
-                        if (moveRes.pos != null) {
+                        if (moveRes.end != null) {
                             enPassant = moveRes.enPassant;
                             if (moveRes.isPawnChange) {
                                 selectedPos = new Vector2Int(x, y);
