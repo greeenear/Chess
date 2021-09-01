@@ -5,6 +5,8 @@ using rules;
 
 namespace controller {
     public class Resource : MonoBehaviour {
+        public GameObject boardObj;
+        public GameObject canMoveCell;
         public List<GameObject> pieceList = new List<GameObject>();
 
         public Dictionary<PieceType, List<Movement>> movement =

@@ -3,10 +3,11 @@ using rules;
 using option;
 using move;
 using board;
+using check;
 using System.Collections.Generic;
 
 namespace chess {
-    public class Chess : MonoBehaviour {
+    public static class Chess {
         public static Vector2Int? CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
             var leftPiece = board[endPos.x, endPos.y - 1];
             var rigthPiece = board[endPos.x, endPos.y + 1];
@@ -21,6 +22,24 @@ namespace chess {
             return null;
         }
 
+        public static List<Vector2Int> GetPossibleMoveCells(
+            Dictionary<PieceType,List<Movement>> movement,
+            Vector2Int pos,
+            Option<Piece>[,] board
+        ) {
+            var possibleMoveCells = new List<Vector2Int>();
+            var movementList = movement[board[pos.x, pos.y].Peel().type];
+
+            possibleMoveCells = move.Move.GetMoveCells(movementList, pos, board);
+            possibleMoveCells = check.Check.HiddenCheck(possibleMoveCells, pos, movement, board);
+
+            return possibleMoveCells;
+        }
+
+        public static void CheckCastling() {
+            Debug.Log("CheckCastling");
+        }
+
         public static MoveRes Move(
             MoveRes res,
             List<Vector2Int> canMovePos,
@@ -30,16 +49,14 @@ namespace chess {
         ) {
             var offset = boardObj.transform.position;
             var start = res.start.Value;
-            var end = res.end.Value;
-
-            var moveRes = move.Move.CheckMove(start, end, canMovePos, board);
             
             if(res.end != null) {
+                var end = res.end.Value;
                 var x = end.x;
                 var y = end.y;
 
-                if (moveRes.isPieceOnPos) {
-                    Destroy(piecesMap[x, y]);
+                if (res.isPieceOnPos) {
+                    GameObject.Destroy(piecesMap[x, y]);
                 }
                 board[x, y] = board[start.x, start.y];
                 board[start.x, start.y] = Option<Piece>.None();
@@ -53,34 +70,33 @@ namespace chess {
 
                     if (res.enPassant != null && Equals(res.enPassant, possibleEnPassant)) {
                         board[start.x, y] = Option<Piece>.None();
-                        Destroy(piecesMap[start.x, y]);
+                        GameObject.Destroy(piecesMap[start.x, y]);
                     }
                     if (Mathf.Abs(start.x - x) == 2) {
-                        moveRes.enPassant = Chess.CheckEnPassant(end, board);
-                        return moveRes;
+                        res.enPassant = Chess.CheckEnPassant(end, board);
+                        return res;
                     }
                 }
-                moveRes.enPassant = null;
+                res.enPassant = null;
 
-                return moveRes;
+                return res;
             }
 
-            return moveRes;
+            return res;
         }
 
         public static string Check(
             Option<Piece>[,] board,
             Vector2Int selectedPos,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement,
-            Vector2Int? enPassant
+            Dictionary<PieceType,List<Movement>> movement
         ) {
             string checkRes = null;
 
-            if (check.Check.CheckKing(board, whoseMove, movement,enPassant)) {
+            if (check.Check.CheckKing(board, whoseMove, movement)) {
                 checkRes = "CheckKing";
             }
-            if (check.Check.CheckMate(board, selectedPos, whoseMove, movement, enPassant)) {
+            if (check.Check.CheckMate(board, selectedPos, whoseMove, movement)) {
                 checkRes = "CheckMate";
             }
 
@@ -110,12 +126,12 @@ namespace chess {
             var x = pos.x;
             var y = pos.y;
 
-            Destroy(pieceGameObjects[x,y]);
+            GameObject.Destroy(pieceGameObjects[x,y]);
             PieceType pieceType = (PieceType)type;
             board[x, y] = Option<Piece>.Some(Piece.Mk(pieceType, whoseMove));
 
             var piece = board[x, y].Peel();
-            pieceGameObjects[pos.x, pos.y] = Instantiate(
+            pieceGameObjects[pos.x, pos.y] = GameObject.Instantiate(
                 piecesObjList[(int)piece.type * 2 + (int)piece.color],
                 new Vector3(
                     x + boardPos.x - 4 + 0.5f,
@@ -125,84 +141,6 @@ namespace chess {
                 Quaternion.identity,
                 boardObj.transform
             );
-        }
-
-        public static void AddPiecesOnBoard(
-            GameObject[,] piecesMap,
-            GameObject boardObj,
-            List<GameObject> pieceList,
-            Option<Piece>[,] board
-        ) {
-            DestroyPieces(piecesMap);
-            var boardPos = boardObj.transform.position;
-
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    var piece = board[i, j].Peel();
-
-                    if (board[i, j].IsSome()) {
-                        piecesMap[i, j] = Instantiate(
-                            pieceList[(int)piece.type * 2 + (int)piece.color],
-                            new Vector3(
-                                i + boardPos.x - 4 + 0.5f,
-                                boardPos.y + 0.5f,
-                                j + boardPos.z - 4 + 0.5f
-                            ),
-                            Quaternion.identity,
-                            boardObj.transform
-                        );
-                    }
-                }
-            }
-        }
-
-        private static void DestroyPieces(GameObject[,] piecesMap) {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    Destroy(piecesMap[i,j]);
-                }
-            }
-        }
-
-        public static void ShowCanMoveCells(
-            List<Vector2Int> canMovePos,
-            GameObject boardObj,
-            Option<Piece>[,] board,
-            GameObject canMoveCell,
-            List<GameObject> canMoveCells
-        ) {
-            var boardPos = boardObj.transform.position;
-
-            foreach (var pos in canMovePos) {
-                if (board[pos.x, pos.y].IsSome()) {
-                    canMoveCell.transform.localScale = new Vector3(0.9f, 0.01f, 0.9f);
-
-                    canMoveCells.Add(Instantiate(
-                        canMoveCell,
-                        new Vector3(
-                            pos.x + boardPos.x - 4 + 0.5f,
-                            boardPos.y + 0.5f,
-                            pos.y + boardPos.z - 4 + 0.5f),
-                        Quaternion.identity)
-                    );
-                    canMoveCell.transform.localScale = new Vector3(0.2f, 0.01f, 0.2f);
-                }
-                canMoveCells.Add(Instantiate(
-                    canMoveCell,
-                    new Vector3(
-                        pos.x + boardPos.x - 4 + 0.5f,
-                        boardPos.y + 0.5f,
-                        pos.y + boardPos.z - 4 + 0.5f
-                    ),
-                    Quaternion.identity
-                ));
-            }
-        }
-
-        public static void RemoveCanMoveCells(List<GameObject> canMoveCells) {
-            foreach (GameObject cell in canMoveCells) {
-                Destroy(cell);
-            }
         }
 
         public static Option<Piece>[,] CreateBoard() {

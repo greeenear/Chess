@@ -31,9 +31,10 @@ namespace rules {
         public static List<Vector2Int> GetLinearMoves(
             Option<Piece>[,] board,
             Vector2Int piecePos,
-            Linear linear
+            Linear linear,
+            int maxLength
         ) {
-            int length = Board.GetLinearLength<Piece>(piecePos, linear, board);
+            int length = Board.GetLinearLength<Piece>(piecePos, linear, board, maxLength);
 
             return CheckColorOnLine(board, piecePos, linear, length);
         }

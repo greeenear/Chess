@@ -10,8 +10,7 @@ namespace check {
         public static bool CheckKing(
             Option<Piece>[,] board,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement,
-            Vector2Int? enPassant
+            Dictionary<PieceType,List<Movement>> movement
         ) {
             var kingPosition = FindKing(board, whoseMove);
 
@@ -19,26 +18,16 @@ namespace check {
             List<Vector2Int> attack = new List<Vector2Int>();
 
             List<Movement> movmentList = movement[PieceType.Queen];
-            canAttackKing.AddRange(Move.GetPossibleMovePosition(movmentList, kingPosition, board));
+            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
 
             movmentList = movement[PieceType.Knight];
-            canAttackKing.AddRange(Move.GetPossibleMovePosition(movmentList, kingPosition, board));
+            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
 
             foreach (var pos in canAttackKing) {
                 if (board[pos.x, pos.y].IsSome()) {
                     movmentList = movement[board[pos.x, pos.y].Peel().type];
                     Vector2Int piecePos = new Vector2Int(pos.x, pos.y);
-
-                    if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                        attack.AddRange(Move.SelectPawnMoves(
-                            board, 
-                            pos, 
-                            Move.GetPossibleMovePosition(movmentList, piecePos, board),
-                            enPassant)
-                        );
-                        continue;
-                    }
-                    attack.AddRange(Move.GetPossibleMovePosition(movmentList, piecePos, board));
+                    attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board));
                 }
             }
             foreach (var attackition in attack) {
@@ -69,8 +58,7 @@ namespace check {
         public static bool CheckMate(Option<Piece>[,] board,
             Vector2Int selectedPos,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement,
-            Vector2Int? enPassant
+            Dictionary<PieceType,List<Movement>> movement
         ) {
             List<Vector2Int> canMovePosition = new List<Vector2Int>();
 
@@ -81,22 +69,18 @@ namespace check {
                         List<Movement> movmentList = movement[board[i, j].Peel().type];
                         Vector2Int pos = new Vector2Int(i, j);
 
-                        canMovePosition = Move.GetPossibleMovePosition(movmentList, pos, board);
+                        canMovePosition = Move.GetMoveCells(movmentList, pos, board);
                         if (board[i, j].Peel().type == PieceType.Pawn) {
                             canMovePosition = Move.SelectPawnMoves(
                                 board,
                                 selectedPos,
-                                canMovePosition,
-                                enPassant
-                            );
+                                canMovePosition);
                         }
                         canMovePosition = HiddenCheck(
                             canMovePosition,
                             new Vector2Int(i, j),
                             movement,
-                            board,
-                            whoseMove,
-                            enPassant
+                            board
                         );
                         if (canMovePosition.Count != 0) {
                             return false;
@@ -112,19 +96,18 @@ namespace check {
             List<Vector2Int> canMovePos,
             Vector2Int piecePos,
             Dictionary<PieceType,List<Movement>> movement,
-            Option<Piece>[,] startBoard,
-            PieceColor whoseMove,
-            Vector2Int? enPassant
+            Option<Piece>[,] startBoard
         ) {
             Option<Piece>[,] board;
             List<Vector2Int> newCanMovePositions = new List<Vector2Int>();
+            var color = startBoard[piecePos.x, piecePos.y].Peel().color;
 
             foreach (var pos in canMovePos) {
                 board = (Option<Piece>[,])startBoard.Clone();
                 board[pos.x, pos.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
 
-                if (!CheckKing(board, whoseMove, movement, enPassant)) {
+                if (!CheckKing(board, color, movement)) {
                     newCanMovePositions.Add(pos);
                 }
 

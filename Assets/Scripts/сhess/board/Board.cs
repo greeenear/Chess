@@ -44,11 +44,12 @@ namespace board {
         public static int GetLinearLength<T>(
             Vector2Int startPosition,
             Linear linear,
-            Option<T>[,] board
+            Option<T>[,] board,
+            int maxLength
         ) {
             int length = 0;
 
-            for (int i = 1; i <= board.GetLength(0); i++) {
+            for (int i = 1; i <= maxLength; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
 
                 if (!Board.OnBoard(pos,new Vector2Int(board.GetLength(0), board.GetLength(1)))) {
