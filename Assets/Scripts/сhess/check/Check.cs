@@ -52,6 +52,7 @@ namespace check {
                     }
                 }
             }
+
             return kingPosition;
         }
 

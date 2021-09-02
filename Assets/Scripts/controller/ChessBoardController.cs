@@ -105,30 +105,28 @@ namespace controller {
                         canMovePos.Clear();
 
                         selectedPos = new Vector2Int(x, y);
-                        if (piece.Peel().type == PieceType.King) {
-                            Chess.CheckCastling();
-                        }
-                        canMovePos = Chess.GetPossibleMoveCells(movement, selectedPos, board);
-                        if (enPassant != null) {
-                            var x = enPassant.Value.x;
-                            var y = enPassant.Value.y;
-
-                            if (board[x, y].Peel().color == PieceColor.White) {
-                                canMovePos.Add(new Vector2Int(selectedPos.x + 1, y));
-                            } else {
-                                canMovePos.Add(new Vector2Int(selectedPos.x - 1, y));
-                            }
-                        }
-
+                        canMovePos = Chess.GetPossibleMoveCells(
+                            movement,
+                            selectedPos,
+                            board,
+                            enPassant
+                        );
                         ShowCanMoveCells(canMovePos);
                     } else {
                         RemoveCanMoveCells(canMoveCells);
 
                         var end = new Vector2Int(x, y);
                         var moveInfo = move.Move.CheckMove(selectedPos, end, canMovePos, board);
+
+                        if (moveInfo.enPassant != null) {
+                            enPassant = moveInfo.enPassant;
+                        } else {
+                            moveInfo.enPassant = enPassant;
+                            enPassant = null;
+                        }
                         var moveRes = Chess.Move(moveInfo, canMovePos, board, boardObj, piecesMap);
 
-                        if (moveRes.toMove != null) {
+                        if (moveRes.moveTo != null) {
                             if (moveRes.isPawnChange) {
                                 selectedPos = new Vector2Int(x, y);
                                 isPaused = true;
@@ -140,10 +138,9 @@ namespace controller {
                             if (moveRes.isPawnChange) {
                                 changePawn.SetActive(true);
                             }
-                            if (moveRes.enPassant != null) {
-                                enPassant = moveRes.enPassant;
+                            if (moveInfo.enPassant != null) {
+                                enPassant = moveInfo.enPassant;
                             }
-                            
                             var checkInfo = Chess.Check(board, selectedPos, whoseMove, movement);
                             if (checkInfo != null) {
                                 Debug.Log(checkInfo);

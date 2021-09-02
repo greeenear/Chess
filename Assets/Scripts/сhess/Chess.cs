@@ -7,24 +7,11 @@ using System.Collections.Generic;
 
 namespace chess {
     public static class Chess {
-        public static Vector2Int? CheckEnPassant(Vector2Int endPos, Option<Piece>[,] board) {
-            var leftPiece = board[endPos.x, endPos.y - 1];
-            var rigthPiece = board[endPos.x, endPos.y + 1];
-
-            if (leftPiece.IsSome() && leftPiece.Peel().type == PieceType.Pawn) {
-                return new Vector2Int(endPos.x, endPos.y);
-            }
-            if (rigthPiece.IsSome() && rigthPiece.Peel().type == PieceType.Pawn) {
-                return new Vector2Int(endPos.x, endPos.y);
-            }
-
-            return null;
-        }
-
         public static List<Vector2Int> GetPossibleMoveCells(
             Dictionary<PieceType,List<Movement>> movement,
             Vector2Int pos,
-            Option<Piece>[,] board
+            Option<Piece>[,] board,
+            Vector2Int? enPassant
         ) {
             var possibleMoveCells = new List<Vector2Int>();
             var movementList = movement[board[pos.x, pos.y].Peel().type];
@@ -32,11 +19,20 @@ namespace chess {
             possibleMoveCells = move.Move.GetMoveCells(movementList, pos, board);
             possibleMoveCells = check.Check.HiddenCheck(possibleMoveCells, pos, movement, board);
 
-            return possibleMoveCells;
-        }
+            if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
+                if (enPassant != null && enPassant.Value.x == pos.x) {
+                        var x = enPassant.Value.x;
+                        var y = enPassant.Value.y;
 
-        public static void CheckCastling() {
-            Debug.Log("CheckCastling");
+                    if (board[pos.x, pos.y].Peel().color == PieceColor.White) {
+                        possibleMoveCells.Add(new Vector2Int(pos.x - 1, y));
+                    } else {
+                        possibleMoveCells.Add(new Vector2Int(pos.x + 1, y));
+                    }
+                }
+            }
+
+            return possibleMoveCells;
         }
 
         public static MoveRes Move(
@@ -49,22 +45,28 @@ namespace chess {
             var offset = boardObj.transform.position;
             var start = res.start.Value;
 
-            if(res.toMove != null) {
-                var end = res.toMove.Value;
-                var x = end.x;
-                var y = end.y;
+            if (res.moveTo != null) {
+                var end = res.moveTo.Value;
 
                 if (res.isPieceOnPos) {
-                    GameObject.Destroy(piecesMap[x, y]);
+                    GameObject.Destroy(piecesMap[end.x, end.y]);
                 }
-                piecesMap[x, y] = piecesMap[start.x, start.y];
 
-                piecesMap[x, y].transform.position =
+                piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+                piecesMap[end.x, end.y].transform.position =
                 new Vector3(
-                    x + offset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                    end.x + offset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
                     offset.y + Resource.CELL_SIZE,
-                    y + offset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                    end.y + offset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
                 );
+
+                if (board[end.x, end.y].Peel().type == PieceType.Pawn && res.enPassant != null) {
+
+                    if (res.enPassant.Value == new Vector2Int(start.x, end.y)) {
+                        GameObject.Destroy(piecesMap[start.x, end.y]);
+                        board[start.x, end.y] = Option<Piece>.None();
+                    }
+                }
 
                 return res;
             }

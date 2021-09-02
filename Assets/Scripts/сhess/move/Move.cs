@@ -7,7 +7,7 @@ using option;
 namespace move {
     public struct MoveRes {
         public Vector2Int? start;
-        public Vector2Int? toMove;
+        public Vector2Int? moveTo;
         public Vector2Int? enPassant;
         public bool isPieceOnPos;
         public bool isPawnChange;
@@ -26,11 +26,11 @@ namespace move {
                 if (pos == end) {
                     board[end.x, end.y] = board[start.x, start.y];
                     board[start.x, start.y] = Option<Piece>.None();
-                    moveRes.toMove = new Vector2Int(end.x, end.y);
+                    moveRes.moveTo = new Vector2Int(end.x, end.y);
 
                     if (board[end.x, end.y].IsSome()) {
                         moveRes.isPieceOnPos = true;
-                        moveRes.toMove = new Vector2Int(end.x, end.y);
+                        moveRes.moveTo = new Vector2Int(end.x, end.y);
                     }
                     if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
                         if (Mathf.Abs(end.x - start.x) == 2) {
