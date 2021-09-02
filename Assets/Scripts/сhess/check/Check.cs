@@ -57,7 +57,6 @@ namespace check {
         }
 
         public static bool CheckMate(Option<Piece>[,] board,
-            Vector2Int selectedPos,
             PieceColor whoseMove,
             Dictionary<PieceType,List<Movement>> movement
         ) {
@@ -74,7 +73,7 @@ namespace check {
                         if (board[i, j].Peel().type == PieceType.Pawn) {
                             canMovePosition = Move.SelectPawnMoves(
                                 board,
-                                selectedPos,
+                                new Vector2Int(i, j),
                                 canMovePosition);
                         }
                         canMovePosition = HiddenCheck(

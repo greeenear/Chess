@@ -42,7 +42,7 @@ namespace chess {
             GameObject boardObj,
             GameObject[,] piecesMap
         ) {
-            var offset = boardObj.transform.position;
+            var boardOffset = boardObj.transform.position;
             var start = res.start.Value;
 
             if (res.moveTo != null) {
@@ -55,9 +55,9 @@ namespace chess {
                 piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
                 piecesMap[end.x, end.y].transform.position =
                 new Vector3(
-                    end.x + offset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
-                    offset.y + Resource.CELL_SIZE,
-                    end.y + offset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                    end.x + boardOffset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                    boardOffset.y + Resource.CELL_SIZE,
+                    end.y + boardOffset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
                 );
 
                 if (board[end.x, end.y].Peel().type == PieceType.Pawn && res.enPassant != null) {
@@ -85,7 +85,7 @@ namespace chess {
             if (check.Check.CheckKing(board, whoseMove, movement)) {
                 checkRes = "CheckKing";
             }
-            if (check.Check.CheckMate(board, selectedPos, whoseMove, movement)) {
+            if (check.Check.CheckMate(board, whoseMove, movement)) {
                 checkRes = "CheckMate";
             }
 
