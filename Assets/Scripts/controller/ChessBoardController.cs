@@ -9,8 +9,7 @@ using check;
 
 namespace controller {
     public class ChessBoardController : MonoBehaviour {
-        const float BORD_SIZE = 4;
-        const float CELL_SIZE = 0.5f;
+
         private Resource resources;
         private Option<Piece>[,] board = new Option<Piece>[8, 8];
 
@@ -96,8 +95,8 @@ namespace controller {
                 ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
                 if (Physics.Raycast(ray, out hit)) {
-                    x = (int)(hit.point.x - (boardObj.transform.position.x - BORD_SIZE));
-                    y = (int)(hit.point.z - (boardObj.transform.position.z - BORD_SIZE));
+                    x = (int)(hit.point.x - (boardObj.transform.position.x - Resource.BORD_SIZE));
+                    y = (int)(hit.point.z - (boardObj.transform.position.z - Resource.BORD_SIZE));
 
                     var piece = board[x, y];
 
@@ -106,10 +105,20 @@ namespace controller {
                         canMovePos.Clear();
 
                         selectedPos = new Vector2Int(x, y);
-                        if(piece.Peel().type == PieceType.King) {
+                        if (piece.Peel().type == PieceType.King) {
                             Chess.CheckCastling();
                         }
                         canMovePos = Chess.GetPossibleMoveCells(movement, selectedPos, board);
+                        if (enPassant != null) {
+                            var x = enPassant.Value.x;
+                            var y = enPassant.Value.y;
+
+                            if (board[x, y].Peel().color == PieceColor.White) {
+                                canMovePos.Add(new Vector2Int(selectedPos.x + 1, y));
+                            } else {
+                                canMovePos.Add(new Vector2Int(selectedPos.x - 1, y));
+                            }
+                        }
 
                         ShowCanMoveCells(canMovePos);
                     } else {
@@ -117,16 +126,9 @@ namespace controller {
 
                         var end = new Vector2Int(x, y);
                         var moveInfo = move.Move.CheckMove(selectedPos, end, canMovePos, board);
-                        moveInfo.enPassant = enPassant;
-                        var moveRes = Chess.Move(
-                                moveInfo,
-                                canMovePos,
-                                board,
-                                boardObj,
-                                piecesMap
-                        );
-                        if (moveRes.end != null) {
-                            enPassant = moveRes.enPassant;
+                        var moveRes = Chess.Move(moveInfo, canMovePos, board, boardObj, piecesMap);
+
+                        if (moveRes.toMove != null) {
                             if (moveRes.isPawnChange) {
                                 selectedPos = new Vector2Int(x, y);
                                 isPaused = true;
@@ -134,15 +136,17 @@ namespace controller {
                             }
                             if (!isPaused) {
                                 whoseMove = Chess.ChangeMove(whoseMove);
-                                var checkInfo = Chess.Check(
-                                    board,
-                                    selectedPos,
-                                    whoseMove,
-                                    movement
-                                );
-                                if (checkInfo != null) {
-                                    Debug.Log(checkInfo);
-                                }
+                            }
+                            if (moveRes.isPawnChange) {
+                                changePawn.SetActive(true);
+                            }
+                            if (moveRes.enPassant != null) {
+                                enPassant = moveRes.enPassant;
+                            }
+                            
+                            var checkInfo = Chess.Check(board, selectedPos, whoseMove, movement);
+                            if (checkInfo != null) {
+                                Debug.Log(checkInfo);
                             }
                         }
                         canMovePos.Clear();
@@ -160,11 +164,28 @@ namespace controller {
         }
 
         public void ChangePawn(int type) {
-            Chess.ChangePiece(type, boardObj, selectedPos, piecesMap, board, pieceList, whoseMove);
+            var boardPos = boardObj.transform.position;
+            var x = selectedPos.x;
+            var y = selectedPos.y;
+            PieceType pieceType = (PieceType)type;
+
+            Chess.ChangePiece(board, selectedPos, pieceType, whoseMove);
+            Destroy(piecesMap[x, y]);
+            piecesMap[x, y] = GameObject.Instantiate(
+                pieceList[(int)board[x, y].Peel().type * 2 + (int)board[x, y].Peel().color],
+                new Vector3(
+                    x + boardPos.x - 4 + 0.5f,
+                    boardPos.y + 0.5f,
+                    y + boardPos.z - 4 + 0.5f
+                ),
+                Quaternion.identity,
+                boardObj.transform
+            );
             isPaused = false;
             changePawn.SetActive(false);
             whoseMove = Chess.ChangeMove(whoseMove);
         }
+
 
         public void AddPiecesOnBoard() {
             DestroyPieces(piecesMap);
@@ -178,9 +199,9 @@ namespace controller {
                         piecesMap[i, j] = GameObject.Instantiate(
                             pieceList[(int)piece.type * 2 + (int)piece.color],
                             new Vector3(
-                                i + boardPos.x - BORD_SIZE + CELL_SIZE,
-                                boardPos.y + CELL_SIZE,
-                                j + boardPos.z - BORD_SIZE + CELL_SIZE
+                                i + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                                boardPos.y + Resource.CELL_SIZE,
+                                j + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
                             ),
                             Quaternion.identity,
                             boardObj.transform
@@ -195,14 +216,15 @@ namespace controller {
 
             foreach (var pos in canMovePos) {
                 if (board[pos.x, pos.y].IsSome()) {
+                    var scale = canMoveCell.transform.localScale;
                     canMoveCell.transform.localScale = new Vector3(0.9f, 0.01f, 0.9f);
 
                     canMoveCells.Add(GameObject.Instantiate(
                         canMoveCell,
                         new Vector3(
-                            pos.x + boardPos.x - BORD_SIZE + CELL_SIZE,
-                            boardPos.y + CELL_SIZE,
-                            pos.y + boardPos.z - BORD_SIZE + CELL_SIZE),
+                            pos.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                            boardPos.y + Resource.CELL_SIZE,
+                            pos.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE),
                         Quaternion.identity)
                     );
                     canMoveCell.transform.localScale = new Vector3(0.2f, 0.01f, 0.2f);
@@ -210,9 +232,9 @@ namespace controller {
                 canMoveCells.Add(GameObject.Instantiate(
                     canMoveCell,
                     new Vector3(
-                        pos.x + boardPos.x - BORD_SIZE + CELL_SIZE,
-                        boardPos.y + CELL_SIZE,
-                        pos.y + boardPos.z - BORD_SIZE + CELL_SIZE
+                        pos.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                        boardPos.y + Resource.CELL_SIZE,
+                        pos.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
                     ),
                     Quaternion.identity
                 ));

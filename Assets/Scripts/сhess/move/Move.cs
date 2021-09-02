@@ -7,7 +7,7 @@ using option;
 namespace move {
     public struct MoveRes {
         public Vector2Int? start;
-        public Vector2Int? end;
+        public Vector2Int? toMove;
         public Vector2Int? enPassant;
         public bool isPieceOnPos;
         public bool isPawnChange;
@@ -23,17 +23,31 @@ namespace move {
             MoveRes moveRes = new MoveRes();
             moveRes.start = start;
             foreach (var pos in movePos) {
-                if (Equals(pos, end)) {
-                    if (board[start.x, start.y].Peel().type == PieceType.Pawn) {
+                if (pos == end) {
+                    board[end.x, end.y] = board[start.x, start.y];
+                    board[start.x, start.y] = Option<Piece>.None();
+                    moveRes.toMove = new Vector2Int(end.x, end.y);
+
+                    if (board[end.x, end.y].IsSome()) {
+                        moveRes.isPieceOnPos = true;
+                        moveRes.toMove = new Vector2Int(end.x, end.y);
+                    }
+                    if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                        if (Mathf.Abs(end.x - start.x) == 2) {
+                            var rightCell = board[end.x, end.y + 1];
+                            var leftCell = board[end.x, end.y - 1];
+                            var pieceColor = board[end.x, end.y].Peel().color;
+
+                            if (rightCell.IsSome() && rightCell.Peel().color != pieceColor) {
+                                moveRes.enPassant = new Vector2Int(end.x, end.y);
+                            }
+                            if (leftCell.IsSome() && leftCell.Peel().color != pieceColor) {
+                                moveRes.enPassant = new Vector2Int(end.x, end.y);
+                            }
+                        }
                         if (end.x == 7 || end.x == 0) {
                             moveRes.isPawnChange = true;
                         }
-                    }
-                    if (board[end.x, end.y].IsSome()) {
-                        moveRes.isPieceOnPos = true;
-                        moveRes.end = new Vector2Int(end.x, end.y);
-                    } else {
-                        moveRes.end = new Vector2Int(end.x, end.y);
                     }
                 }
             }

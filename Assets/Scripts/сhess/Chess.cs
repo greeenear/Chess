@@ -3,7 +3,6 @@ using rules;
 using option;
 using move;
 using board;
-using check;
 using System.Collections.Generic;
 
 namespace chess {
@@ -49,35 +48,23 @@ namespace chess {
         ) {
             var offset = boardObj.transform.position;
             var start = res.start.Value;
-            
-            if(res.end != null) {
-                var end = res.end.Value;
+
+            if(res.toMove != null) {
+                var end = res.toMove.Value;
                 var x = end.x;
                 var y = end.y;
 
                 if (res.isPieceOnPos) {
                     GameObject.Destroy(piecesMap[x, y]);
                 }
-                board[x, y] = board[start.x, start.y];
-                board[start.x, start.y] = Option<Piece>.None();
                 piecesMap[x, y] = piecesMap[start.x, start.y];
 
                 piecesMap[x, y].transform.position =
-                new Vector3(x + offset.x - 4 + 0.5f, offset.y + 0.5f, y + offset.z - 4 + 0.5f);
-
-                if (board[x, y].Peel().type == PieceType.Pawn) {
-                    var possibleEnPassant = new Vector2Int(start.x, y);
-
-                    if (res.enPassant != null && Equals(res.enPassant, possibleEnPassant)) {
-                        board[start.x, y] = Option<Piece>.None();
-                        GameObject.Destroy(piecesMap[start.x, y]);
-                    }
-                    if (Mathf.Abs(start.x - x) == 2) {
-                        res.enPassant = Chess.CheckEnPassant(end, board);
-                        return res;
-                    }
-                }
-                res.enPassant = null;
+                new Vector3(
+                    x + offset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                    offset.y + Resource.CELL_SIZE,
+                    y + offset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                );
 
                 return res;
             }
@@ -114,33 +101,13 @@ namespace chess {
         }
 
         public static void ChangePiece(
-            int type,
-            GameObject boardObj,
-            Vector2Int pos,
-            GameObject[,] pieceGameObjects,
             Option<Piece>[,] board,
-            List<GameObject> piecesObjList,
-            PieceColor whoseMove
+            Vector2Int pos,
+            PieceType type,
+            PieceColor color
         ) {
-            var boardPos = boardObj.transform.position;
-            var x = pos.x;
-            var y = pos.y;
-
-            GameObject.Destroy(pieceGameObjects[x,y]);
-            PieceType pieceType = (PieceType)type;
-            board[x, y] = Option<Piece>.Some(Piece.Mk(pieceType, whoseMove));
-
-            var piece = board[x, y].Peel();
-            pieceGameObjects[pos.x, pos.y] = GameObject.Instantiate(
-                piecesObjList[(int)piece.type * 2 + (int)piece.color],
-                new Vector3(
-                    x + boardPos.x - 4 + 0.5f,
-                    boardPos.y + 0.5f,
-                    y + boardPos.z - 4 + 0.5f
-                ),
-                Quaternion.identity,
-                boardObj.transform
-            );
+            board[pos.x, pos.y] = Option<Piece>.None();
+            board[pos.x, pos.y] = Option<Piece>.Some(Piece.Mk(type, color));
         }
 
         public static Option<Piece>[,] CreateBoard() {

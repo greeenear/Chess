@@ -3,11 +3,14 @@ using UnityEngine;
 using board;
 using rules;
 
-namespace controller {
+namespace chess {
     public class Resource : MonoBehaviour {
         public GameObject boardObj;
         public GameObject canMoveCell;
         public List<GameObject> pieceList = new List<GameObject>();
+
+        public const float BORD_SIZE = 4;
+        public const float CELL_SIZE = 0.5f;
 
         public Dictionary<PieceType, List<Movement>> movement =
                 new Dictionary<PieceType, List<Movement>>() {
