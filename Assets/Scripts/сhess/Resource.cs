@@ -7,6 +7,8 @@ namespace chess {
     public class Resource : MonoBehaviour {
         public GameObject boardObj;
         public GameObject canMoveCell;
+        public GameObject gameMenu;
+        public GameObject changePawn;
         public List<GameObject> pieceList = new List<GameObject>();
 
         public const float BORD_SIZE = 4;

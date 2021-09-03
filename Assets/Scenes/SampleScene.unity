@@ -1156,6 +1156,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardObj: {fileID: 965990723}
   canMoveCell: {fileID: 6169466877868371687, guid: 28ba2eb344ba1984387386c4f2470078, type: 3}
+  gameMenu: {fileID: 1923249195}
+  changePawn: {fileID: 1612427839}
   pieceList:
   - {fileID: 1223592777669084, guid: 3698dddfe4c0a4a8dadcdf81c3255943, type: 3}
   - {fileID: 1916680518618882, guid: eec17d5f9090c4c949f55d97388bfec8, type: 3}
@@ -1181,8 +1183,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 566a752d858f1d644a448beedf151f6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameMenu: {fileID: 1923249195}
-  changePawn: {fileID: 1612427839}
 --- !u!65 &965990728
 BoxCollider:
   m_ObjectHideFlags: 0

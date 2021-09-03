@@ -33,24 +33,25 @@ namespace move {
             moveRes.start = start;
             foreach (var pos in movePos) {
                 if (pos == end) {
-                    board[end.x, end.y] = board[start.x, start.y];
-                    board[start.x, start.y] = Option<Piece>.None();
                     moveRes.moveTo = new Vector2Int(end.x, end.y);
 
                     if (board[end.x, end.y].IsSome()) {
                         moveRes.isPieceOnPos = true;
                         moveRes.moveTo = new Vector2Int(end.x, end.y);
                     }
-                    if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                    if (board[start.x, start.y].Peel().type == PieceType.Pawn) {
                         if (Mathf.Abs(end.x - start.x) == 2) {
-                            var rightCell = board[end.x, end.y + 1];
-                            var leftCell = board[end.x, end.y - 1];
-                            var pieceColor = board[end.x, end.y].Peel().color;
+                            var right = new Vector2Int(end.x, end.y + 1);
+                            var left = new Vector2Int(end.x, end.y - 1);
+                            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+                            var pieceColor = board[start.x, start.y].Peel().color;
 
-                            if (rightCell.IsSome() && rightCell.Peel().color != pieceColor) {
+                            if (Board.OnBoard(right, boardSize) && board[end.x, end.y + 1].IsSome()
+                                && board[end.x, end.y + 1].Peel().color != pieceColor) {
                                 moveRes.enPassant = new Vector2Int(end.x, end.y);
                             }
-                            if (leftCell.IsSome() && leftCell.Peel().color != pieceColor) {
+                            if (Board.OnBoard(left, boardSize) && board[end.x, end.y - 1].IsSome() 
+                                && board[end.x, end.y - 1].Peel().color != pieceColor) {
                                 moveRes.enPassant = new Vector2Int(end.x, end.y);
                             }
                         }
@@ -124,27 +125,28 @@ namespace move {
             }
 
             foreach (var possible in possibleMoves) {
+                var cell = board[possible.x, possible.y];
+
                 if (pos.x == 1 && dir == 1 || pos.x == 6 && dir == -1) {
                     if (possible == new Vector2Int(pos.x + 2 * dir, pos.y)
-                        && board[possible.x, possible.y].IsNone()) {
+                        && cell.IsNone()) {
                         newPossibleMoves.Add(possible);
                     }
                 }
 
-                if (possible == new Vector2Int(pos.x + dir, pos.y)
-                    && board[possible.x, possible.y].IsNone()) {
+                if (possible == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
                     newPossibleMoves.Add(possible);
                 }
 
                 if (possible == new Vector2Int(pos.x + dir, pos.y + dir)
-                    && board[possible.x, possible.y].IsSome()
-                    && board[possible.x, possible.y].Peel().color != pawn.color) {
+                    && cell.IsSome()
+                    && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
 
                 if (possible == new Vector2Int(pos.x + dir, pos.y - dir)
-                    && board[possible.x, possible.y].IsSome()
-                    && board[possible.x, possible.y].Peel().color != pawn.color) {
+                    && cell.IsSome()
+                    && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
             }

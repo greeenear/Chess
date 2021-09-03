@@ -6,6 +6,10 @@ using board;
 using System.Collections.Generic;
 
 namespace chess {
+    public struct Castling {
+        public Vector2Int kingPos;
+        public Vector2Int? rookPos;
+    }
     public static class Chess {
         public static List<Vector2Int> GetPossibleMoveCells(
             Dictionary<PieceType,List<Movement>> movement,
@@ -31,6 +35,9 @@ namespace chess {
                     }
                 }
             }
+            if(board[pos.x, pos.y].Peel().type == PieceType.King) {
+                CheckCastling(pos, board);
+            }
 
             return possibleMoveCells;
         }
@@ -47,6 +54,8 @@ namespace chess {
 
             if (res.moveTo != null) {
                 var end = res.moveTo.Value;
+                board[end.x, end.y] = board[start.x, start.y];
+                board[start.x, start.y] = Option<Piece>.None();
 
                 if (res.isPieceOnPos) {
                     GameObject.Destroy(piecesMap[end.x, end.y]);
@@ -61,7 +70,6 @@ namespace chess {
                 );
 
                 if (board[end.x, end.y].Peel().type == PieceType.Pawn && res.enPassant != null) {
-
                     if (res.enPassant.Value == new Vector2Int(start.x, end.y)) {
                         GameObject.Destroy(piecesMap[start.x, end.y]);
                         board[start.x, end.y] = Option<Piece>.None();
@@ -89,6 +97,38 @@ namespace chess {
             }
 
             return checkRes;
+        }
+
+        public static Castling CheckCastling(Vector2Int kingPos, Option<Piece>[,] board) {
+            List<Vector2Int> castlingMove = new List<Vector2Int>();
+            Castling castlingInfo = new Castling();
+            List<Movement> checkLeft = new List<Movement> {
+                Movement.Linear(Linear.Mk(new Vector2Int(0, -1)))
+            };
+            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+
+            castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
+            foreach (var move in castlingMove) {
+                if (move.y - 1 == 0
+                    && board[kingPos.x, move.y - 1].Peel().type == PieceType.Rook) {
+                    castlingInfo.kingPos = kingPos;
+                    castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y - 1);
+               }
+            }
+
+            checkLeft = new List<Movement> {
+                Movement.Linear(Linear.Mk(new Vector2Int(0, 1)))
+            };
+            castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
+            foreach (var move in castlingMove) {
+                if (move.y + 1 == boardSize.y - 1
+                    && board[kingPos.x, move.y + 1].Peel().type == PieceType.Rook) {
+                    castlingInfo.kingPos = kingPos;
+                    castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y + 1);
+               }
+            }
+
+            return castlingInfo;
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {
@@ -143,5 +183,3 @@ namespace chess {
         }
     }
 }
-
-
