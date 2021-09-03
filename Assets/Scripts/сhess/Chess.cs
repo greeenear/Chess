@@ -81,7 +81,6 @@ namespace chess {
             Dictionary<PieceType,List<Movement>> movement
         ) {
             string checkRes = null;
-
             if (check.Check.CheckKing(board, whoseMove, movement)) {
                 checkRes = "CheckKing";
             }

@@ -13,6 +13,15 @@ namespace move {
         public bool isPawnChange;
     }
 
+    public struct StartAngle {
+        public float Knight;
+        public float King;
+
+        public static StartAngle Mk(float Knight, float King) {
+            return new StartAngle { Knight = Knight, King = King };
+        }
+    }
+
     public static class Move {
         public static MoveRes CheckMove(
             Vector2Int start,
@@ -61,8 +70,10 @@ namespace move {
             Option<Piece>[,] board
         ) {
             var possibleMoves = new List<Vector2Int>();
-            float startAngle;
             int maxLength;
+            float startAngle;
+            var angle = StartAngle.Mk(22.5f, 20f);
+
             foreach (var movment in moveList) {
                 if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                     maxLength = 2;
@@ -78,9 +89,9 @@ namespace move {
                     ));
                 } else {
                     if (board[pos.x, pos.y].Peel().type == PieceType.Knight) {
-                        startAngle = 22.5f;
+                        startAngle = angle.Knight;
                     } else {
-                        startAngle = 20f;
+                        startAngle = angle.King;
                     }
                     possibleMoves = Rules.GetCirclularMoves(
                         board,
@@ -93,6 +104,7 @@ namespace move {
             if(board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                 possibleMoves = SelectPawnMoves(board, pos, possibleMoves);
             }
+
             return possibleMoves;
         }
 
