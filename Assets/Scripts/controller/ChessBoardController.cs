@@ -4,11 +4,12 @@ using chess;
 using option;
 using rules;
 using json;
+using move;
 
 namespace controller {
     enum GameState {
         PieceSelected,
-        PiceDontSelected
+        PieceNotSelected
     }
 
     public class ChessBoardController : MonoBehaviour {
@@ -21,13 +22,12 @@ namespace controller {
         private PieceColor whoseMove = PieceColor.White;
         private List<GameObject> canMoveCells = new List<GameObject>();
 
-        private List<Vector2Int> canMovePos = new List<Vector2Int>();
+        private List<MoveRes> canMovePos = new List<MoveRes>();
 
         private bool isPaused;
 
         private Vector2Int? enPassant;
         private JsonObject jsonObject;
-        private GameStats gameStats;
 
         private void Awake() {
            board = Chess.CreateBoard();
@@ -39,6 +39,7 @@ namespace controller {
         }
 
         public void Save() {
+            GameStats gameStats;
             var whoseMove = this.whoseMove;
             gameStats = GameStats.Mk(whoseMove);
             List<PieceInfo> pieceInfoList = new List<PieceInfo>();
@@ -60,7 +61,7 @@ namespace controller {
             var gameInfo = SaveLoad.LoadFromJson("json.json", jsonObject);
             board = new Option<Piece>[8,8];
 
-            whoseMove = gameStats.whoseMove;
+            whoseMove = gameInfo.gameStats.whoseMove;
             foreach (var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
@@ -71,65 +72,54 @@ namespace controller {
             if (!Input.GetMouseButtonDown(0)) {
                 return;
             }
+
             Ray ray;
             RaycastHit hit;
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
             if (!Physics.Raycast(ray, out hit)) {
                 return;
             }
-            int x = (int)(hit.point.x - (resources.boardObj.transform.position.x - Resource.BORD_SIZE));
-            int y = (int)(hit.point.z - (resources.boardObj.transform.position.z - Resource.BORD_SIZE));
 
-            var piece = board[x, y];
+            var boardPos = resources.boardObj.transform.position;
+            Vector2Int clickPoint = new Vector2Int(
+                (int)(hit.point.x - (boardPos.x - Resource.BORD_SIZE)),
+                (int)(hit.point.z - (boardPos.z - Resource.BORD_SIZE))
+            );
 
-            if (piece.IsSome() && piece.Peel().color == whoseMove && !isPaused) {
-                RemoveCanMoveCells(canMoveCells);
-                canMovePos.Clear();
+            var pieceOpt = board[clickPoint.x, clickPoint.y];
+            GameState gameState = new GameState();
+            if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
+                gameState = GameState.PieceNotSelected;
+            }
 
-                selectedPos = new Vector2Int(x, y);
-                canMovePos = Chess.GetPossibleMoveCells(
-                    resources.movement,
-                    selectedPos,
-                    board,
-                    enPassant
-                );
-                ShowCanMoveCells(canMovePos);
-            } else {
-                RemoveCanMoveCells(canMoveCells);
-
-                var end = new Vector2Int(x, y);
-                var moveInfo = move.Move.CheckMove(selectedPos, end, canMovePos, board);
-
-                if (moveInfo.enPassant != null) {
-                    enPassant = moveInfo.enPassant;
-                } else {
-                    moveInfo.enPassant = enPassant;
-                    enPassant = null;
-                }
-                var moveRes = Chess.Move(moveInfo, canMovePos, board, resources.boardObj, piecesMap);
-
-                if (moveRes.moveTo != null) {
-                    if (moveRes.isPawnChange) {
-                        selectedPos = new Vector2Int(x, y);
-                        isPaused = true;
-                        resources.changePawn.SetActive(true);
+            switch(gameState) {
+                case GameState.PieceSelected:
+                    int layerMask = 1 << 3;
+                    if (!Physics.Raycast(ray, out hit, 100f, layerMask)) {
+                        return;
                     }
-                    if (!isPaused) {
-                        whoseMove = Chess.ChangeMove(whoseMove);
-                    }
-                    if (moveRes.isPawnChange) {
-                        resources.changePawn.SetActive(true);
-                    }
-                    if (moveInfo.enPassant != null) {
-                        enPassant = moveInfo.enPassant;
-                    }
+                    Move(selectedPos, clickPoint);
+                    whoseMove = Chess.ChangeMove(whoseMove);
                     var checkInfo = Chess.Check(board, selectedPos, whoseMove, resources.movement);
                     if (checkInfo != null) {
                         Debug.Log(checkInfo);
                     }
-                }
-                canMovePos.Clear();
+                    canMovePos.Clear();
+                    RemoveCanMoveCells(canMoveCells);
+                break;
+                case GameState.PieceNotSelected:
+                    RemoveCanMoveCells(canMoveCells);
+                    canMovePos.Clear();
+
+                    selectedPos = clickPoint;
+                    canMovePos = Chess.GetPossibleMoveCells(
+                        resources.movement,
+                        selectedPos,
+                        board,
+                        enPassant
+                    );
+                    ShowCanMoveCells(canMovePos);
+                break;
             }
         }
 
@@ -149,8 +139,10 @@ namespace controller {
 
             Chess.ChangePiece(board, selectedPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
+            var piece = board[x, y];
+
             piecesMap[x, y] = GameObject.Instantiate(
-                resources.pieceList[(int)board[x, y].Peel().type * 2 + (int)board[x, y].Peel().color],
+                resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color],
                 new Vector3(
                     x + boardPos.x - 4 + 0.5f,
                     boardPos.y + 0.5f,
@@ -164,6 +156,19 @@ namespace controller {
             whoseMove = Chess.ChangeMove(whoseMove);
         }
 
+        public void Move(Vector2Int start, Vector2Int end) {
+            var moveRes =  move.Move.PieceMove(start, end, board);
+            var boardPos = resources.boardObj.transform.position;
+            if (moveRes.whoDelete != null) {
+                Destroy(piecesMap[end.x, end.y]);
+            }
+            piecesMap[start.x, start.y].transform.position = new Vector3(
+                end.x + boardPos.x - 4 + 0.5f,
+                boardPos.y + 0.5f,
+                end.y + boardPos.z - 4 + 0.5f
+            );
+            piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+        }
 
         public void AddPiecesOnBoard() {
             DestroyPieces(piecesMap);
@@ -189,30 +194,16 @@ namespace controller {
             }
         }
 
-        public void ShowCanMoveCells(List<Vector2Int> canMovePos) {
+        public void ShowCanMoveCells(List<MoveRes> canMovePos) {
             var boardPos = resources.boardObj.transform.position;
 
             foreach (var pos in canMovePos) {
-                if (board[pos.x, pos.y].IsSome()) {
-                    var scale = resources.canMoveCell.transform.localScale;
-                    resources.canMoveCell.transform.localScale = new Vector3(0.9f, 0.01f, 0.9f);
-
-                    canMoveCells.Add(GameObject.Instantiate(
-                        resources.canMoveCell,
-                        new Vector3(
-                            pos.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
-                            boardPos.y + Resource.CELL_SIZE,
-                            pos.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE),
-                        Quaternion.identity)
-                    );
-                    resources.canMoveCell.transform.localScale = new Vector3(0.2f, 0.01f, 0.2f);
-                }
                 canMoveCells.Add(GameObject.Instantiate(
                    resources.canMoveCell,
                     new Vector3(
-                        pos.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
+                        pos.end.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
                         boardPos.y + Resource.CELL_SIZE,
-                        pos.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                        pos.end.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
                     ),
                     Quaternion.identity
                 ));

@@ -11,30 +11,18 @@ namespace chess {
         public Vector2Int? rookPos;
     }
     public static class Chess {
-        public static List<Vector2Int> GetPossibleMoveCells(
+        public static List<MoveRes> GetPossibleMoveCells(
             Dictionary<PieceType,List<Movement>> movement,
             Vector2Int pos,
             Option<Piece>[,] board,
             Vector2Int? enPassant
         ) {
-            var possibleMoveCells = new List<Vector2Int>();
+            var possibleMoveCells = new List<MoveRes>();
             var movementList = movement[board[pos.x, pos.y].Peel().type];
 
             possibleMoveCells = move.Move.GetMoveCells(movementList, pos, board);
             possibleMoveCells = check.Check.HiddenCheck(possibleMoveCells, pos, movement, board);
 
-            if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                if (enPassant != null && enPassant.Value.x == pos.x) {
-                        var x = enPassant.Value.x;
-                        var y = enPassant.Value.y;
-
-                    if (board[pos.x, pos.y].Peel().color == PieceColor.White) {
-                        possibleMoveCells.Add(new Vector2Int(pos.x - 1, y));
-                    } else {
-                        possibleMoveCells.Add(new Vector2Int(pos.x + 1, y));
-                    }
-                }
-            }
             if(board[pos.x, pos.y].Peel().type == PieceType.King) {
                 CheckCastling(pos, board);
             }
@@ -49,36 +37,6 @@ namespace chess {
             GameObject boardObj,
             GameObject[,] piecesMap
         ) {
-            var boardOffset = boardObj.transform.position;
-            var start = res.start.Value;
-
-            if (res.moveTo != null) {
-                var end = res.moveTo.Value;
-                board[end.x, end.y] = board[start.x, start.y];
-                board[start.x, start.y] = Option<Piece>.None();
-
-                if (res.isPieceOnPos) {
-                    GameObject.Destroy(piecesMap[end.x, end.y]);
-                }
-
-                piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
-                piecesMap[end.x, end.y].transform.position =
-                new Vector3(
-                    end.x + boardOffset.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
-                    boardOffset.y + Resource.CELL_SIZE,
-                    end.y + boardOffset.z - Resource.BORD_SIZE + Resource.CELL_SIZE
-                );
-
-                if (board[end.x, end.y].Peel().type == PieceType.Pawn && res.enPassant != null) {
-                    if (res.enPassant.Value == new Vector2Int(start.x, end.y)) {
-                        GameObject.Destroy(piecesMap[start.x, end.y]);
-                        board[start.x, end.y] = Option<Piece>.None();
-                    }
-                }
-
-                return res;
-            }
-
             return res;
         }
 
@@ -99,36 +57,36 @@ namespace chess {
             return checkRes;
         }
 
-        public static Castling CheckCastling(Vector2Int kingPos, Option<Piece>[,] board) {
-            List<Vector2Int> castlingMove = new List<Vector2Int>();
-            Castling castlingInfo = new Castling();
-            List<Movement> checkLeft = new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(0, -1)))
-            };
-            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+        public static void CheckCastling(Vector2Int kingPos, Option<Piece>[,] board) {
+            // List<Vector2Int> castlingMove = new List<Vector2Int>();
+            // Castling castlingInfo = new Castling();
+            // List<Movement> checkLeft = new List<Movement> {
+            //     Movement.Linear(Linear.Mk(new Vector2Int(0, -1)))
+            // };
+            // var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
 
-            castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
-            foreach (var move in castlingMove) {
-                if (move.y - 1 == 0
-                    && board[kingPos.x, move.y - 1].Peel().type == PieceType.Rook) {
-                    castlingInfo.kingPos = kingPos;
-                    castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y - 1);
-               }
-            }
+            // castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
+            // foreach (var move in castlingMove) {
+            //     if (move.y - 1 == 0
+            //         && board[kingPos.x, move.y - 1].Peel().type == PieceType.Rook) {
+            //         castlingInfo.kingPos = kingPos;
+            //         castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y - 1);
+            //    }
+            // }
 
-            checkLeft = new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(0, 1)))
-            };
-            castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
-            foreach (var move in castlingMove) {
-                if (move.y + 1 == boardSize.y - 1
-                    && board[kingPos.x, move.y + 1].Peel().type == PieceType.Rook) {
-                    castlingInfo.kingPos = kingPos;
-                    castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y + 1);
-               }
-            }
+            // checkLeft = new List<Movement> {
+            //     Movement.Linear(Linear.Mk(new Vector2Int(0, 1)))
+            // };
+            // castlingMove = move.Move.GetMoveCells(checkLeft, kingPos, board);
+            // foreach (var move in castlingMove) {
+            //     if (move.y + 1 == boardSize.y - 1
+            //         && board[kingPos.x, move.y + 1].Peel().type == PieceType.Rook) {
+            //         castlingInfo.kingPos = kingPos;
+            //         castlingInfo.rookPos = new Vector2Int(kingPos.x, move.y + 1);
+            //    }
+            // }
 
-            return castlingInfo;
+            // return castlingInfo;
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {

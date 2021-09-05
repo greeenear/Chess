@@ -6,11 +6,9 @@ using option;
 
 namespace move {
     public struct MoveRes {
-        public Vector2Int? start;
-        public Vector2Int? moveTo;
-        public Vector2Int? enPassant;
-        public bool isPieceOnPos;
-        public bool isPawnChange;
+        public Vector2Int end;
+        public Vector2Int? whoDelete;
+
     }
 
     public struct StartAngle {
@@ -23,54 +21,25 @@ namespace move {
     }
 
     public static class Move {
-        public static MoveRes CheckMove(
-            Vector2Int start,
-            Vector2Int end,
-            List<Vector2Int> movePos,
-            Option<Piece>[,] board
-        ) {
+        public static MoveRes PieceMove(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
             MoveRes moveRes = new MoveRes();
-            moveRes.start = start;
-            foreach (var pos in movePos) {
-                if (pos == end) {
-                    moveRes.moveTo = new Vector2Int(end.x, end.y);
 
-                    if (board[end.x, end.y].IsSome()) {
-                        moveRes.isPieceOnPos = true;
-                        moveRes.moveTo = new Vector2Int(end.x, end.y);
-                    }
-                    if (board[start.x, start.y].Peel().type == PieceType.Pawn) {
-                        if (Mathf.Abs(end.x - start.x) == 2) {
-                            var right = new Vector2Int(end.x, end.y + 1);
-                            var left = new Vector2Int(end.x, end.y - 1);
-                            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-                            var pieceColor = board[start.x, start.y].Peel().color;
-
-                            if (Board.OnBoard(right, boardSize) && board[end.x, end.y + 1].IsSome()
-                                && board[end.x, end.y + 1].Peel().color != pieceColor) {
-                                moveRes.enPassant = new Vector2Int(end.x, end.y);
-                            }
-                            if (Board.OnBoard(left, boardSize) && board[end.x, end.y - 1].IsSome() 
-                                && board[end.x, end.y - 1].Peel().color != pieceColor) {
-                                moveRes.enPassant = new Vector2Int(end.x, end.y);
-                            }
-                        }
-                        if (end.x == 7 || end.x == 0) {
-                            moveRes.isPawnChange = true;
-                        }
-                    }
-                }
+            if (board[end.x, end.y].IsSome()) {
+                moveRes.whoDelete = new Vector2Int(end.x, end.y);
             }
+            board[end.x, end.y] = board[start.x, start.y];
+            board[start.x, start.y] = Option<Piece>.None();
 
             return moveRes;
         }
 
-        public static List<Vector2Int> GetMoveCells(
+        public static List<MoveRes> GetMoveCells(
             List<Movement> moveList,
             Vector2Int pos,
             Option<Piece>[,] board
         ) {
             var possibleMoves = new List<Vector2Int>();
+            var moveResList = new List<MoveRes>();
             int maxLength;
             float startAngle;
             var angle = StartAngle.Mk(22.5f, 20f);
@@ -102,21 +71,30 @@ namespace move {
                     );
                 }
             }
-            if(board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                possibleMoves = SelectPawnMoves(board, pos, possibleMoves);
+
+            foreach (var move in possibleMoves) {
+                if(board[move.x, move.y].IsSome()) {
+                    moveResList.Add(new MoveRes {end = move, whoDelete = move});
+                } else {
+                    moveResList.Add(new MoveRes {end = move});
+                }
             }
 
-            return possibleMoves;
+            if(board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
+                moveResList = SelectPawnMoves(board, pos, moveResList);
+            }
+
+            return moveResList;
         }
 
-        public static List<Vector2Int> SelectPawnMoves(
+        public static List<MoveRes> SelectPawnMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            List<Vector2Int> possibleMoves
+            List<MoveRes> possibleMoves
         ) {
             Piece pawn = board[pos.x, pos.y].Peel();
             int dir;
-            List<Vector2Int> newPossibleMoves = new List<Vector2Int>();
+            var newPossibleMoves = new List<MoveRes>();
 
             if (pawn.color == PieceColor.White) {
                 dir = -1;
@@ -125,26 +103,23 @@ namespace move {
             }
 
             foreach (var possible in possibleMoves) {
-                var cell = board[possible.x, possible.y];
+                var cell = board[possible.end.x, possible.end.y];
 
                 if (pos.x == 1 && dir == 1 || pos.x == 6 && dir == -1) {
-                    if (possible == new Vector2Int(pos.x + 2 * dir, pos.y)
+                    if (possible.end == new Vector2Int(pos.x + 2 * dir, pos.y)
                         && cell.IsNone()) {
                         newPossibleMoves.Add(possible);
                     }
                 }
-
-                if (possible == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
+                if (possible.end == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
                     newPossibleMoves.Add(possible);
                 }
-
-                if (possible == new Vector2Int(pos.x + dir, pos.y + dir)
+                if (possible.end == new Vector2Int(pos.x + dir, pos.y + dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
-
-                if (possible == new Vector2Int(pos.x + dir, pos.y - dir)
+                if (possible.end == new Vector2Int(pos.x + dir, pos.y - dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
