@@ -19,7 +19,7 @@ namespace controller {
         private Option<Piece>[,] board = new Option<Piece>[8, 8];
         private GameObject[,] piecesMap = new GameObject[8, 8];
 
-        private Vector2Int selectedPos;
+        private Vector2Int selectedPiece;
         private PieceColor whoseMove = PieceColor.White;
 
         private List<MoveInfo> canMovePos = new List<MoveInfo>();
@@ -80,40 +80,40 @@ namespace controller {
             }
 
             var boardPos = resources.boardObj.transform.position;
-            Vector2Int clickPoint = new Vector2Int(
+            Vector2Int selectedPos = new Vector2Int(
                 (int)(hit.point.x - (boardPos.x - resources.halfBoardSize)),
                 (int)(hit.point.z - (boardPos.z - resources.halfBoardSize))
             );
 
-            var pieceOpt = board[clickPoint.x, clickPoint.y];
+            var pieceOpt = board[selectedPos.x, selectedPos.y];
             GameState gameState = new GameState();
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
                 gameState = GameState.PieceNotSelected;
             }
 
-            switch(gameState) {
+            switch (gameState) {
                 case GameState.PieceSelected:
                     int layerMask = 1 << 3;
                     if (!Physics.Raycast(ray, out hit, 100f, layerMask)) {
                         return;
                     }
-                    Move(selectedPos, clickPoint);
+                    Move(selectedPiece, selectedPos);
                     if(!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove);
                         Check.CheckMate(board, whoseMove, resources.movement);
                         canMovePos.Clear();
                     }
-                    selectedPos = clickPoint;
+                    selectedPiece = selectedPos;
                     DestroyHighLightCell();
                     break;
                 case GameState.PieceNotSelected:
                     DestroyHighLightCell();
                     canMovePos.Clear();
 
-                    selectedPos = clickPoint;
+                    selectedPiece = selectedPos;
                     canMovePos = Chess.GetPossibleMoveCells(
                         resources.movement,
-                        selectedPos,
+                        selectedPiece,
                         board
                     );
                     HighLightCell(canMovePos);
@@ -131,11 +131,11 @@ namespace controller {
 
         public void ChangePawn(int type) {
             var boardPos = resources.boardObj.transform.position;
-            var x = selectedPos.x;
-            var y = selectedPos.y;
+            var x = selectedPiece.x;
+            var y = selectedPiece.y;
             PieceType pieceType = (PieceType)type;
 
-            Chess.ChangePiece(board, selectedPos, pieceType, whoseMove);
+            Chess.ChangePiece(board, selectedPiece, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
             var piece = board[x, y];
 
@@ -168,8 +168,9 @@ namespace controller {
                 }
             }
             var boardPos = resources.boardObj.transform.position;
-            if (currentMove.whoDelete != null) {
-                Destroy(piecesMap[currentMove.whoDelete.Value.x, currentMove.whoDelete.Value.y]);
+            var deletedPiece = currentMove.deletedPiece;
+            if (deletedPiece != null) {
+                Destroy(piecesMap[deletedPiece.Value.x, deletedPiece.Value.y]);
             }
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
@@ -180,7 +181,7 @@ namespace controller {
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
 
             if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
-                if(end.x == 0 || end.x == board.GetLength(1)-1) {
+                if (end.x == 0 || end.x == board.GetLength(1)-1) {
                     isPaused = true;
                     resources.changePawn.SetActive(true);
                 }

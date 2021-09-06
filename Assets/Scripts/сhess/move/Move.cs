@@ -7,17 +7,12 @@ using option;
 namespace move {
     public struct MoveInfo {
         public Vector2Int end;
-        public Vector2Int? whoDelete;
-
+        public Vector2Int? deletedPiece;
     }
 
     public struct StartAngle {
-        public float Knight;
-        public float King;
-
-        public static StartAngle Mk(float Knight, float King) {
-            return new StartAngle { Knight = Knight, King = King };
-        }
+        public const float Knight = 22.5f;
+        public const float King = 20f;
     }
 
     public static class Move {
@@ -30,7 +25,6 @@ namespace move {
             var moveResList = new List<MoveInfo>();
             int maxLength;
             float startAngle;
-            var angle = StartAngle.Mk(22.5f, 20f);
 
             foreach (var movment in moveList) {
                 if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
@@ -47,9 +41,9 @@ namespace move {
                     ));
                 } else {
                     if (board[pos.x, pos.y].Peel().type == PieceType.Knight) {
-                        startAngle = angle.Knight;
+                        startAngle = StartAngle.Knight;
                     } else {
-                        startAngle = angle.King;
+                        startAngle = StartAngle.King;
                     }
                     possibleMoves = Rules.GetCirclularMoves(
                         board,
@@ -62,7 +56,7 @@ namespace move {
 
             foreach (var move in possibleMoves) {
                 if (board[move.x, move.y].IsSome()) {
-                    moveResList.Add(new MoveInfo {end = move, whoDelete = move});
+                    moveResList.Add(new MoveInfo {end = move, deletedPiece = move});
                 } else {
                     moveResList.Add(new MoveInfo {end = move});
                 }
@@ -70,6 +64,9 @@ namespace move {
 
             if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                 moveResList = SelectPawnMoves(board, pos, moveResList);
+            }
+            if(board[pos.x, pos.y].Peel().type == PieceType.King) {
+                Debug.Log("+");
             }
 
             return moveResList;
@@ -143,10 +140,15 @@ namespace move {
                 && checkedCell.Peel().moveCounter == 1) {
                 newPossibleMoves.Add(new MoveInfo {
                     end = new Vector2Int(pos.x + colorDir, pos.y + horizontalDir),
-                    whoDelete = new Vector2Int(pos.x, pos.y + horizontalDir)}
+                    deletedPiece = new Vector2Int(pos.x, pos.y + horizontalDir)}
                 );
             }
             return newPossibleMoves;
+        }
+
+        private static List<MoveInfo> CheckCastling() {
+            
+            return new List<MoveInfo>();
         }
     }
 }

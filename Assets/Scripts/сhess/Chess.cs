@@ -22,15 +22,7 @@ namespace chess {
             possibleMoveCells = move.Move.GetMoveCells(movementList, pos, board);
             possibleMoveCells = check.Check.HiddenCheck(possibleMoveCells, pos, movement, board);
 
-            if(board[pos.x, pos.y].Peel().type == PieceType.King) {
-                CheckCastling(pos, board);
-            }
-
             return possibleMoveCells;
-        }
-
-        public static void CheckCastling(Vector2Int kingPos, Option<Piece>[,] board) {
-
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {
