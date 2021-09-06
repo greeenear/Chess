@@ -5,7 +5,7 @@ using rules;
 using option;
 
 namespace move {
-    public struct MoveRes {
+    public struct MoveInfo {
         public Vector2Int end;
         public Vector2Int? whoDelete;
 
@@ -21,25 +21,13 @@ namespace move {
     }
 
     public static class Move {
-        public static MoveRes PieceMove(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
-            MoveRes moveRes = new MoveRes();
-
-            if (board[end.x, end.y].IsSome()) {
-                moveRes.whoDelete = new Vector2Int(end.x, end.y);
-            }
-            board[end.x, end.y] = board[start.x, start.y];
-            board[start.x, start.y] = Option<Piece>.None();
-
-            return moveRes;
-        }
-
-        public static List<MoveRes> GetMoveCells(
+        public static List<MoveInfo> GetMoveCells(
             List<Movement> moveList,
             Vector2Int pos,
             Option<Piece>[,] board
         ) {
             var possibleMoves = new List<Vector2Int>();
-            var moveResList = new List<MoveRes>();
+            var moveResList = new List<MoveInfo>();
             int maxLength;
             float startAngle;
             var angle = StartAngle.Mk(22.5f, 20f);
@@ -73,33 +61,36 @@ namespace move {
             }
 
             foreach (var move in possibleMoves) {
-                if(board[move.x, move.y].IsSome()) {
-                    moveResList.Add(new MoveRes {end = move, whoDelete = move});
+                if (board[move.x, move.y].IsSome()) {
+                    moveResList.Add(new MoveInfo {end = move, whoDelete = move});
                 } else {
-                    moveResList.Add(new MoveRes {end = move});
+                    moveResList.Add(new MoveInfo {end = move});
                 }
             }
 
-            if(board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
+            if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                 moveResList = SelectPawnMoves(board, pos, moveResList);
             }
 
             return moveResList;
         }
 
-        public static List<MoveRes> SelectPawnMoves(
+        public static List<MoveInfo> SelectPawnMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            List<MoveRes> possibleMoves
+            List<MoveInfo> possibleMoves
         ) {
             Piece pawn = board[pos.x, pos.y].Peel();
             int dir;
-            var newPossibleMoves = new List<MoveRes>();
+            int enPassantX;
+            var newPossibleMoves = new List<MoveInfo>();
 
             if (pawn.color == PieceColor.White) {
                 dir = -1;
+                enPassantX = 3;
             } else {
                 dir = 1;
+                enPassantX = board.GetLength(1) - 4;
             }
 
             foreach (var possible in possibleMoves) {
@@ -125,7 +116,36 @@ namespace move {
                     newPossibleMoves.Add(possible);
                 }
             }
+            if (pos.x == enPassantX) {
+                CheckEnPassant(newPossibleMoves, board, pos, dir, 1);
+                CheckEnPassant(newPossibleMoves, board, pos, dir, -1);
+            }
 
+            return newPossibleMoves;
+        }
+
+        private static List<MoveInfo> CheckEnPassant(
+            List<MoveInfo> newPossibleMoves,
+            Option<Piece>[,] board,
+            Vector2Int pos,
+            int colorDir,
+            int horizontalDir
+        ) {
+            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            Option<Piece> checkedCell = new Option<Piece>();
+            if(Board.OnBoard(new Vector2Int(pos.x, pos.y + horizontalDir), boardSize)) {
+                checkedCell = board[pos.x, pos.y + horizontalDir];
+            }
+            Piece pawn = board[pos.x, pos.y].Peel();
+
+            if (checkedCell.IsSome() && checkedCell.Peel().color != pawn.color
+                && checkedCell.Peel().type == PieceType.Pawn
+                && checkedCell.Peel().moveCounter == 1) {
+                newPossibleMoves.Add(new MoveInfo {
+                    end = new Vector2Int(pos.x + colorDir, pos.y + horizontalDir),
+                    whoDelete = new Vector2Int(pos.x, pos.y + horizontalDir)}
+                );
+            }
             return newPossibleMoves;
         }
     }

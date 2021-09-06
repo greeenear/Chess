@@ -22,8 +22,10 @@ namespace rules {
         public PieceType type;
         public PieceColor color;
 
-        public static Piece Mk(PieceType type, PieceColor color) {
-            return new Piece { type = type, color = color };
+        public int moveCounter;
+
+        public static Piece Mk(PieceType type, PieceColor color, int moveCounter) {
+            return new Piece { type = type, color = color, moveCounter = moveCounter };
         }
     }
 

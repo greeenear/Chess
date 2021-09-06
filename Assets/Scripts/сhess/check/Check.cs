@@ -13,8 +13,8 @@ namespace check {
             Dictionary<PieceType,List<Movement>> movement
         ) {
             var kingPosition = FindKing(board, whoseMove);
-            var canAttackKing = new List<MoveRes>();
-            var attack = new List<MoveRes>();
+            var canAttackKing = new List<MoveInfo>();
+            var attack = new List<MoveInfo>();
 
             List<Movement> movmentList = movement[PieceType.Queen];
             canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
@@ -54,11 +54,12 @@ namespace check {
             return kingPosition;
         }
 
-        public static bool CheckMate(Option<Piece>[,] board,
+        public static bool CheckMate(
+            Option<Piece>[,] board,
             PieceColor whoseMove,
             Dictionary<PieceType,List<Movement>> movement
         ) {
-            var canMovePosition = new List<MoveRes>();
+            var canMovePosition = new List<MoveInfo>();
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
@@ -72,7 +73,8 @@ namespace check {
                             canMovePosition = Move.SelectPawnMoves(
                                 board,
                                 new Vector2Int(i, j),
-                                canMovePosition);
+                                canMovePosition
+                            );
                         }
                         canMovePosition = HiddenCheck(
                             canMovePosition,
@@ -81,23 +83,27 @@ namespace check {
                             board
                         );
                         if (canMovePosition.Count != 0) {
+                            if(CheckKing(board, whoseMove, movement)) {
+                                Debug.Log("Check");
+                            }
                             return false;
                         }
                     }
                 }
             }
+            Debug.Log("CheckMate");
 
             return true;
         }
 
-        public static List<MoveRes> HiddenCheck(
-            List<MoveRes> canMovePos,
+        public static List<MoveInfo> HiddenCheck(
+            List<MoveInfo> canMovePos,
             Vector2Int piecePos,
             Dictionary<PieceType,List<Movement>> movement,
             Option<Piece>[,] startBoard
         ) {
             Option<Piece>[,] board;
-            List<MoveRes> newCanMovePositions = new List<MoveRes>();
+            List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
             var color = startBoard[piecePos.x, piecePos.y].Peel().color;
 
             foreach (var pos in canMovePos) {

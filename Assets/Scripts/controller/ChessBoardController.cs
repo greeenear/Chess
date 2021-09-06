@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
+using check;
 using option;
 using rules;
 using json;
@@ -17,16 +18,14 @@ namespace controller {
         private Resource resources;
         private Option<Piece>[,] board = new Option<Piece>[8, 8];
         private GameObject[,] piecesMap = new GameObject[8, 8];
+
         private Vector2Int selectedPos;
-
         private PieceColor whoseMove = PieceColor.White;
-        private List<GameObject> canMoveCells = new List<GameObject>();
 
-        private List<MoveRes> canMovePos = new List<MoveRes>();
+        private List<MoveInfo> canMovePos = new List<MoveInfo>();
 
         private bool isPaused;
 
-        private Vector2Int? enPassant;
         private JsonObject jsonObject;
 
         private void Awake() {
@@ -76,14 +75,14 @@ namespace controller {
             Ray ray;
             RaycastHit hit;
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out hit)) {
+            if (!Physics.Raycast(ray, out hit, 100f)) {
                 return;
             }
 
             var boardPos = resources.boardObj.transform.position;
             Vector2Int clickPoint = new Vector2Int(
-                (int)(hit.point.x - (boardPos.x - Resource.BORD_SIZE)),
-                (int)(hit.point.z - (boardPos.z - Resource.BORD_SIZE))
+                (int)(hit.point.x - (boardPos.x - resources.halfBoardSize)),
+                (int)(hit.point.z - (boardPos.z - resources.halfBoardSize))
             );
 
             var pieceOpt = board[clickPoint.x, clickPoint.y];
@@ -99,27 +98,26 @@ namespace controller {
                         return;
                     }
                     Move(selectedPos, clickPoint);
-                    whoseMove = Chess.ChangeMove(whoseMove);
-                    var checkInfo = Chess.Check(board, selectedPos, whoseMove, resources.movement);
-                    if (checkInfo != null) {
-                        Debug.Log(checkInfo);
+                    if(!isPaused) {
+                        whoseMove = Chess.ChangeMove(whoseMove);
+                        Check.CheckMate(board, whoseMove, resources.movement);
+                        canMovePos.Clear();
                     }
-                    canMovePos.Clear();
-                    RemoveCanMoveCells(canMoveCells);
-                break;
+                    selectedPos = clickPoint;
+                    DestroyHighLightCell();
+                    break;
                 case GameState.PieceNotSelected:
-                    RemoveCanMoveCells(canMoveCells);
+                    DestroyHighLightCell();
                     canMovePos.Clear();
 
                     selectedPos = clickPoint;
                     canMovePos = Chess.GetPossibleMoveCells(
                         resources.movement,
                         selectedPos,
-                        board,
-                        enPassant
+                        board
                     );
-                    ShowCanMoveCells(canMovePos);
-                break;
+                    HighLightCell(canMovePos);
+                    break;
             }
         }
 
@@ -144,9 +142,9 @@ namespace controller {
             piecesMap[x, y] = GameObject.Instantiate(
                 resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color],
                 new Vector3(
-                    x + boardPos.x - 4 + 0.5f,
-                    boardPos.y + 0.5f,
-                    y + boardPos.z - 4 + 0.5f
+                    x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
+                    boardPos.y + resources.halfCellSize,
+                    y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
                 ),
                 Quaternion.identity,
                 resources.boardObj.transform
@@ -157,17 +155,36 @@ namespace controller {
         }
 
         public void Move(Vector2Int start, Vector2Int end) {
-            var moveRes =  move.Move.PieceMove(start, end, board);
-            var boardPos = resources.boardObj.transform.position;
-            if (moveRes.whoDelete != null) {
-                Destroy(piecesMap[end.x, end.y]);
+            MoveInfo currentMove = new MoveInfo();
+            board[end.x, end.y] = board[start.x, start.y];
+            board[start.x, start.y] = Option<Piece>.None();
+            var piece = board[end.x, end.y].Peel();
+            piece.moveCounter++;
+            board[end.x, end.y] = Option<Piece>.Some(piece);
+
+            foreach (var move in canMovePos) {
+                if (move.end == end) {
+                    currentMove = move;
+                }
             }
+            var boardPos = resources.boardObj.transform.position;
+            if (currentMove.whoDelete != null) {
+                Destroy(piecesMap[currentMove.whoDelete.Value.x, currentMove.whoDelete.Value.y]);
+            }
+
             piecesMap[start.x, start.y].transform.position = new Vector3(
-                end.x + boardPos.x - 4 + 0.5f,
-                boardPos.y + 0.5f,
-                end.y + boardPos.z - 4 + 0.5f
+                end.x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
+                boardPos.y + resources.halfCellSize,
+                end.y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
             );
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+
+            if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                if(end.x == 0 || end.x == board.GetLength(1)-1) {
+                    isPaused = true;
+                    resources.changePawn.SetActive(true);
+                }
+            }
         }
 
         public void AddPiecesOnBoard() {
@@ -182,9 +199,9 @@ namespace controller {
                         piecesMap[i, j] = GameObject.Instantiate(
                             resources.pieceList[(int)piece.type * 2 + (int)piece.color],
                             new Vector3(
-                                i + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
-                                boardPos.y + Resource.CELL_SIZE,
-                                j + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                                i + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
+                                boardPos.y + resources.halfCellSize,
+                                j + boardPos.z - resources.halfBoardSize + resources.halfCellSize
                             ),
                             Quaternion.identity,
                             resources.boardObj.transform
@@ -194,25 +211,25 @@ namespace controller {
             }
         }
 
-        public void ShowCanMoveCells(List<MoveRes> canMovePos) {
+        public void HighLightCell(List<MoveInfo> canMovePos) {
             var boardPos = resources.boardObj.transform.position;
-
             foreach (var pos in canMovePos) {
-                canMoveCells.Add(GameObject.Instantiate(
-                   resources.canMoveCell,
+                Instantiate(
+                    resources.canMoveCell,
                     new Vector3(
-                        pos.end.x + boardPos.x - Resource.BORD_SIZE + Resource.CELL_SIZE,
-                        boardPos.y + Resource.CELL_SIZE,
-                        pos.end.y + boardPos.z - Resource.BORD_SIZE + Resource.CELL_SIZE
+                        pos.end.x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
+                        boardPos.y + resources.halfCellSize,
+                        pos.end.y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
                     ),
-                    Quaternion.identity
-                ));
+                    Quaternion.identity,
+                    resources.storageHighlightCells.transform
+                );
             }
         }
 
-        public static void RemoveCanMoveCells(List<GameObject> canMoveCells) {
-            foreach (GameObject cell in canMoveCells) {
-                GameObject.Destroy(cell);
+        public void DestroyHighLightCell() {
+            foreach (Transform child in resources.storageHighlightCells.transform) {
+                Destroy(child.gameObject);
             }
         }
 

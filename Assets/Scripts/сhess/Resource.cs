@@ -9,10 +9,12 @@ namespace chess {
         public GameObject canMoveCell;
         public GameObject gameMenu;
         public GameObject changePawn;
+        public Transform cellSize;
+        public GameObject storageHighlightCells;
         public List<GameObject> pieceList = new List<GameObject>();
 
-        public const float BORD_SIZE = 4;
-        public const float CELL_SIZE = 0.5f;
+        public float halfBoardSize;
+        public float halfCellSize;
 
         public Dictionary<PieceType, List<Movement>> movement =
                 new Dictionary<PieceType, List<Movement>>() {
@@ -59,6 +61,11 @@ namespace chess {
                 }
             }
         };
+
+        private void Awake() {
+            halfBoardSize = cellSize.lossyScale.x * 4;
+            halfCellSize = cellSize.lossyScale.x / 2;
+        }
     }
 }
 
