@@ -66,7 +66,7 @@ namespace move {
                 moveResList = SelectPawnMoves(board, pos, moveResList);
             }
             if(board[pos.x, pos.y].Peel().type == PieceType.King) {
-                Debug.Log("+");
+                CheckCastling();
             }
 
             return moveResList;
@@ -147,7 +147,7 @@ namespace move {
         }
 
         private static List<MoveInfo> CheckCastling() {
-            
+
             return new List<MoveInfo>();
         }
     }
