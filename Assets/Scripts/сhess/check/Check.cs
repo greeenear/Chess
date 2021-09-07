@@ -23,14 +23,14 @@ namespace check {
             canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
 
             foreach (var pos in canAttackKing) {
-                if (board[pos.end.x, pos.end.y].IsSome()) {
-                    movmentList = movement[board[pos.end.x, pos.end.y].Peel().type];
-                    Vector2Int piecePos = new Vector2Int(pos.end.x, pos.end.y);
+                if (board[pos.first.to.x, pos.first.to.y].IsSome()) {
+                    movmentList = movement[board[pos.first.to.x, pos.first.to.y].Peel().type];
+                    Vector2Int piecePos = new Vector2Int(pos.first.to.x, pos.first.to.y);
                     attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board));
                 }
             }
             foreach (var attackPos in attack) {
-                if (kingPosition == attackPos.end) {
+                if (kingPosition == attackPos.first.to) {
                     return true;
                 }
             }
@@ -108,15 +108,15 @@ namespace check {
 
             foreach (var pos in canMovePos) {
                 board = (Option<Piece>[,])startBoard.Clone();
-                board[pos.end.x, pos.end.y] = board[piecePos.x, piecePos.y];
+                board[pos.first.to.x, pos.first.to.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
 
                 if (!CheckKing(board, color, movement)) {
                     newCanMovePositions.Add(pos);
                 }
 
-                board[piecePos.x, piecePos.y] = board[pos.end.x, pos.end.y];
-                board[pos.end.x, pos.end.y] = Option<Piece>.None();
+                board[piecePos.x, piecePos.y] = board[pos.first.to.x, pos.first.to.y];
+                board[pos.first.to.x, pos.first.to.y] = Option<Piece>.None();
             }
 
             return newCanMovePositions;

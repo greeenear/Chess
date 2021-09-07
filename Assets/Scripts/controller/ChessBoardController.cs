@@ -14,7 +14,6 @@ namespace controller {
     }
 
     public class ChessBoardController : MonoBehaviour {
-
         private Resource resources;
         private Option<Piece>[,] board = new Option<Piece>[8, 8];
         private GameObject[,] piecesMap = new GameObject[8, 8];
@@ -27,6 +26,8 @@ namespace controller {
         private bool isPaused;
 
         private JsonObject jsonObject;
+
+        private GameState gameState;
 
         private void Awake() {
            board = Chess.CreateBoard();
@@ -80,10 +81,10 @@ namespace controller {
             }
 
             var boardPos = resources.boardObj.transform.position;
-            Vector2Int selectedPos = new Vector2Int(
-                (int)(hit.point.x - (boardPos.x - resources.halfBoardSize)),
-                (int)(hit.point.z - (boardPos.z - resources.halfBoardSize))
-            );
+            var halfBoardSize = resources.halfBoardSize;
+            var halfSIzeVec = new Vector3(halfBoardSize, halfBoardSize, halfBoardSize);
+            var selectedPosFloat = hit.point - (boardPos - halfSIzeVec);
+            var selectedPos = new Vector2Int((int)selectedPosFloat.x, (int)selectedPosFloat.z);
 
             var pieceOpt = board[selectedPos.x, selectedPos.y];
             GameState gameState = new GameState();
@@ -93,23 +94,25 @@ namespace controller {
 
             switch (gameState) {
                 case GameState.PieceSelected:
-                    int layerMask = 1 << 3;
-                    if (!Physics.Raycast(ray, out hit, 100f, layerMask)) {
+                    if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
-                    if (!CheckCastling(selectedPiece, selectedPos)) {
-                        Move(selectedPiece, selectedPos);
+                    var currentMove = GetCurrentMove(selectedPos);
+                    Move(selectedPiece, currentMove.first.to, currentMove);
+                    if(currentMove.second != null) {
+                        var secondMove = currentMove.second.Value;
+                        Move(secondMove.from, secondMove.to, currentMove);
                     }
-                    if(!isPaused) {
+                    if (!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove);
                         Check.CheckMate(board, whoseMove, resources.movement);
                         canMovePos.Clear();
                     }
                     selectedPiece = selectedPos;
-                    DestroyHighLightCell();
+                    DestroyHighlightCell();
                     break;
                 case GameState.PieceNotSelected:
-                    DestroyHighLightCell();
+                    DestroyHighlightCell();
                     canMovePos.Clear();
 
                     selectedPiece = selectedPos;
@@ -118,7 +121,7 @@ namespace controller {
                         selectedPiece,
                         board
                     );
-                    HighLightCell(canMovePos);
+                    HighlightCell(canMovePos);
                     break;
             }
         }
@@ -156,21 +159,15 @@ namespace controller {
             whoseMove = Chess.ChangeMove(whoseMove);
         }
 
-        private void Move(Vector2Int start, Vector2Int end) {
-            MoveInfo currentMove = new MoveInfo();
+        private void Move(Vector2Int start, Vector2Int end, MoveInfo currentMove) {
             board[end.x, end.y] = board[start.x, start.y];
             board[start.x, start.y] = Option<Piece>.None();
             var piece = board[end.x, end.y].Peel();
             piece.moveCounter++;
             board[end.x, end.y] = Option<Piece>.Some(piece);
 
-            foreach (var move in canMovePos) {
-                if (move.end == end) {
-                    currentMove = move;
-                }
-            }
             var boardPos = resources.boardObj.transform.position;
-            var deletedPiece = currentMove.deletedPiece;
+            var deletedPiece = currentMove.sentenced;
             if (deletedPiece != null) {
                 Destroy(piecesMap[deletedPiece.Value.x, deletedPiece.Value.y]);
             }
@@ -189,24 +186,6 @@ namespace controller {
                 }
             }
 
-        }
-
-        private bool CheckCastling(Vector2Int start, Vector2Int end) {
-            if (board[start.x, start.y].Peel().type == PieceType.King) {
-                int castlingDir = end.y - start.y;
-
-                if (Mathf.Abs(castlingDir) == 2) {
-                    if(castlingDir < 0) {
-                        Move(new Vector2Int(start.x, 0), new Vector2Int(start.x, 3));
-                    } else {
-                        Move(new Vector2Int(start.x, 7), new Vector2Int(start.x, 5));
-                    }
-                    Move(start, end);
-
-                    return true;
-                }
-            }
-            return false;
         }
 
         public void AddPiecesOnBoard() {
@@ -233,15 +212,17 @@ namespace controller {
             }
         }
 
-        private void HighLightCell(List<MoveInfo> canMovePos) {
+        private void HighlightCell(List<MoveInfo> canMovePos) {
             var boardPos = resources.boardObj.transform.position;
+            var halfBoardSize = resources.halfBoardSize;
+            var halfCellSize = resources.halfCellSize;
             foreach (var pos in canMovePos) {
                 Instantiate(
                     resources.canMoveCell,
                     new Vector3(
-                        pos.end.x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
-                        boardPos.y + resources.halfCellSize,
-                        pos.end.y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
+                        pos.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
+                        boardPos.y + halfCellSize,
+                        pos.first.to.y + boardPos.z - halfBoardSize + halfCellSize
                     ),
                     Quaternion.identity,
                     resources.storageHighlightCells.transform
@@ -249,18 +230,27 @@ namespace controller {
             }
         }
 
-        private void DestroyHighLightCell() {
+        private void DestroyHighlightCell() {
             foreach (Transform child in resources.storageHighlightCells.transform) {
                 Destroy(child.gameObject);
             }
         }
 
-        private static void DestroyPieces(GameObject[,] piecesMap) {
+        private void DestroyPieces(GameObject[,] piecesMap) {
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     GameObject.Destroy(piecesMap[i,j]);
                 }
             }
+        }
+
+        private MoveInfo GetCurrentMove(Vector2Int selectedPos) {
+            foreach (var move in canMovePos) {
+                if (move.first.to == selectedPos) {
+                    return move;
+                }
+            }
+            return new MoveInfo();
         }
     }
 }

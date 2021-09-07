@@ -5,9 +5,18 @@ using rules;
 using option;
 
 namespace move {
+    public struct MoveData {
+        public Vector2Int from;
+        public Vector2Int to;
+
+        public static MoveData Mk(Vector2Int from, Vector2Int to) {
+            return new MoveData { from = from, to = to };
+        }
+    }
     public struct MoveInfo {
-        public Vector2Int end;
-        public Vector2Int? deletedPiece;
+        public MoveData first;
+        public MoveData? second;
+        public Vector2Int? sentenced;
     }
 
     public struct StartAngle {
@@ -56,9 +65,11 @@ namespace move {
 
             foreach (var move in possibleMoves) {
                 if (board[move.x, move.y].IsSome()) {
-                    moveResList.Add(new MoveInfo {end = move, deletedPiece = move});
+                    moveResList.Add(new MoveInfo {
+                        first = MoveData.Mk(pos, move), sentenced = move
+                    });
                 } else {
-                    moveResList.Add(new MoveInfo {end = move});
+                    moveResList.Add(new MoveInfo {first = MoveData.Mk(pos, move)});
                 }
             }
 
@@ -92,23 +103,23 @@ namespace move {
             }
 
             foreach (var possible in possibleMoves) {
-                var cell = board[possible.end.x, possible.end.y];
+                var cell = board[possible.first.to.x, possible.first.to.y];
 
                 if (pos.x == 1 && dir == 1 || pos.x == 6 && dir == -1) {
-                    if (possible.end == new Vector2Int(pos.x + 2 * dir, pos.y)
+                    if (possible.first.to == new Vector2Int(pos.x + 2 * dir, pos.y)
                         && cell.IsNone()) {
                         newPossibleMoves.Add(possible);
                     }
                 }
-                if (possible.end == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
+                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
                     newPossibleMoves.Add(possible);
                 }
-                if (possible.end == new Vector2Int(pos.x + dir, pos.y + dir)
+                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y + dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
-                if (possible.end == new Vector2Int(pos.x + dir, pos.y - dir)
+                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y - dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
@@ -127,12 +138,12 @@ namespace move {
             Option<Piece>[,] board,
             Vector2Int pos,
             int colorDir,
-            int horizontalDir
+            int dir
         ) {
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             Option<Piece> checkedCell = new Option<Piece>();
-            if (Board.OnBoard(new Vector2Int(pos.x, pos.y + horizontalDir), boardSize)) {
-                checkedCell = board[pos.x, pos.y + horizontalDir];
+            if (Board.OnBoard(new Vector2Int(pos.x, pos.y + dir), boardSize)) {
+                checkedCell = board[pos.x, pos.y + dir];
             }
             Piece pawn = board[pos.x, pos.y].Peel();
 
@@ -140,14 +151,14 @@ namespace move {
                 && checkedCell.Peel().type == PieceType.Pawn
                 && checkedCell.Peel().moveCounter == 1) {
                 newPossibleMoves.Add(new MoveInfo {
-                    end = new Vector2Int(pos.x + colorDir, pos.y + horizontalDir),
-                    deletedPiece = new Vector2Int(pos.x, pos.y + horizontalDir)}
+                    first = MoveData.Mk(pos, new Vector2Int(pos.x + colorDir, pos.y + dir)),
+                    sentenced = new Vector2Int(pos.x, pos.y + dir)}
                 );
             }
             return newPossibleMoves;
         }
 
-        private static List<MoveInfo> CheckCastling(
+        private static void CheckCastling(
             Vector2Int pos,
             Option<Piece>[,] board,
             List<MoveInfo> newPossibleMoves,
@@ -160,20 +171,22 @@ namespace move {
                 rookPos = new Vector2Int(pos.x, board.GetLength(0) - 1);
             }
             int i = pos.y + dir;
+            if(board[pos.x, pos.y].Peel().moveCounter != 0) {
+                return;
+            }
             while (i != rookPos.y) {
                 i = i + dir;
                 if (board[pos.x, i].IsSome() && board[pos.x, i].Peel().type != PieceType.Rook) {
                     break;
                 } else if (board[pos.x, i].Peel().type == PieceType.Rook){
-                    if (i == rookPos.y) {
-                        newPossibleMoves.Add(new MoveInfo { 
-                            end = new Vector2Int(pos.x, pos.y + 2 * dir) 
+                    if (i == rookPos.y && board[pos.x, i].Peel().moveCounter == 0) {
+                        newPossibleMoves.Add(new MoveInfo {
+                            first = MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2 * dir)),
+                            second = MoveData.Mk(rookPos, new Vector2Int(pos.x, pos.y + dir))
                         });
                     }
                 }
             }
-
-            return new List<MoveInfo>();
         }
     }
 }

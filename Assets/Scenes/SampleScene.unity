@@ -1164,6 +1164,9 @@ MonoBehaviour:
   changePawn: {fileID: 1612427839}
   cellSize: {fileID: 1081007861}
   storageHighlightCells: {fileID: 1281635026}
+  highlightMask:
+    serializedVersion: 2
+    m_Bits: 8
   pieceList:
   - {fileID: 1223592777669084, guid: 3698dddfe4c0a4a8dadcdf81c3255943, type: 3}
   - {fileID: 1916680518618882, guid: eec17d5f9090c4c949f55d97388bfec8, type: 3}

@@ -11,6 +11,8 @@ namespace chess {
         public GameObject changePawn;
         public Transform cellSize;
         public GameObject storageHighlightCells;
+
+        public LayerMask highlightMask;
         public List<GameObject> pieceList = new List<GameObject>();
 
         public float halfBoardSize;
