@@ -97,7 +97,9 @@ namespace controller {
                     if (!Physics.Raycast(ray, out hit, 100f, layerMask)) {
                         return;
                     }
-                    Move(selectedPiece, selectedPos);
+                    if (!CheckCastling(selectedPiece, selectedPos)) {
+                        Move(selectedPiece, selectedPos);
+                    }
                     if(!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove);
                         Check.CheckMate(board, whoseMove, resources.movement);
@@ -154,7 +156,7 @@ namespace controller {
             whoseMove = Chess.ChangeMove(whoseMove);
         }
 
-        public void Move(Vector2Int start, Vector2Int end) {
+        private void Move(Vector2Int start, Vector2Int end) {
             MoveInfo currentMove = new MoveInfo();
             board[end.x, end.y] = board[start.x, start.y];
             board[start.x, start.y] = Option<Piece>.None();
@@ -186,6 +188,25 @@ namespace controller {
                     resources.changePawn.SetActive(true);
                 }
             }
+
+        }
+
+        private bool CheckCastling(Vector2Int start, Vector2Int end) {
+            if (board[start.x, start.y].Peel().type == PieceType.King) {
+                int castlingDir = end.y - start.y;
+
+                if (Mathf.Abs(castlingDir) == 2) {
+                    if(castlingDir < 0) {
+                        Move(new Vector2Int(start.x, 0), new Vector2Int(start.x, 3));
+                    } else {
+                        Move(new Vector2Int(start.x, 7), new Vector2Int(start.x, 5));
+                    }
+                    Move(start, end);
+
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void AddPiecesOnBoard() {
@@ -212,7 +233,7 @@ namespace controller {
             }
         }
 
-        public void HighLightCell(List<MoveInfo> canMovePos) {
+        private void HighLightCell(List<MoveInfo> canMovePos) {
             var boardPos = resources.boardObj.transform.position;
             foreach (var pos in canMovePos) {
                 Instantiate(
@@ -228,7 +249,7 @@ namespace controller {
             }
         }
 
-        public void DestroyHighLightCell() {
+        private void DestroyHighLightCell() {
             foreach (Transform child in resources.storageHighlightCells.transform) {
                 Destroy(child.gameObject);
             }

@@ -65,8 +65,9 @@ namespace move {
             if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
                 moveResList = SelectPawnMoves(board, pos, moveResList);
             }
-            if(board[pos.x, pos.y].Peel().type == PieceType.King) {
-                CheckCastling();
+            if (board[pos.x, pos.y].Peel().type == PieceType.King) {
+                CheckCastling(pos, board, moveResList, -1);
+                CheckCastling(pos, board, moveResList, 1);
             }
 
             return moveResList;
@@ -130,7 +131,7 @@ namespace move {
         ) {
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             Option<Piece> checkedCell = new Option<Piece>();
-            if(Board.OnBoard(new Vector2Int(pos.x, pos.y + horizontalDir), boardSize)) {
+            if (Board.OnBoard(new Vector2Int(pos.x, pos.y + horizontalDir), boardSize)) {
                 checkedCell = board[pos.x, pos.y + horizontalDir];
             }
             Piece pawn = board[pos.x, pos.y].Peel();
@@ -146,7 +147,31 @@ namespace move {
             return newPossibleMoves;
         }
 
-        private static List<MoveInfo> CheckCastling() {
+        private static List<MoveInfo> CheckCastling(
+            Vector2Int pos,
+            Option<Piece>[,] board,
+            List<MoveInfo> newPossibleMoves,
+            int dir
+        ) {
+            Vector2Int rookPos = new Vector2Int();
+            if (dir == -1) {
+                rookPos = new Vector2Int(pos.x, 0);
+            } else {
+                rookPos = new Vector2Int(pos.x, board.GetLength(0) - 1);
+            }
+            int i = pos.y + dir;
+            while (i != rookPos.y) {
+                i = i + dir;
+                if (board[pos.x, i].IsSome() && board[pos.x, i].Peel().type != PieceType.Rook) {
+                    break;
+                } else if (board[pos.x, i].Peel().type == PieceType.Rook){
+                    if (i == rookPos.y) {
+                        newPossibleMoves.Add(new MoveInfo { 
+                            end = new Vector2Int(pos.x, pos.y + 2 * dir) 
+                        });
+                    }
+                }
+            }
 
             return new List<MoveInfo>();
         }
