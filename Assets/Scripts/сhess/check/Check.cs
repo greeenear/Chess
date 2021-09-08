@@ -10,23 +10,24 @@ namespace check {
         public static bool CheckKing(
             Option<Piece>[,] board,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement
+            Dictionary<PieceType,List<Movement>> movement,
+            MoveInfo lastMove
         ) {
             var kingPosition = FindKing(board, whoseMove);
             var canAttackKing = new List<MoveInfo>();
             var attack = new List<MoveInfo>();
 
             List<Movement> movmentList = movement[PieceType.Queen];
-            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
+            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board, lastMove));
 
             movmentList = movement[PieceType.Knight];
-            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board));
+            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board, lastMove));
 
             foreach (var pos in canAttackKing) {
                 if (board[pos.first.to.x, pos.first.to.y].IsSome()) {
                     movmentList = movement[board[pos.first.to.x, pos.first.to.y].Peel().type];
                     Vector2Int piecePos = new Vector2Int(pos.first.to.x, pos.first.to.y);
-                    attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board));
+                    attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board, lastMove));
                 }
             }
             foreach (var attackPos in attack) {
@@ -57,7 +58,8 @@ namespace check {
         public static bool CheckMate(
             Option<Piece>[,] board,
             PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement
+            Dictionary<PieceType,List<Movement>> movement,
+            MoveInfo lastMove
         ) {
             var canMovePosition = new List<MoveInfo>();
 
@@ -68,22 +70,24 @@ namespace check {
                         List<Movement> movmentList = movement[board[i, j].Peel().type];
                         Vector2Int pos = new Vector2Int(i, j);
 
-                        canMovePosition = Move.GetMoveCells(movmentList, pos, board);
+                        canMovePosition = Move.GetMoveCells(movmentList, pos, board,lastMove);
                         if (board[i, j].Peel().type == PieceType.Pawn) {
                             canMovePosition = Move.SelectPawnMoves(
                                 board,
                                 new Vector2Int(i, j),
-                                canMovePosition
+                                canMovePosition,
+                                lastMove
                             );
                         }
                         canMovePosition = HiddenCheck(
                             canMovePosition,
                             new Vector2Int(i, j),
                             movement,
-                            board
+                            board,
+                            lastMove
                         );
                         if (canMovePosition.Count != 0) {
-                            if(CheckKing(board, whoseMove, movement)) {
+                            if(CheckKing(board, whoseMove, movement, lastMove)) {
                                 Debug.Log("Check");
                             }
                             return false;
@@ -100,7 +104,8 @@ namespace check {
             List<MoveInfo> canMovePos,
             Vector2Int piecePos,
             Dictionary<PieceType,List<Movement>> movement,
-            Option<Piece>[,] startBoard
+            Option<Piece>[,] startBoard,
+            MoveInfo lastMove
         ) {
             Option<Piece>[,] board;
             List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
@@ -111,7 +116,7 @@ namespace check {
                 board[pos.first.to.x, pos.first.to.y] = board[piecePos.x, piecePos.y];
                 board[piecePos.x, piecePos.y] = Option<Piece>.None();
 
-                if (!CheckKing(board, color, movement)) {
+                if (!CheckKing(board, color, movement, lastMove)) {
                     newCanMovePositions.Add(pos);
                 }
 

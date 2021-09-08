@@ -27,6 +27,8 @@ namespace controller {
 
         private JsonObject jsonObject;
 
+        private MoveInfo lastMove;
+
         private GameState gameState;
 
         private void Awake() {
@@ -35,6 +37,7 @@ namespace controller {
 
         private void Start() {
             resources = gameObject.GetComponent<Resource>();
+            move.Move.changePawn += ShowPieceSelectionMenu;
             AddPiecesOnBoard();
         }
 
@@ -61,7 +64,7 @@ namespace controller {
             var gameInfo = SaveLoad.LoadFromJson("json.json", jsonObject);
             board = new Option<Piece>[8,8];
 
-            whoseMove = gameInfo.gameStats.whoseMove;
+            whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
@@ -87,7 +90,7 @@ namespace controller {
             var selectedPos = new Vector2Int((int)selectedPosFloat.x, (int)selectedPosFloat.z);
 
             var pieceOpt = board[selectedPos.x, selectedPos.y];
-            GameState gameState = new GameState();
+            GameState gameState = GameState.PieceSelected;
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
                 gameState = GameState.PieceNotSelected;
             }
@@ -98,14 +101,15 @@ namespace controller {
                         return;
                     }
                     var currentMove = GetCurrentMove(selectedPos);
-                    Move(selectedPiece, currentMove.first.to, currentMove);
+                    Move(currentMove.first.from, currentMove.first.to, currentMove);
                     if(currentMove.second != null) {
                         var secondMove = currentMove.second.Value;
                         Move(secondMove.from, secondMove.to, currentMove);
                     }
+                    lastMove = currentMove;
                     if (!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove);
-                        Check.CheckMate(board, whoseMove, resources.movement);
+                        Check.CheckMate(board, whoseMove, resources.movement, lastMove);
                         canMovePos.Clear();
                     }
                     selectedPiece = selectedPos;
@@ -116,10 +120,11 @@ namespace controller {
                     canMovePos.Clear();
 
                     selectedPiece = selectedPos;
-                    canMovePos = Chess.GetPossibleMoveCells(
+                    canMovePos = Chess.GetPossibleMoves(
                         resources.movement,
                         selectedPiece,
-                        board
+                        board,
+                        lastMove
                     );
                     HighlightCell(canMovePos);
                     break;
@@ -160,16 +165,12 @@ namespace controller {
         }
 
         private void Move(Vector2Int start, Vector2Int end, MoveInfo currentMove) {
-            board[end.x, end.y] = board[start.x, start.y];
-            board[start.x, start.y] = Option<Piece>.None();
-            var piece = board[end.x, end.y].Peel();
-            piece.moveCounter++;
-            board[end.x, end.y] = Option<Piece>.Some(piece);
+            move.Move.MovePiece(start, end, board);
 
             var boardPos = resources.boardObj.transform.position;
-            var deletedPiece = currentMove.sentenced;
-            if (deletedPiece != null) {
-                Destroy(piecesMap[deletedPiece.Value.x, deletedPiece.Value.y]);
+            var sentencedPiece = currentMove.sentenced;
+            if (sentencedPiece != null) {
+                Destroy(piecesMap[sentencedPiece.Value.x, sentencedPiece.Value.y]);
             }
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
@@ -178,14 +179,6 @@ namespace controller {
                 end.y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
             );
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
-
-            if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
-                if (end.x == 0 || end.x == board.GetLength(1)-1) {
-                    isPaused = true;
-                    resources.changePawn.SetActive(true);
-                }
-            }
-
         }
 
         public void AddPiecesOnBoard() {
@@ -204,6 +197,7 @@ namespace controller {
                                 boardPos.y + resources.halfCellSize,
                                 j + boardPos.z - resources.halfBoardSize + resources.halfCellSize
                             ),
+                            
                             Quaternion.identity,
                             resources.boardObj.transform
                         );
@@ -217,6 +211,18 @@ namespace controller {
             var halfBoardSize = resources.halfBoardSize;
             var halfCellSize = resources.halfCellSize;
             foreach (var pos in canMovePos) {
+                if(board[pos.first.to.x, pos.first.to.y].IsSome()) {
+                    Instantiate(
+                        resources.underAttackCell,
+                        new Vector3(
+                            pos.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
+                            boardPos.y + halfCellSize,
+                            pos.first.to.y + boardPos.z - halfBoardSize + halfCellSize
+                        ),
+                        Quaternion.identity,
+                        resources.storageHighlightCells.transform
+                    );
+                }
                 Instantiate(
                     resources.canMoveCell,
                     new Vector3(
@@ -228,6 +234,11 @@ namespace controller {
                     resources.storageHighlightCells.transform
                 );
             }
+        }
+
+        private void ShowPieceSelectionMenu() {
+            resources.changePawn.SetActive(true);
+            isPaused = true;
         }
 
         private void DestroyHighlightCell() {

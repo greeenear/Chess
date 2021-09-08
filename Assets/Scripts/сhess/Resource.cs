@@ -7,6 +7,7 @@ namespace chess {
     public class Resource : MonoBehaviour {
         public GameObject boardObj;
         public GameObject canMoveCell;
+        public GameObject underAttackCell;
         public GameObject gameMenu;
         public GameObject changePawn;
         public Transform cellSize;

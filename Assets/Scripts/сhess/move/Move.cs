@@ -3,6 +3,7 @@ using UnityEngine;
 using board;
 using rules;
 using option;
+using System;
 
 namespace move {
     public struct MoveData {
@@ -25,10 +26,27 @@ namespace move {
     }
 
     public static class Move {
+        public static event Action changePawn;
+
+        public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
+            board[end.x, end.y] = board[start.x, start.y];
+            board[start.x, start.y] = Option<Piece>.None();
+            var piece = board[end.x, end.y].Peel();
+            piece.moveCounter++;
+            board[end.x, end.y] = Option<Piece>.Some(piece);
+
+            if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+                if (end.x == 0 || end.x == board.GetLength(1)-1) {
+                    changePawn?.Invoke();
+                }
+            }
+        }
+
         public static List<MoveInfo> GetMoveCells(
             List<Movement> moveList,
             Vector2Int pos,
-            Option<Piece>[,] board
+            Option<Piece>[,] board,
+            MoveInfo lastMove
         ) {
             var possibleMoves = new List<Vector2Int>();
             var moveResList = new List<MoveInfo>();
@@ -74,7 +92,7 @@ namespace move {
             }
 
             if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                moveResList = SelectPawnMoves(board, pos, moveResList);
+                moveResList = SelectPawnMoves(board, pos, moveResList, lastMove);
             }
             if (board[pos.x, pos.y].Peel().type == PieceType.King) {
                 CheckCastling(pos, board, moveResList, -1);
@@ -87,19 +105,17 @@ namespace move {
         public static List<MoveInfo> SelectPawnMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            List<MoveInfo> possibleMoves
+            List<MoveInfo> possibleMoves,
+            MoveInfo lastMove
         ) {
             Piece pawn = board[pos.x, pos.y].Peel();
             int dir;
-            int enPassantX;
             var newPossibleMoves = new List<MoveInfo>();
 
             if (pawn.color == PieceColor.White) {
                 dir = -1;
-                enPassantX = 3;
             } else {
                 dir = 1;
-                enPassantX = board.GetLength(1) - 4;
             }
 
             foreach (var possible in possibleMoves) {
@@ -125,9 +141,14 @@ namespace move {
                     newPossibleMoves.Add(possible);
                 }
             }
-            if (pos.x == enPassantX) {
-                CheckEnPassant(newPossibleMoves, board, pos, dir, 1);
-                CheckEnPassant(newPossibleMoves, board, pos, dir, -1);
+
+            if (board[lastMove.first.to.x, lastMove.first.to.y].Peel().type == PieceType.Pawn 
+                && Mathf.Abs(lastMove.first.from.x - lastMove.first.to.x) == 2) {
+                if (lastMove.first.from.y - pos.y == 1) {
+                    CheckEnPassant(newPossibleMoves, board, pos, dir, 1);
+                } else if (lastMove.first.from.y - pos.y == -1) {
+                    CheckEnPassant(newPossibleMoves, board, pos, dir, -1);
+                }
             }
 
             return newPossibleMoves;

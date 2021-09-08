@@ -11,18 +11,19 @@ namespace chess {
         public Vector2Int? rookPos;
     }
     public static class Chess {
-        public static List<MoveInfo> GetPossibleMoveCells(
+        public static List<MoveInfo> GetPossibleMoves(
             Dictionary<PieceType,List<Movement>> movement,
             Vector2Int pos,
-            Option<Piece>[,] board
+            Option<Piece>[,] board,
+            MoveInfo lastMove
         ) {
-            var possibleMoveCells = new List<MoveInfo>();
+            var possibleMoves = new List<MoveInfo>();
             var movementList = movement[board[pos.x, pos.y].Peel().type];
 
-            possibleMoveCells = move.Move.GetMoveCells(movementList, pos, board);
-            possibleMoveCells = check.Check.HiddenCheck(possibleMoveCells, pos, movement, board);
+            possibleMoves = move.Move.GetMoveCells(movementList, pos, board, lastMove);
+            possibleMoves = check.Check.HiddenCheck(possibleMoves, pos, movement, board, lastMove);
 
-            return possibleMoveCells;
+            return possibleMoves;
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {
