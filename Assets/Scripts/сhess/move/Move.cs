@@ -192,7 +192,7 @@ namespace move {
                 rookPos = new Vector2Int(pos.x, board.GetLength(0) - 1);
             }
             int i = pos.y + dir;
-            if(board[pos.x, pos.y].Peel().moveCounter != 0) {
+            if (board[pos.x, pos.y].Peel().moveCounter != 0) {
                 return;
             }
             while (i != rookPos.y) {

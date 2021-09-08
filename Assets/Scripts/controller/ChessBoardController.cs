@@ -102,7 +102,7 @@ namespace controller {
                     }
                     var currentMove = GetCurrentMove(selectedPos);
                     Move(currentMove.first.from, currentMove.first.to, currentMove);
-                    if(currentMove.second != null) {
+                    if (currentMove.second.HasValue) {
                         var secondMove = currentMove.second.Value;
                         Move(secondMove.from, secondMove.to, currentMove);
                     }
@@ -169,7 +169,7 @@ namespace controller {
 
             var boardPos = resources.boardObj.transform.position;
             var sentencedPiece = currentMove.sentenced;
-            if (sentencedPiece != null) {
+            if (sentencedPiece.HasValue) {
                 Destroy(piecesMap[sentencedPiece.Value.x, sentencedPiece.Value.y]);
             }
 
@@ -210,8 +210,9 @@ namespace controller {
             var boardPos = resources.boardObj.transform.position;
             var halfBoardSize = resources.halfBoardSize;
             var halfCellSize = resources.halfCellSize;
+
             foreach (var pos in canMovePos) {
-                if(board[pos.first.to.x, pos.first.to.y].IsSome()) {
+                if (board[pos.first.to.x, pos.first.to.y].IsSome()) {
                     Instantiate(
                         resources.underAttackCell,
                         new Vector3(
@@ -261,6 +262,7 @@ namespace controller {
                     return move;
                 }
             }
+
             return new MoveInfo();
         }
     }

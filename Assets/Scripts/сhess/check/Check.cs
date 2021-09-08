@@ -87,9 +87,10 @@ namespace check {
                             lastMove
                         );
                         if (canMovePosition.Count != 0) {
-                            if(CheckKing(board, whoseMove, movement, lastMove)) {
+                            if (CheckKing(board, whoseMove, movement, lastMove)) {
                                 Debug.Log("Check");
                             }
+
                             return false;
                         }
                     }
