@@ -1160,6 +1160,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardObj: {fileID: 965990723}
   canMoveCell: {fileID: 6169466877868371687, guid: 28ba2eb344ba1984387386c4f2470078, type: 3}
+  underAttackCell: {fileID: 1527063711133394628, guid: a8bd9aa60866f6240bb2d51e83959785, type: 3}
   gameMenu: {fileID: 1923249195}
   changePawn: {fileID: 1612427839}
   cellSize: {fileID: 1081007861}
