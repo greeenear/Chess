@@ -26,20 +26,12 @@ namespace move {
     }
 
     public static class Move {
-        public static event Action changePawn;
-
         public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
             board[end.x, end.y] = board[start.x, start.y];
             board[start.x, start.y] = Option<Piece>.None();
             var piece = board[end.x, end.y].Peel();
             piece.moveCounter++;
             board[end.x, end.y] = Option<Piece>.Some(piece);
-
-            // if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
-            //     if (end.x == 0 || end.x == board.GetLength(1)-1) {
-            //         changePawn?.Invoke();
-            //     }
-            // }
         }
 
         public static List<MoveInfo> GetMoveCells(

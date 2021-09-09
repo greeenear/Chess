@@ -8,9 +8,10 @@ using json;
 using move;
 
 namespace controller {
-    enum GameState {
-        PieceSelected,
-        PieceNotSelected
+    enum PlayerAction {
+        None,
+        Select,
+        Move
     }
 
     public class ChessBoardController : MonoBehaviour {
@@ -26,7 +27,7 @@ namespace controller {
 
         private JsonObject jsonObject;
 
-        private GameState gameState;
+        private PlayerAction playerAction;
         private bool isPaused;
 
         private void Awake() {
@@ -35,7 +36,6 @@ namespace controller {
 
         private void Start() {
             resources = gameObject.GetComponent<Resource>();
-            move.Move.changePawn += ShowPieceSelectionMenu;
             completedMoves.Add(new MoveInfo());
             AddPiecesOnBoard();
         }
@@ -90,13 +90,12 @@ namespace controller {
             var selectedPos = new Vector2Int((int)selectedPosFloat.x, (int)selectedPosFloat.z);
 
             var pieceOpt = board[selectedPos.x, selectedPos.y];
-            GameState gameState = GameState.PieceSelected;
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
-                gameState = GameState.PieceNotSelected;
+                playerAction = PlayerAction.Select;
             }
 
-            switch (gameState) {
-                case GameState.PieceSelected:
+            switch (playerAction) {
+                case PlayerAction.Move:
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
@@ -121,12 +120,12 @@ namespace controller {
                     }
                     if (Chess.CheckDraw(completedMoves)) {
                         isPaused = true;
-                        Debug.Log("draw");
                     }
                     selectedPiece = selectedPos;
                     DestroyHighlightCell();
+                    playerAction = PlayerAction.None;
                     break;
-                case GameState.PieceNotSelected:
+                case PlayerAction.Select:
                     DestroyHighlightCell();
                     canMovePos.Clear();
                     lastMove = completedMoves[completedMoves.Count - 1];
@@ -138,6 +137,7 @@ namespace controller {
                         lastMove
                     );
                     HighlightCell(canMovePos);
+                    playerAction = PlayerAction.Move;
                     break;
             }
         }
