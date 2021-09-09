@@ -36,6 +36,47 @@ namespace chess {
             return whoseMove;
         }
 
+        public static bool CheckChangePawn(Option<Piece>[,] board, MoveInfo lastMove) {
+            if (board[lastMove.first.to.x, lastMove.first.to.y].Peel().type == PieceType.Pawn) {
+                if (lastMove.first.to.x == 0 || lastMove.first.to.x == board.GetLength(1)-1) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static bool CheckDraw(List<MoveInfo> completedMoves) {
+            int moveCounter = 0;
+            if (completedMoves.Count > 10) {
+                var lastMove = completedMoves[completedMoves.Count - 1];
+
+                for (int i = completedMoves.Count - 1; i > completedMoves.Count - 10; i = i - 2) {
+                    if (completedMoves[i].first.to == lastMove.first.to 
+                        && completedMoves[i].first.from == lastMove.first.from) {
+                        moveCounter++;
+                    }
+                }
+            }
+            if (moveCounter == 3) {
+                return true;
+            }
+
+            if (completedMoves.Count > 50) {
+                moveCounter = 0;
+                for (int i = completedMoves.Count - 1; i > completedMoves.Count - 50; i = i - 2) {
+                    if(completedMoves[i].sentenced == null) {
+                        moveCounter++;
+                    }
+                }
+            }
+            if (moveCounter == 50) {
+                return true;
+            }
+
+            return false;
+        }
+
         public static void ChangePiece(
             Option<Piece>[,] board,
             Vector2Int pos,

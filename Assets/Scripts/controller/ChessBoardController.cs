@@ -22,14 +22,12 @@ namespace controller {
         private PieceColor whoseMove = PieceColor.White;
 
         private List<MoveInfo> canMovePos = new List<MoveInfo>();
-
-        private bool isPaused;
+        private List<MoveInfo> completedMoves = new List<MoveInfo>();
 
         private JsonObject jsonObject;
 
-        private MoveInfo lastMove;
-
         private GameState gameState;
+        private bool isPaused;
 
         private void Awake() {
            board = Chess.CreateBoard();
@@ -38,6 +36,7 @@ namespace controller {
         private void Start() {
             resources = gameObject.GetComponent<Resource>();
             move.Move.changePawn += ShowPieceSelectionMenu;
+            completedMoves.Add(new MoveInfo());
             AddPiecesOnBoard();
         }
 
@@ -60,8 +59,8 @@ namespace controller {
             SaveLoad.WriteJson(SaveLoad.GetJsonType<JsonObject>(jsonObject), "json.json");
         }
 
-        public void Load() {
-            var gameInfo = SaveLoad.LoadFromJson("json.json", jsonObject);
+        public void Load(string path) {
+            var gameInfo = SaveLoad.LoadFromJson(path, jsonObject);
             board = new Option<Piece>[8,8];
 
             whoseMove = gameInfo.gameStats.whoseMove; 
@@ -69,6 +68,7 @@ namespace controller {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
             AddPiecesOnBoard();
+            resources.gameMenu.SetActive(false);
         }
  
         private void Update() {
@@ -106,11 +106,22 @@ namespace controller {
                         var secondMove = currentMove.second.Value;
                         Move(secondMove.from, secondMove.to, currentMove);
                     }
-                    lastMove = currentMove;
+                    completedMoves.Add(currentMove);
+                    var lastMove = completedMoves[completedMoves.Count - 1];
+                    if(Chess.CheckChangePawn(board, lastMove)) {
+                        resources.changePawn.SetActive(true);
+                        isPaused = true;
+                    }
                     if (!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove);
-                        Check.CheckMate(board, whoseMove, resources.movement, lastMove);
+                        if (Check.CheckMate(board, whoseMove, resources.movement, lastMove)) {
+                            resources.gameMenu.SetActive(true);
+                        }
                         canMovePos.Clear();
+                    }
+                    if (Chess.CheckDraw(completedMoves)) {
+                        isPaused = true;
+                        Debug.Log("draw");
                     }
                     selectedPiece = selectedPos;
                     DestroyHighlightCell();
@@ -118,7 +129,7 @@ namespace controller {
                 case GameState.PieceNotSelected:
                     DestroyHighlightCell();
                     canMovePos.Clear();
-
+                    lastMove = completedMoves[completedMoves.Count - 1];
                     selectedPiece = selectedPos;
                     canMovePos = Chess.GetPossibleMoves(
                         resources.movement,

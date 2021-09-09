@@ -35,11 +35,11 @@ namespace move {
             piece.moveCounter++;
             board[end.x, end.y] = Option<Piece>.Some(piece);
 
-            if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
-                if (end.x == 0 || end.x == board.GetLength(1)-1) {
-                    changePawn?.Invoke();
-                }
-            }
+            // if (board[end.x, end.y].Peel().type == PieceType.Pawn) {
+            //     if (end.x == 0 || end.x == board.GetLength(1)-1) {
+            //         changePawn?.Invoke();
+            //     }
+            // }
         }
 
         public static List<MoveInfo> GetMoveCells(
@@ -67,10 +67,10 @@ namespace move {
                         maxLength
                     ));
                 } else {
-                    if (board[pos.x, pos.y].Peel().type == PieceType.Knight) {
-                        startAngle = StartAngle.Knight;
-                    } else {
+                    if (board[pos.x, pos.y].Peel().type == PieceType.King) {
                         startAngle = StartAngle.King;
+                    } else {
+                        startAngle = StartAngle.Knight;
                     }
                     possibleMoves = Rules.GetCirclularMoves(
                         board,

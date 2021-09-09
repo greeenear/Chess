@@ -49,6 +49,7 @@ namespace check {
                         kingPosition.x = i;
                         kingPosition.y = j;
                     }
+
                 }
             }
 
@@ -96,7 +97,11 @@ namespace check {
                     }
                 }
             }
-            Debug.Log("CheckMate");
+            if (CheckKing(board, whoseMove, movement, lastMove)) {
+                Debug.Log("CheckMate");
+            } else {
+                Debug.Log("stalemate");
+            }
 
             return true;
         }
