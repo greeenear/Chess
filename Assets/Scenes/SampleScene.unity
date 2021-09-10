@@ -1314,8 +1314,8 @@ MonoBehaviour:
   - {fileID: 1996616484037168, guid: fd58da484cc87433689394934ae1baa1, type: 3}
   - {fileID: 1037745782791696, guid: ae91a18cadda2480e9478488d2142fde, type: 3}
   - {fileID: 1764167493807252, guid: 27b957161063143d6a75fad94db1125f, type: 3}
-  halfBoardSize: 0
-  halfCellSize: 0
+  halfBoardSize: {x: 0, y: 0, z: 0}
+  halfCellSize: {x: 0, y: 0, z: 0}
 --- !u!114 &965990727
 MonoBehaviour:
   m_ObjectHideFlags: 0
