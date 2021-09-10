@@ -14,9 +14,20 @@ namespace move {
             return new MoveData { from = from, to = to };
         }
     }
-    public struct MoveInfo {
+
+    public struct DoubleMove {
         public MoveData first;
         public MoveData? second;
+
+        public static DoubleMove MkSingleMove(MoveData first) {
+            return new DoubleMove { first = first};
+        }
+        public static DoubleMove MkDoubleMove(MoveData first, MoveData? second) {
+            return new DoubleMove {first = first, second = second};
+        }
+    }
+    public struct MoveInfo {
+        public DoubleMove doubleMove;
         public Vector2Int? sentenced;
     }
 
@@ -75,11 +86,18 @@ namespace move {
 
             foreach (var move in possibleMoves) {
                 if (board[move.x, move.y].IsSome()) {
-                    moveResList.Add(new MoveInfo {
-                        first = MoveData.Mk(pos, move), sentenced = move
-                    });
+                    moveResList.Add(
+                        new MoveInfo {
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move)), 
+                            sentenced = move
+                        }
+                    );
                 } else {
-                    moveResList.Add(new MoveInfo {first = MoveData.Mk(pos, move)});
+                    moveResList.Add(
+                        new MoveInfo {
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move))
+                        }
+                    );
                 }
             }
 
@@ -111,34 +129,36 @@ namespace move {
             }
 
             foreach (var possible in possibleMoves) {
-                var cell = board[possible.first.to.x, possible.first.to.y];
+                var cell = board[possible.doubleMove.first.to.x, possible.doubleMove.first.to.y];
 
                 if (pos.x == 1 && dir == 1 || pos.x == 6 && dir == -1) {
-                    if (possible.first.to == new Vector2Int(pos.x + 2 * dir, pos.y)
+                    if (possible.doubleMove.first.to == new Vector2Int(pos.x + 2 * dir, pos.y)
                         && cell.IsNone()) {
                         newPossibleMoves.Add(possible);
                     }
                 }
-                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
+                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y) 
+                    && cell.IsNone()) {
                     newPossibleMoves.Add(possible);
                 }
-                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y + dir)
+                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y + dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
-                if (possible.first.to == new Vector2Int(pos.x + dir, pos.y - dir)
+                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y - dir)
                     && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
                     newPossibleMoves.Add(possible);
                 }
             }
-
-            if (board[lastMove.first.to.x, lastMove.first.to.y].Peel().type == PieceType.Pawn 
-                && Mathf.Abs(lastMove.first.from.x - lastMove.first.to.x) == 2) {
-                if (lastMove.first.from.y - pos.y == 1) {
+            var piece = board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y];
+            var moveLength = lastMove.doubleMove.first.from.x - lastMove.doubleMove.first.to.x;
+            if (piece.Peel().type == PieceType.Pawn 
+                && Mathf.Abs(moveLength) == 2) {
+                if (lastMove.doubleMove.first.from.y - pos.y == 1) {
                     CheckEnPassant(newPossibleMoves, board, pos, dir, 1);
-                } else if (lastMove.first.from.y - pos.y == -1) {
+                } else if (lastMove.doubleMove.first.from.y - pos.y == -1) {
                     CheckEnPassant(newPossibleMoves, board, pos, dir, -1);
                 }
             }
@@ -163,9 +183,16 @@ namespace move {
             if (checkedCell.IsSome() && checkedCell.Peel().color != pawn.color
                 && checkedCell.Peel().type == PieceType.Pawn
                 && checkedCell.Peel().moveCounter == 1) {
-                newPossibleMoves.Add(new MoveInfo {
-                    first = MoveData.Mk(pos, new Vector2Int(pos.x + colorDir, pos.y + dir)),
-                    sentenced = new Vector2Int(pos.x, pos.y + dir)}
+                newPossibleMoves.Add(
+                    new MoveInfo {
+                        doubleMove = DoubleMove.MkSingleMove(
+                            MoveData.Mk(
+                                pos,
+                                new Vector2Int(pos.x + colorDir, pos.y + dir)
+                            )
+                        ),
+                        sentenced = new Vector2Int(pos.x, pos.y + dir)
+                    }
                 );
             }
             return newPossibleMoves;
@@ -194,8 +221,9 @@ namespace move {
                 } else if (board[pos.x, i].Peel().type == PieceType.Rook){
                     if (i == rookPos.y && board[pos.x, i].Peel().moveCounter == 0) {
                         newPossibleMoves.Add(new MoveInfo {
-                            first = MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2 * dir)),
-                            second = MoveData.Mk(rookPos, new Vector2Int(pos.x, pos.y + dir))
+                            doubleMove = DoubleMove.MkDoubleMove(
+                                MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2 * dir)),
+                                MoveData.Mk(rookPos, new Vector2Int(pos.x, pos.y + dir)))
                         });
                     }
                 }

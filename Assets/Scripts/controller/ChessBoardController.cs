@@ -24,6 +24,7 @@ namespace controller {
 
         private List<MoveInfo> canMovePos = new List<MoveInfo>();
         private List<MoveInfo> completedMoves = new List<MoveInfo>();
+        private int countMoveWithoutTaking;
 
         private JsonObject jsonObject;
 
@@ -84,10 +85,11 @@ namespace controller {
             }
 
             var boardPos = resources.boardObj.transform.position;
-            var halfBoardSize = resources.halfBoardSize;
-            var halfSIzeVec = new Vector3(halfBoardSize, halfBoardSize, halfBoardSize);
-            var selectedPosFloat = hit.point - (boardPos - halfSIzeVec);
+            var selectedPosFloat = hit.point - (boardPos - resources.halfBoardSize);
+
             var selectedPos = new Vector2Int((int)selectedPosFloat.x, (int)selectedPosFloat.z);
+            var currentMove = GetCurrentMove(selectedPos);
+            var firstMove = currentMove.doubleMove.first;
 
             var pieceOpt = board[selectedPos.x, selectedPos.y];
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
@@ -99,45 +101,25 @@ namespace controller {
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
-                    var currentMove = GetCurrentMove(selectedPos);
-                    Move(currentMove.first.from, currentMove.first.to, currentMove);
-                    if (currentMove.second.HasValue) {
-                        var secondMove = currentMove.second.Value;
-                        Move(secondMove.from, secondMove.to, currentMove);
-                    }
+                    Move(firstMove.from, firstMove.to, currentMove);
                     completedMoves.Add(currentMove);
                     var lastMove = completedMoves[completedMoves.Count - 1];
-                    if(Chess.CheckChangePawn(board, lastMove)) {
-                        resources.changePawn.SetActive(true);
-                        isPaused = true;
-                    }
-                    if (!isPaused) {
-                        whoseMove = Chess.ChangeMove(whoseMove);
-                        if (Check.CheckMate(board, whoseMove, resources.movement, lastMove)) {
-                            resources.gameMenu.SetActive(true);
-                        }
-                        canMovePos.Clear();
-                    }
-                    if (Chess.CheckDraw(completedMoves)) {
-                        isPaused = true;
-                    }
+                    whoseMove = Chess.ChangeMove(whoseMove, ref isPaused, board, lastMove);
+                    Chess.CheckDraw(completedMoves, countMoveWithoutTaking);
+                    Check.NewCheck(canMovePos,whoseMove, Storage.movement, board, lastMove);
+                    canMovePos.Clear();
                     selectedPiece = selectedPos;
-                    DestroyHighlightCell();
                     playerAction = PlayerAction.None;
+                    DestroyHighlightCell();
                     break;
                 case PlayerAction.Select:
                     DestroyHighlightCell();
                     canMovePos.Clear();
                     lastMove = completedMoves[completedMoves.Count - 1];
                     selectedPiece = selectedPos;
-                    canMovePos = Chess.GetPossibleMoves(
-                        resources.movement,
-                        selectedPiece,
-                        board,
-                        lastMove
-                    );
-                    HighlightCell(canMovePos);
+                    canMovePos = Chess.GetPossibleMoves(selectedPiece, board, lastMove);
                     playerAction = PlayerAction.Move;
+                    HighlightCell(canMovePos);
                     break;
             }
         }
@@ -163,38 +145,48 @@ namespace controller {
             piecesMap[x, y] = GameObject.Instantiate(
                 resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color],
                 new Vector3(
-                    x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
-                    boardPos.y + resources.halfCellSize,
-                    y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
+                    x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
+                    boardPos.y + resources.halfCellSize.x,
+                    y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
                 ),
                 Quaternion.identity,
                 resources.boardObj.transform
             );
             isPaused = false;
             resources.changePawn.SetActive(false);
-            whoseMove = Chess.ChangeMove(whoseMove);
+            var lastMove = completedMoves[completedMoves.Count - 1];
+            whoseMove = Chess.ChangeMove(whoseMove, ref isPaused, board, lastMove);
         }
 
         private void Move(Vector2Int start, Vector2Int end, MoveInfo currentMove) {
             move.Move.MovePiece(start, end, board);
+            countMoveWithoutTaking++;
 
             var boardPos = resources.boardObj.transform.position;
             var sentencedPiece = currentMove.sentenced;
             if (sentencedPiece.HasValue) {
+                countMoveWithoutTaking = 0;
                 Destroy(piecesMap[sentencedPiece.Value.x, sentencedPiece.Value.y]);
             }
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
-                end.x + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
-                boardPos.y + resources.halfCellSize,
-                end.y + boardPos.z - resources.halfBoardSize + resources.halfCellSize
+                end.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
+                boardPos.y + resources.halfCellSize.x,
+                end.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
             );
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+            if (currentMove.doubleMove.second.HasValue) {
+                var secondMove = currentMove.doubleMove.second.Value;
+                currentMove.doubleMove.second = null;
+                Move(secondMove.from, secondMove.to, currentMove);
+            }
         }
 
         public void AddPiecesOnBoard() {
             DestroyPieces(piecesMap);
             var boardPos = resources.boardObj.transform.position;
+            var halfBoardSize = resources.halfBoardSize.x;
+            var halfCellSize = resources.halfCellSize.x;
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
@@ -204,11 +196,11 @@ namespace controller {
                         piecesMap[i, j] = GameObject.Instantiate(
                             resources.pieceList[(int)piece.type * 2 + (int)piece.color],
                             new Vector3(
-                                i + boardPos.x - resources.halfBoardSize + resources.halfCellSize,
-                                boardPos.y + resources.halfCellSize,
-                                j + boardPos.z - resources.halfBoardSize + resources.halfCellSize
+                                i + boardPos.x - halfBoardSize + halfCellSize,
+                                boardPos.y + halfCellSize,
+                                j + boardPos.z - halfBoardSize + halfCellSize
                             ),
-                            
+
                             Quaternion.identity,
                             resources.boardObj.transform
                         );
@@ -219,17 +211,17 @@ namespace controller {
 
         private void HighlightCell(List<MoveInfo> canMovePos) {
             var boardPos = resources.boardObj.transform.position;
-            var halfBoardSize = resources.halfBoardSize;
-            var halfCellSize = resources.halfCellSize;
+            var halfBoardSize = resources.halfBoardSize.x;
+            var halfCellSize = resources.halfCellSize.x;
 
             foreach (var pos in canMovePos) {
-                if (board[pos.first.to.x, pos.first.to.y].IsSome()) {
+                if (board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y].IsSome()) {
                     Instantiate(
                         resources.underAttackCell,
                         new Vector3(
-                            pos.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
+                            pos.doubleMove.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
                             boardPos.y + halfCellSize,
-                            pos.first.to.y + boardPos.z - halfBoardSize + halfCellSize
+                            pos.doubleMove.first.to.y + boardPos.z - halfBoardSize + halfCellSize
                         ),
                         Quaternion.identity,
                         resources.storageHighlightCells.transform
@@ -238,19 +230,14 @@ namespace controller {
                 Instantiate(
                     resources.canMoveCell,
                     new Vector3(
-                        pos.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
+                        pos.doubleMove.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
                         boardPos.y + halfCellSize,
-                        pos.first.to.y + boardPos.z - halfBoardSize + halfCellSize
+                        pos.doubleMove.first.to.y + boardPos.z - halfBoardSize + halfCellSize
                     ),
                     Quaternion.identity,
                     resources.storageHighlightCells.transform
                 );
             }
-        }
-
-        private void ShowPieceSelectionMenu() {
-            resources.changePawn.SetActive(true);
-            isPaused = true;
         }
 
         private void DestroyHighlightCell() {
@@ -269,7 +256,7 @@ namespace controller {
 
         private MoveInfo GetCurrentMove(Vector2Int selectedPos) {
             foreach (var move in canMovePos) {
-                if (move.first.to == selectedPos) {
+                if (move.doubleMove.first.to == selectedPos) {
                     return move;
                 }
             }

@@ -22,16 +22,19 @@ namespace check {
 
             movmentList = movement[PieceType.Knight];
             canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board, lastMove));
-
             foreach (var pos in canAttackKing) {
-                if (board[pos.first.to.x, pos.first.to.y].IsSome()) {
-                    movmentList = movement[board[pos.first.to.x, pos.first.to.y].Peel().type];
-                    Vector2Int piecePos = new Vector2Int(pos.first.to.x, pos.first.to.y);
+                var attackPos = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
+                if (attackPos.IsSome()) {
+                    movmentList = movement[attackPos.Peel().type];
+                    Vector2Int piecePos = new Vector2Int(
+                        pos.doubleMove.first.to.x,
+                        pos.doubleMove.first.to.y
+                    );
                     attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board, lastMove));
                 }
             }
             foreach (var attackPos in attack) {
-                if (kingPosition == attackPos.first.to) {
+                if (kingPosition == attackPos.doubleMove.first.to) {
                     return true;
                 }
             }
@@ -80,13 +83,13 @@ namespace check {
                                 lastMove
                             );
                         }
-                        canMovePosition = HiddenCheck(
-                            canMovePosition,
-                            new Vector2Int(i, j),
-                            movement,
-                            board,
-                            lastMove
-                        );
+                        // canMovePosition = HiddenCheck(
+                        //     canMovePosition,
+                        //     new Vector2Int(i, j),
+                        //     movement,
+                        //     board,
+                        //     lastMove
+                        // );
                         if (canMovePosition.Count != 0) {
                             if (CheckKing(board, whoseMove, movement, lastMove)) {
                                 Debug.Log("Check");
@@ -106,31 +109,79 @@ namespace check {
             return true;
         }
 
-        public static List<MoveInfo> HiddenCheck(
+        public static void HiddenCheck(
             List<MoveInfo> canMovePos,
             Vector2Int piecePos,
             Dictionary<PieceType,List<Movement>> movement,
             Option<Piece>[,] startBoard,
             MoveInfo lastMove
         ) {
-            Option<Piece>[,] board;
-            List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
-            var color = startBoard[piecePos.x, piecePos.y].Peel().color;
+        //     Option<Piece>[,] board;
+        //     List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
+        //     var color = startBoard[piecePos.x, piecePos.y].Peel().color;
 
-            foreach (var pos in canMovePos) {
-                board = (Option<Piece>[,])startBoard.Clone();
-                board[pos.first.to.x, pos.first.to.y] = board[piecePos.x, piecePos.y];
-                board[piecePos.x, piecePos.y] = Option<Piece>.None();
+        //     foreach (var pos in canMovePos) {
+        //         board = (Option<Piece>[,])startBoard.Clone();
+        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = board[piecePos.x, piecePos.y];
+        //         board[piecePos.x, piecePos.y] = Option<Piece>.None();
 
-                if (!CheckKing(board, color, movement, lastMove)) {
-                    newCanMovePositions.Add(pos);
+        //         if (!CheckKing(board, color, movement, lastMove)) {
+        //             newCanMovePositions.Add(pos);
+        //         }
+
+        //         board[piecePos.x, piecePos.y] = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
+        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = Option<Piece>.None();
+        //     }
+
+        //     return newCanMovePositions;
+        
+        }
+
+        public static void NewCheck(
+            List<MoveInfo> canMovePos,
+            PieceColor color,
+            Dictionary<PieceType,List<Movement>> movement,
+            Option<Piece>[,] startBoard,
+            MoveInfo lastMove
+        ) {
+            var pos = FindKing(startBoard, color);
+            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (i != pos.x && j != pos.y) {
+                        if (board[i,j].IsSome() 
+                            && board[i,j].Peel().color != board[pos.x, pos.y].Peel().color) {
+                            board[i, j] = Option<Piece>.None();
+                        }
+                    }
                 }
-
-                board[piecePos.x, piecePos.y] = board[pos.first.to.x, pos.first.to.y];
-                board[pos.first.to.x, pos.first.to.y] = Option<Piece>.None();
+            }
+            foreach (var cell in board) {
+                if(cell.IsSome()) {
+                    
+                }
             }
 
-            return newCanMovePositions;
+
+        //     Option<Piece>[,] board;
+        //     List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
+        //     var color = startBoard[piecePos.x, piecePos.y].Peel().color;
+
+        //     foreach (var pos in canMovePos) {
+        //         board = (Option<Piece>[,])startBoard.Clone();
+        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = board[piecePos.x, piecePos.y];
+        //         board[piecePos.x, piecePos.y] = Option<Piece>.None();
+
+        //         if (!CheckKing(board, color, movement, lastMove)) {
+        //             newCanMovePositions.Add(pos);
+        //         }
+
+        //         board[piecePos.x, piecePos.y] = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
+        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = Option<Piece>.None();
+        //     }
+
+        //     return newCanMovePositions;
+        
         }
     }
 }

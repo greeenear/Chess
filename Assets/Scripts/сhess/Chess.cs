@@ -1,8 +1,10 @@
+using System;
 using UnityEngine;
 using rules;
 using option;
 using move;
 using board;
+using check;
 using System.Collections.Generic;
 
 namespace chess {
@@ -12,33 +14,55 @@ namespace chess {
     }
     public static class Chess {
         public static List<MoveInfo> GetPossibleMoves(
-            Dictionary<PieceType,List<Movement>> movement,
             Vector2Int pos,
             Option<Piece>[,] board,
             MoveInfo lastMove
         ) {
             var possibleMoves = new List<MoveInfo>();
-            var movementList = movement[board[pos.x, pos.y].Peel().type];
+            var movementList = Storage.movement[board[pos.x, pos.y].Peel().type];
 
             possibleMoves = move.Move.GetMoveCells(movementList, pos, board, lastMove);
-            possibleMoves = check.Check.HiddenCheck(possibleMoves, pos, movement, board, lastMove);
+            // possibleMoves = check.Check.HiddenCheck(
+            //     possibleMoves,
+            //     pos,
+            //     Storage.movement,
+            //     board,
+            //     lastMove
+            // );
 
             return possibleMoves;
         }
 
-        public static PieceColor ChangeMove(PieceColor whoseMove) {
-            if (whoseMove == PieceColor.White) {
-                whoseMove = PieceColor.Black;
-            } else {
-                whoseMove = PieceColor.White;
+        public static PieceColor ChangeMove(
+            PieceColor whoseMove,
+            ref bool isPaused,
+            Option<Piece>[,] board,
+            MoveInfo lastMove
+        ) {
+            if (Chess.CheckChangePawn(board, lastMove)) {
+                Resource.changePawnPanel.SetActive(true);
+                isPaused = true;
+            }
+            if (!isPaused) {
+                if (whoseMove == PieceColor.White) {
+                    whoseMove = PieceColor.Black;
+                } else {
+                    whoseMove = PieceColor.White;
+                }
+            
+                if (Check.CheckMate(board, whoseMove, Storage.movement, lastMove)) {
+                    Resource.gameMenuPanel.SetActive(true);
+                }
             }
 
             return whoseMove;
         }
 
         public static bool CheckChangePawn(Option<Piece>[,] board, MoveInfo lastMove) {
-            if (board[lastMove.first.to.x, lastMove.first.to.y].Peel().type == PieceType.Pawn) {
-                if (lastMove.first.to.x == 0 || lastMove.first.to.x == board.GetLength(1)-1) {
+            var last = board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y];
+            var end = lastMove.doubleMove.first.to.x;
+            if (last.Peel().type == PieceType.Pawn) {
+                if (end == 0 || end == board.GetLength(1)-1) {
                     return true;
                 }
             }
@@ -46,14 +70,14 @@ namespace chess {
             return false;
         }
 
-        public static bool CheckDraw(List<MoveInfo> completedMoves) {
+        public static bool CheckDraw(List<MoveInfo> completedMoves, int movesWithoutTaking) {
             int moveCounter = 0;
             if (completedMoves.Count > 10) {
-                var lastMove = completedMoves[completedMoves.Count - 1];
+                var lastMove = completedMoves[completedMoves.Count - 1].doubleMove.first;
 
                 for (int i = completedMoves.Count - 1; i > completedMoves.Count - 10; i = i - 2) {
-                    if (completedMoves[i].first.to == lastMove.first.to 
-                        && completedMoves[i].first.from == lastMove.first.from) {
+                    if (completedMoves[i].doubleMove.first.to == lastMove.to 
+                        && completedMoves[i].doubleMove.first.from == lastMove.from) {
                         moveCounter++;
                     }
                 }
@@ -61,16 +85,7 @@ namespace chess {
             if (moveCounter == 3) {
                 return true;
             }
-
-            if (completedMoves.Count > 50) {
-                moveCounter = 0;
-                for (int i = completedMoves.Count - 1; i > completedMoves.Count - 50; i = i - 2) {
-                    if(completedMoves[i].sentenced == null) {
-                        moveCounter++;
-                    }
-                }
-            }
-            if (moveCounter == 50) {
+            if(movesWithoutTaking == 50) {
                 return true;
             }
 

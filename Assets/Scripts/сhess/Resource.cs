@@ -10,64 +10,22 @@ namespace chess {
         public GameObject underAttackCell;
         public GameObject gameMenu;
         public GameObject changePawn;
+        public static GameObject gameMenuPanel;
+        public static GameObject changePawnPanel;
         public Transform cellSize;
         public GameObject storageHighlightCells;
 
         public LayerMask highlightMask;
         public List<GameObject> pieceList = new List<GameObject>();
 
-        public float halfBoardSize;
-        public float halfCellSize;
-
-        public Dictionary<PieceType, List<Movement>> movement =
-                new Dictionary<PieceType, List<Movement>>() {
-            { PieceType.Pawn, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0)))
-                }
-            },
-            { PieceType.Bishop, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1)))
-                }
-            },
-            { PieceType.Rook, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, 1)))
-                }
-            },
-            { PieceType.Queen, new List<Movement> {
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 0))),
-                Movement.Linear(Linear.Mk(new Vector2Int(0, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, 1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
-                Movement.Linear(Linear.Mk(new Vector2Int(-1, 1)))
-                }
-            },
-            { PieceType.Knight, new List<Movement> {
-                Movement.Circular(Circular.Mk(2f))
-                }
-            },
-            { PieceType.King, new List<Movement> {
-                Movement.Circular(Circular.Mk(1f))
-                }
-            }
-        };
+        public Vector3 halfBoardSize;
+        public Vector3 halfCellSize;
 
         private void Awake() {
-            halfBoardSize = cellSize.lossyScale.x * 4;
-            halfCellSize = cellSize.lossyScale.x / 2;
+            halfBoardSize = cellSize.lossyScale * 4;
+            halfCellSize = cellSize.lossyScale / 2;
+            gameMenuPanel = gameMenu;
+            changePawnPanel = changePawn;
         }
     }
 }
