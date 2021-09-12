@@ -174,7 +174,6 @@ namespace check {
 
             foreach (var line in linearDirList) {
                 Rules.GetLinearMoves(board, pos, line, 8);
-                Debug.Log(line.dir.x + " " + line.dir.y);
             }
 
         }
