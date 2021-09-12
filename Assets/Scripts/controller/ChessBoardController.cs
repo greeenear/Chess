@@ -105,8 +105,6 @@ namespace controller {
                     completedMoves.Add(currentMove);
                     var lastMove = completedMoves[completedMoves.Count - 1];
                     whoseMove = Chess.ChangeMove(whoseMove, ref isPaused, board, lastMove);
-                    Chess.CheckDraw(completedMoves, countMoveWithoutTaking);
-                    Check.NewCheck(canMovePos,whoseMove, Storage.movement, board, lastMove);
                     canMovePos.Clear();
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;

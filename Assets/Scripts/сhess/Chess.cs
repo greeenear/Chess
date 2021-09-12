@@ -1,3 +1,4 @@
+using System.Globalization;
 using System;
 using UnityEngine;
 using rules;
@@ -49,6 +50,7 @@ namespace chess {
                 } else {
                     whoseMove = PieceColor.White;
                 }
+                Check.NewCheck(whoseMove, board, lastMove, Storage.movement);
             
                 if (Check.CheckMate(board, whoseMove, Storage.movement, lastMove)) {
                     Resource.gameMenuPanel.SetActive(true);
