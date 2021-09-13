@@ -1,3 +1,4 @@
+using System.Data;
 using System.Collections.Generic;
 using UnityEngine;
 using board;
@@ -138,50 +139,43 @@ namespace check {
         }
 
         public static void NewCheck(
-            List<MoveInfo> canMovePos,
             PieceColor color,
-            Dictionary<PieceType,List<Movement>> movement,
             Option<Piece>[,] startBoard,
-            MoveInfo lastMove
+            MoveInfo lastMove,
+            Dictionary<PieceType,List<Movement>> movement
         ) {
             var pos = FindKing(startBoard, color);
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    if (i != pos.x && j != pos.y) {
-                        if (board[i,j].IsSome() 
-                            && board[i,j].Peel().color != board[pos.x, pos.y].Peel().color) {
-                            board[i, j] = Option<Piece>.None();
+                    if(i == pos.x && j == pos.y) {
+                        continue;
+                    }
+                    if (board[i,j].IsSome()
+                        && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
+                        board[i, j] = Option<Piece>.None();
+                    }
+                }
+            }
+            var linearDirList = new List<Linear>();
+            var moveType = movement[PieceType.Queen];
+            
+            foreach (var type in moveType) {
+                int length = 0;
+                foreach (var move in Rules.GetLinearMoves(board, pos, type.linear.Value, 8)) {
+                    length++;
+                    if (board[move.x , move.y].IsSome()) {
+                        if(movement[board[move.x , move.y].Peel().type].Contains(type)) {
+                            linearDirList.Add(type.linear.Value);
                         }
                     }
                 }
             }
-            foreach (var cell in board) {
-                if(cell.IsSome()) {
-                    
-                }
+
+            foreach (var line in linearDirList) {
+                Rules.GetLinearMoves(board, pos, line, 8);
             }
 
-
-        //     Option<Piece>[,] board;
-        //     List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
-        //     var color = startBoard[piecePos.x, piecePos.y].Peel().color;
-
-        //     foreach (var pos in canMovePos) {
-        //         board = (Option<Piece>[,])startBoard.Clone();
-        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = board[piecePos.x, piecePos.y];
-        //         board[piecePos.x, piecePos.y] = Option<Piece>.None();
-
-        //         if (!CheckKing(board, color, movement, lastMove)) {
-        //             newCanMovePositions.Add(pos);
-        //         }
-
-        //         board[piecePos.x, piecePos.y] = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
-        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = Option<Piece>.None();
-        //     }
-
-        //     return newCanMovePositions;
-        
         }
     }
 }
