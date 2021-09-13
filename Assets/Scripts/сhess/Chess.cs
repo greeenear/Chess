@@ -52,9 +52,9 @@ namespace chess {
                 }
                 Check.NewCheck(whoseMove, board, lastMove, Storage.movement);
             
-                if (Check.CheckMate(board, whoseMove, Storage.movement, lastMove)) {
-                    Resource.gameMenuPanel.SetActive(true);
-                }
+                // if (Check.CheckMate(board, whoseMove, Storage.movement, lastMove)) {
+                //     Resource.gameMenuPanel.SetActive(true);
+                // }
             }
 
             return whoseMove;

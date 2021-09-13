@@ -145,6 +145,7 @@ namespace check {
             Dictionary<PieceType,List<Movement>> movement
         ) {
             var pos = FindKing(startBoard, color);
+            var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
@@ -161,9 +162,7 @@ namespace check {
             var moveType = movement[PieceType.Queen];
             
             foreach (var type in moveType) {
-                int length = 0;
                 foreach (var move in Rules.GetLinearMoves(board, pos, type.linear.Value, 8)) {
-                    length++;
                     if (board[move.x , move.y].IsSome()) {
                         if(movement[board[move.x , move.y].Peel().type].Contains(type)) {
                             linearDirList.Add(type.linear.Value);
@@ -171,11 +170,39 @@ namespace check {
                     }
                 }
             }
-
+            var kingPos = startBoard[pos.x, pos.y];
+            var blockingFiguresList = new List<Vector2Int>();
             foreach (var line in linearDirList) {
-                Rules.GetLinearMoves(board, pos, line, 8);
-            }
+                var piecesCounter = 0;
+                for (int i = 1; i < 8; i++) {
+                    var nextX = pos.x + line.dir.x * i;
+                    var newtY = pos.y + line.dir.y * i;
+                    var nextPos = new Vector2Int(nextX, newtY);
+                    var isOnBoard = Board.OnBoard(nextPos, boardSize);
+                    if (!isOnBoard) {
+                        break;
+                    }
+                    var nextCell = startBoard[nextX, newtY];
+                    if (!nextCell.IsSome()) {
+                        continue;
+                    }
 
+                    if (nextCell.Peel().color == kingPos.Peel().color) {
+                        if (piecesCounter == 0) {
+                            blockingFiguresList.Add(nextPos);
+                            piecesCounter++;
+                        } else {
+                            blockingFiguresList.RemoveAt(blockingFiguresList.Count - 1);
+                            break;
+                        }
+                    }
+                    if (nextCell.Peel().color != kingPos.Peel().color && piecesCounter == 0) {
+                        Debug.Log("Check");
+                        break;
+                    }
+                    
+                }
+            }
         }
     }
 }
