@@ -138,15 +138,16 @@ namespace check {
         
         }
 
-        public static void NewCheck(
+        public static List<Linear> GetAttackingDirections(
             PieceColor color,
             Option<Piece>[,] startBoard,
-            MoveInfo lastMove,
             Dictionary<PieceType,List<Movement>> movement
         ) {
+            var linearDirList = new List<Linear>();
             var pos = FindKing(startBoard, color);
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
+
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     if(i == pos.x && j == pos.y) {
@@ -158,20 +159,32 @@ namespace check {
                     }
                 }
             }
-            var linearDirList = new List<Linear>();
             var moveType = movement[PieceType.Queen];
             
-            foreach (var type in moveType) {
-                foreach (var move in Rules.GetLinearMoves(board, pos, type.linear.Value, 8)) {
+            foreach (var dir in moveType) {
+                foreach (var move in Rules.GetLinearMoves(board, pos, dir.linear.Value, 8)) {
                     if (board[move.x , move.y].IsSome()) {
-                        if(movement[board[move.x , move.y].Peel().type].Contains(type)) {
-                            linearDirList.Add(type.linear.Value);
+                        if(movement[board[move.x , move.y].Peel().type].Contains(dir)) {
+                            linearDirList.Add(dir.linear.Value);
                         }
                     }
                 }
             }
-            var kingPos = startBoard[pos.x, pos.y];
+
+            return linearDirList;
+        }
+
+        public static void NewCheck(
+            PieceColor color,
+            Option<Piece>[,] startBoard,
+            Dictionary<PieceType,List<Movement>> movement,
+            List<Linear> linearDirList
+        ) {
+            var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
+            var pos = FindKing(startBoard, color);
+            var kingCell = startBoard[pos.x, pos.y];
             var blockingFiguresList = new List<Vector2Int>();
+
             foreach (var line in linearDirList) {
                 var piecesCounter = 0;
                 for (int i = 1; i < 8; i++) {
@@ -187,7 +200,7 @@ namespace check {
                         continue;
                     }
 
-                    if (nextCell.Peel().color == kingPos.Peel().color) {
+                    if (nextCell.Peel().color == kingCell.Peel().color) {
                         if (piecesCounter == 0) {
                             blockingFiguresList.Add(nextPos);
                             piecesCounter++;
@@ -196,11 +209,10 @@ namespace check {
                             break;
                         }
                     }
-                    if (nextCell.Peel().color != kingPos.Peel().color && piecesCounter == 0) {
+                    if (nextCell.Peel().color != kingCell.Peel().color && piecesCounter == 0) {
                         Debug.Log("Check");
                         break;
                     }
-                    
                 }
             }
         }

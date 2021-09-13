@@ -36,26 +36,15 @@ namespace chess {
 
         public static PieceColor ChangeMove(
             PieceColor whoseMove,
-            ref bool isPaused,
-            Option<Piece>[,] board,
-            MoveInfo lastMove
+            Option<Piece>[,] board
         ) {
-            if (Chess.CheckChangePawn(board, lastMove)) {
-                Resource.changePawnPanel.SetActive(true);
-                isPaused = true;
+            if (whoseMove == PieceColor.White) {
+                whoseMove = PieceColor.Black;
+            } else {
+                whoseMove = PieceColor.White;
             }
-            if (!isPaused) {
-                if (whoseMove == PieceColor.White) {
-                    whoseMove = PieceColor.Black;
-                } else {
-                    whoseMove = PieceColor.White;
-                }
-                Check.NewCheck(whoseMove, board, lastMove, Storage.movement);
-            
-                // if (Check.CheckMate(board, whoseMove, Storage.movement, lastMove)) {
-                //     Resource.gameMenuPanel.SetActive(true);
-                // }
-            }
+            var attackDir =  Check.GetAttackingDirections(whoseMove, board, Storage.movement);
+            Check.NewCheck(whoseMove, board, Storage.movement, attackDir);
 
             return whoseMove;
         }

@@ -22,9 +22,9 @@ namespace controller {
         private Vector2Int selectedPiece;
         private PieceColor whoseMove = PieceColor.White;
 
-        private List<MoveInfo> canMovePos = new List<MoveInfo>();
+        private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private List<MoveInfo> completedMoves = new List<MoveInfo>();
-        private int countMoveWithoutTaking;
+        private int noTakeMoves;
 
         private JsonObject jsonObject;
 
@@ -101,23 +101,28 @@ namespace controller {
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
-                    Move(firstMove.from, firstMove.to, currentMove);
+
+                    CheckMove(currentMove);
+
                     completedMoves.Add(currentMove);
-                    var lastMove = completedMoves[completedMoves.Count - 1];
-                    whoseMove = Chess.ChangeMove(whoseMove, ref isPaused, board, lastMove);
-                    canMovePos.Clear();
+                    if(!isPaused) {
+                        whoseMove = Chess.ChangeMove(whoseMove, board);
+                    }
+
+                    possibleMoves.Clear();
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
-                    DestroyHighlightCell();
+                    DestroyHighlightCell(resources.storageHighlightCells.transform);
                     break;
                 case PlayerAction.Select:
-                    DestroyHighlightCell();
-                    canMovePos.Clear();
-                    lastMove = completedMoves[completedMoves.Count - 1];
-                    selectedPiece = selectedPos;
-                    canMovePos = Chess.GetPossibleMoves(selectedPiece, board, lastMove);
+                    DestroyHighlightCell(resources.storageHighlightCells.transform);
+                    possibleMoves.Clear();
+
+                    var lastMove = completedMoves[completedMoves.Count - 1];
+                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
+
                     playerAction = PlayerAction.Move;
-                    HighlightCell(canMovePos);
+                    HighlightCell(possibleMoves);
                     break;
             }
         }
@@ -132,11 +137,12 @@ namespace controller {
 
         public void ChangePawn(int type) {
             var boardPos = resources.boardObj.transform.position;
-            var x = selectedPiece.x;
-            var y = selectedPiece.y;
+            var pawnPos = completedMoves[completedMoves.Count - 1].doubleMove.first.to;
+            var x = pawnPos.x;
+            var y = pawnPos.y;
             PieceType pieceType = (PieceType)type;
 
-            Chess.ChangePiece(board, selectedPiece, pieceType, whoseMove);
+            Chess.ChangePiece(board, pawnPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
             var piece = board[x, y];
 
@@ -153,18 +159,18 @@ namespace controller {
             isPaused = false;
             resources.changePawn.SetActive(false);
             var lastMove = completedMoves[completedMoves.Count - 1];
-            whoseMove = Chess.ChangeMove(whoseMove, ref isPaused, board, lastMove);
+            whoseMove = Chess.ChangeMove(whoseMove, board);
         }
 
-        private void Move(Vector2Int start, Vector2Int end, MoveInfo currentMove) {
+        private void Move(MoveData moveData, Vector2Int? sentenced) {
+            var start = moveData.from;
+            var end = moveData.to;
             move.Move.MovePiece(start, end, board);
-            countMoveWithoutTaking++;
 
             var boardPos = resources.boardObj.transform.position;
-            var sentencedPiece = currentMove.sentenced;
-            if (sentencedPiece.HasValue) {
-                countMoveWithoutTaking = 0;
-                Destroy(piecesMap[sentencedPiece.Value.x, sentencedPiece.Value.y]);
+            if (sentenced.HasValue) {
+                noTakeMoves = 0;
+                Destroy(piecesMap[sentenced.Value.x, sentenced.Value.y]);
             }
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
@@ -173,10 +179,14 @@ namespace controller {
                 end.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
             );
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+        }
+
+        private void CheckMove(MoveInfo currentMove) {
+            noTakeMoves++;
+            
+            Move(currentMove.doubleMove.first, currentMove.sentenced);
             if (currentMove.doubleMove.second.HasValue) {
-                var secondMove = currentMove.doubleMove.second.Value;
-                currentMove.doubleMove.second = null;
-                Move(secondMove.from, secondMove.to, currentMove);
+                Move(currentMove.doubleMove.second.Value, currentMove.sentenced);
             }
         }
 
@@ -207,39 +217,39 @@ namespace controller {
             }
         }
 
-        private void HighlightCell(List<MoveInfo> canMovePos) {
+        private void HighlightCell(List<MoveInfo> possibleMoves) {
             var boardPos = resources.boardObj.transform.position;
             var halfBoardSize = resources.halfBoardSize.x;
             var halfCellSize = resources.halfCellSize.x;
 
-            foreach (var pos in canMovePos) {
-                if (board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y].IsSome()) {
+            foreach (var pos in possibleMoves) {
+                var toX = pos.doubleMove.first.to.x;
+                var toY = pos.doubleMove.first.to.y;
+
+                var highlightPos = new Vector3(
+                            toX + boardPos.x - halfBoardSize + halfCellSize,
+                            boardPos.y + halfCellSize,
+                            toY + boardPos.z - halfBoardSize + halfCellSize
+                        );
+                if (board[toX, toY].IsSome()) {
                     Instantiate(
                         resources.underAttackCell,
-                        new Vector3(
-                            pos.doubleMove.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
-                            boardPos.y + halfCellSize,
-                            pos.doubleMove.first.to.y + boardPos.z - halfBoardSize + halfCellSize
-                        ),
+                        highlightPos,
                         Quaternion.identity,
                         resources.storageHighlightCells.transform
                     );
                 }
                 Instantiate(
                     resources.canMoveCell,
-                    new Vector3(
-                        pos.doubleMove.first.to.x + boardPos.x - halfBoardSize + halfCellSize,
-                        boardPos.y + halfCellSize,
-                        pos.doubleMove.first.to.y + boardPos.z - halfBoardSize + halfCellSize
-                    ),
+                    highlightPos,
                     Quaternion.identity,
                     resources.storageHighlightCells.transform
                 );
             }
         }
 
-        private void DestroyHighlightCell() {
-            foreach (Transform child in resources.storageHighlightCells.transform) {
+        private void DestroyHighlightCell(Transform storageHighlightCells) {
+            foreach (Transform child in storageHighlightCells) {
                 Destroy(child.gameObject);
             }
         }
@@ -253,7 +263,7 @@ namespace controller {
         }
 
         private MoveInfo GetCurrentMove(Vector2Int selectedPos) {
-            foreach (var move in canMovePos) {
+            foreach (var move in possibleMoves) {
                 if (move.doubleMove.first.to == selectedPos) {
                     return move;
                 }

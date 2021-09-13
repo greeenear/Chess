@@ -10,8 +10,6 @@ namespace chess {
         public GameObject underAttackCell;
         public GameObject gameMenu;
         public GameObject changePawn;
-        public static GameObject gameMenuPanel;
-        public static GameObject changePawnPanel;
         public Transform cellSize;
         public GameObject storageHighlightCells;
 
@@ -24,8 +22,6 @@ namespace chess {
         private void Awake() {
             halfBoardSize = cellSize.lossyScale * 4;
             halfCellSize = cellSize.lossyScale / 2;
-            gameMenuPanel = gameMenu;
-            changePawnPanel = changePawn;
         }
     }
 }
