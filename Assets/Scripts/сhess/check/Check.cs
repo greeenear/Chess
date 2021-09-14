@@ -1,4 +1,3 @@
-using System.Data;
 using System.Collections.Generic;
 using UnityEngine;
 using board;
@@ -7,42 +6,21 @@ using rules;
 using move;
 
 namespace check {
-    public static class Check {
-        public static bool CheckKing(
-            Option<Piece>[,] board,
-            PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement,
-            MoveInfo lastMove
-        ) {
-            var kingPosition = FindKing(board, whoseMove);
-            var canAttackKing = new List<MoveInfo>();
-            var attack = new List<MoveInfo>();
+    public struct CheckInfo {
+        public Linear linear;
+        public Vector2Int coveringPiece;
+        public Vector2Int? realCheck;
 
-            List<Movement> movmentList = movement[PieceType.Queen];
-            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board, lastMove));
-
-            movmentList = movement[PieceType.Knight];
-            canAttackKing.AddRange(Move.GetMoveCells(movmentList, kingPosition, board, lastMove));
-            foreach (var pos in canAttackKing) {
-                var attackPos = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
-                if (attackPos.IsSome()) {
-                    movmentList = movement[attackPos.Peel().type];
-                    Vector2Int piecePos = new Vector2Int(
-                        pos.doubleMove.first.to.x,
-                        pos.doubleMove.first.to.y
-                    );
-                    attack.AddRange(Move.GetMoveCells(movmentList, piecePos, board, lastMove));
-                }
-            }
-            foreach (var attackPos in attack) {
-                if (kingPosition == attackPos.doubleMove.first.to) {
-                    return true;
-                }
-            }
-
-            return false;
+        public static CheckInfo BlokingInfo(Linear linear, Vector2Int coveringPiece) {
+            return new CheckInfo { linear = linear, coveringPiece = coveringPiece };
         }
 
+        public static CheckInfo RealCheckInfo(Linear linear, Vector2Int? realCheck) {
+            return new CheckInfo { linear = linear, realCheck = realCheck };
+        }
+    }
+
+    public static class Check {
         public static Vector2Int FindKing(Option<Piece>[,] board, PieceColor color) {
             Vector2Int kingPosition = new Vector2Int();
 
@@ -53,89 +31,10 @@ namespace check {
                         kingPosition.x = i;
                         kingPosition.y = j;
                     }
-
                 }
             }
 
             return kingPosition;
-        }
-
-        public static bool CheckMate(
-            Option<Piece>[,] board,
-            PieceColor whoseMove,
-            Dictionary<PieceType,List<Movement>> movement,
-            MoveInfo lastMove
-        ) {
-            var canMovePosition = new List<MoveInfo>();
-
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    if (board[i, j].IsSome()
-                    && board[i, j].Peel().color == whoseMove) {
-                        List<Movement> movmentList = movement[board[i, j].Peel().type];
-                        Vector2Int pos = new Vector2Int(i, j);
-
-                        canMovePosition = Move.GetMoveCells(movmentList, pos, board,lastMove);
-                        if (board[i, j].Peel().type == PieceType.Pawn) {
-                            canMovePosition = Move.SelectPawnMoves(
-                                board,
-                                new Vector2Int(i, j),
-                                canMovePosition,
-                                lastMove
-                            );
-                        }
-                        // canMovePosition = HiddenCheck(
-                        //     canMovePosition,
-                        //     new Vector2Int(i, j),
-                        //     movement,
-                        //     board,
-                        //     lastMove
-                        // );
-                        if (canMovePosition.Count != 0) {
-                            if (CheckKing(board, whoseMove, movement, lastMove)) {
-                                Debug.Log("Check");
-                            }
-
-                            return false;
-                        }
-                    }
-                }
-            }
-            if (CheckKing(board, whoseMove, movement, lastMove)) {
-                Debug.Log("CheckMate");
-            } else {
-                Debug.Log("stalemate");
-            }
-
-            return true;
-        }
-
-        public static void HiddenCheck(
-            List<MoveInfo> canMovePos,
-            Vector2Int piecePos,
-            Dictionary<PieceType,List<Movement>> movement,
-            Option<Piece>[,] startBoard,
-            MoveInfo lastMove
-        ) {
-        //     Option<Piece>[,] board;
-        //     List<MoveInfo> newCanMovePositions = new List<MoveInfo>();
-        //     var color = startBoard[piecePos.x, piecePos.y].Peel().color;
-
-        //     foreach (var pos in canMovePos) {
-        //         board = (Option<Piece>[,])startBoard.Clone();
-        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = board[piecePos.x, piecePos.y];
-        //         board[piecePos.x, piecePos.y] = Option<Piece>.None();
-
-        //         if (!CheckKing(board, color, movement, lastMove)) {
-        //             newCanMovePositions.Add(pos);
-        //         }
-
-        //         board[piecePos.x, piecePos.y] = board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y];
-        //         board[pos.doubleMove.first.to.x, pos.doubleMove.first.to.y] = Option<Piece>.None();
-        //     }
-
-        //     return newCanMovePositions;
-        
         }
 
         public static List<Linear> GetAttackingDirections(
@@ -162,9 +61,20 @@ namespace check {
             var moveType = movement[PieceType.Queen];
             
             foreach (var dir in moveType) {
+                int lineLength = 0;
                 foreach (var move in Rules.GetLinearMoves(board, pos, dir.linear.Value, 8)) {
-                    if (board[move.x , move.y].IsSome()) {
-                        if(movement[board[move.x , move.y].Peel().type].Contains(dir)) {
+                    lineLength++;
+
+                    if (board[move.x, move.y].IsSome()) {
+                        if (movement[board[move.x , move.y].Peel().type].Contains(dir)) {
+                            if (board[move.x, move.y].Peel().type == PieceType.Pawn) {
+                                if (lineLength == 1 && dir.movementType == MovementType.Attack) {
+                                    linearDirList.Add(dir.linear.Value);
+                                    break;
+                                } else {
+                                    break;
+                                }
+                            }
                             linearDirList.Add(dir.linear.Value);
                         }
                     }
@@ -174,16 +84,16 @@ namespace check {
             return linearDirList;
         }
 
-        public static void NewCheck(
+        public static List<CheckInfo> GetCheckInfo(
             PieceColor color,
             Option<Piece>[,] startBoard,
-            Dictionary<PieceType,List<Movement>> movement,
-            List<Linear> linearDirList
+            Dictionary<PieceType,List<Movement>> movement
         ) {
+            var checkInfo = new List<CheckInfo>();
+            var linearDirList = GetAttackingDirections(color, startBoard, movement);
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
             var pos = FindKing(startBoard, color);
             var kingCell = startBoard[pos.x, pos.y];
-            var blockingFiguresList = new List<Vector2Int>();
 
             foreach (var line in linearDirList) {
                 var piecesCounter = 0;
@@ -199,23 +109,23 @@ namespace check {
                     if (!nextCell.IsSome()) {
                         continue;
                     }
-
                     if (nextCell.Peel().color == kingCell.Peel().color) {
                         if (piecesCounter == 0) {
-                            blockingFiguresList.Add(nextPos);
+                            checkInfo.Add(CheckInfo.BlokingInfo(line, nextPos));
                             piecesCounter++;
                         } else {
-                            blockingFiguresList.RemoveAt(blockingFiguresList.Count - 1);
+                            checkInfo.RemoveAt(checkInfo.Count - 1);
                             break;
                         }
                     }
                     if (nextCell.Peel().color != kingCell.Peel().color && piecesCounter == 0) {
-                        Debug.Log("Check");
+                        checkInfo.Add(CheckInfo.RealCheckInfo(line, nextPos));
                         break;
                     }
                 }
             }
+
+            return checkInfo;
         }
     }
 }
-

@@ -3,7 +3,6 @@ using UnityEngine;
 using board;
 using rules;
 using option;
-using System;
 
 namespace move {
     public struct MoveData {
@@ -29,6 +28,7 @@ namespace move {
     public struct MoveInfo {
         public DoubleMove doubleMove;
         public Vector2Int? sentenced;
+        public bool pawnPromotion;
     }
 
     public struct StartAngle {
@@ -129,27 +129,29 @@ namespace move {
             }
 
             foreach (var possible in possibleMoves) {
+                MoveInfo promotion = possible;
                 var cell = board[possible.doubleMove.first.to.x, possible.doubleMove.first.to.y];
+                var possibleMove = possible.doubleMove.first.to;
 
                 if (pos.x == 1 && dir == 1 || pos.x == 6 && dir == -1) {
                     if (possible.doubleMove.first.to == new Vector2Int(pos.x + 2 * dir, pos.y)
                         && cell.IsNone()) {
-                        newPossibleMoves.Add(possible);
+                        newPossibleMoves.Add(promotion);
                     }
                 }
-                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y) 
-                    && cell.IsNone()) {
-                    newPossibleMoves.Add(possible);
+                if (possibleMove.x == 0 || possibleMove.x == 7) {
+                    promotion.pawnPromotion = true;
                 }
-                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y + dir)
-                    && cell.IsSome()
-                    && cell.Peel().color != pawn.color) {
-                    newPossibleMoves.Add(possible);
+                if (possibleMove == new Vector2Int(pos.x + dir, pos.y) && cell.IsNone()) {
+                    newPossibleMoves.Add(promotion);
                 }
-                if (possible.doubleMove.first.to == new Vector2Int(pos.x + dir, pos.y - dir)
-                    && cell.IsSome()
+                if (possibleMove == new Vector2Int(pos.x + dir, pos.y + dir) && cell.IsSome()
                     && cell.Peel().color != pawn.color) {
-                    newPossibleMoves.Add(possible);
+                    newPossibleMoves.Add(promotion);
+                }
+                if (possibleMove == new Vector2Int(pos.x + dir, pos.y - dir) && cell.IsSome()
+                    && cell.Peel().color != pawn.color) {
+                    newPossibleMoves.Add(promotion);
                 }
             }
             var piece = board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y];

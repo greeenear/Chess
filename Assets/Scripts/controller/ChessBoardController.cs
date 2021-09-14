@@ -95,6 +95,7 @@ namespace controller {
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
                 playerAction = PlayerAction.Select;
             }
+            var lastMove = completedMoves[completedMoves.Count - 1];
 
             switch (playerAction) {
                 case PlayerAction.Move:
@@ -109,16 +110,15 @@ namespace controller {
                         whoseMove = Chess.ChangeMove(whoseMove, board);
                     }
 
-                    possibleMoves.Clear();
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
+                    possibleMoves.Clear();
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     break;
                 case PlayerAction.Select:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
 
-                    var lastMove = completedMoves[completedMoves.Count - 1];
                     possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
 
                     playerAction = PlayerAction.Move;
@@ -187,6 +187,10 @@ namespace controller {
             Move(currentMove.doubleMove.first, currentMove.sentenced);
             if (currentMove.doubleMove.second.HasValue) {
                 Move(currentMove.doubleMove.second.Value, currentMove.sentenced);
+            }
+            if (currentMove.pawnPromotion) {
+                resources.changePawn.SetActive(true);
+                isPaused = true;
             }
         }
 

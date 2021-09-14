@@ -1,5 +1,3 @@
-using System.Globalization;
-using System;
 using UnityEngine;
 using rules;
 using option;
@@ -20,16 +18,50 @@ namespace chess {
             MoveInfo lastMove
         ) {
             var possibleMoves = new List<MoveInfo>();
-            var movementList = Storage.movement[board[pos.x, pos.y].Peel().type];
+            List<Movement> movementList = new List<Movement>(); 
+            var color = board[pos.x, pos.y].Peel().color;
+            var checkInfo = Check.GetCheckInfo(color, board, Storage.movement);
 
+            foreach (var info in checkInfo) {
+                if (info.realCheck.HasValue) {
+                    movementList.Clear();
+                    var attackDir = new Vector2Int(-info.linear.dir.x,-info.linear.dir.y);
+                    movementList.Add(Movement.Linear(Linear.Mk(attackDir)));
+
+                    var possibleAttackPos = move.Move.GetMoveCells(
+                        movementList,
+                        info.realCheck.Value,
+                        board,
+                        lastMove
+                    );
+                    var possibleDefensePos = move.Move.GetMoveCells(
+                        movementList = Storage.movement[board[pos.x, pos.y].Peel().type],
+                        pos,
+                        board,
+                        lastMove
+                    );
+
+                    foreach (var attack in possibleAttackPos) {
+                        foreach (var defense in possibleDefensePos) {
+                            if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
+                                possibleMoves.Add(defense);
+                            }
+                            if (defense.doubleMove.first.to == info.realCheck.Value) {
+                                possibleMoves.Add(defense);
+                            }
+                        }
+                    }
+                    return possibleMoves;
+                }
+                if (info.coveringPiece == pos) {
+                    movementList.Add(Movement.Linear(info.linear));
+                }
+            }
+
+            if (movementList.Count == 0) {
+                movementList = Storage.movement[board[pos.x, pos.y].Peel().type];
+            }
             possibleMoves = move.Move.GetMoveCells(movementList, pos, board, lastMove);
-            // possibleMoves = check.Check.HiddenCheck(
-            //     possibleMoves,
-            //     pos,
-            //     Storage.movement,
-            //     board,
-            //     lastMove
-            // );
 
             return possibleMoves;
         }
@@ -43,8 +75,11 @@ namespace chess {
             } else {
                 whoseMove = PieceColor.White;
             }
-            var attackDir =  Check.GetAttackingDirections(whoseMove, board, Storage.movement);
-            Check.NewCheck(whoseMove, board, Storage.movement, attackDir);
+            foreach (var checkInfo in Check.GetCheckInfo(whoseMove, board, Storage.movement)) {
+                if (checkInfo.realCheck.HasValue) {
+                    Debug.Log("Check");
+                }
+            }
 
             return whoseMove;
         }
