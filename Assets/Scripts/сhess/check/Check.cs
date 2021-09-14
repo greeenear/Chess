@@ -15,7 +15,7 @@ namespace check {
             return new CheckInfo { linear = linear, coveringPiece = coveringPiece };
         }
 
-        public static CheckInfo RealCheckInfo(Linear linear, Vector2Int? realCheck) {
+        public static CheckInfo CheckingInfo(Linear linear, Vector2Int? realCheck) {
             return new CheckInfo { linear = linear, realCheck = realCheck };
         }
     }
@@ -119,7 +119,7 @@ namespace check {
                         }
                     }
                     if (nextCell.Peel().color != kingCell.Peel().color && piecesCounter == 0) {
-                        checkInfo.Add(CheckInfo.RealCheckInfo(line, nextPos));
+                        checkInfo.Add(CheckInfo.CheckingInfo(line, nextPos));
                         break;
                     }
                 }
