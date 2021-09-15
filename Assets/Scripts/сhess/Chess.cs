@@ -20,8 +20,9 @@ namespace chess {
             var possibleMoves = new List<MoveInfo>();
             List<Movement> movementList = new List<Movement>(); 
             var color = board[pos.x, pos.y].Peel().color;
-            var cleanedBoard = DeletePiecesSameColor(PieceColor.Black, board);
-            var checkInfo = Check.GetCheckInfo(color, cleanedBoard, Storage.movement);
+            var cleanedBoard = DeletePiecesSameColor(color, board);
+            var attackInfo = Check.GetAttackInfo(color, cleanedBoard, Storage.movement);
+            var checkInfo = Check.GetCheckInfo(color, board, attackInfo);
 
             foreach (var info in checkInfo) {
                 if (info.attackingPiecePos.HasValue) {
@@ -82,11 +83,11 @@ namespace chess {
             } else {
                 whoseMove = PieceColor.White;
             }
-            foreach (var checkInfo in Check.GetCheckInfo(whoseMove, board, Storage.movement)) {
-                if (checkInfo.attackingPiecePos.HasValue) {
-                    Debug.Log("Check");
-                }
-            }
+            // foreach (var checkInfo in Check.GetCheckInfo(whoseMove, board, Storage.movement)) {
+            //     if (checkInfo.attackingPiecePos.HasValue) {
+            //         Debug.Log("Check");
+            //     }
+            // }
 
             return whoseMove;
         }
@@ -129,16 +130,15 @@ namespace chess {
             PieceColor color,
             Option<Piece>[,] startBoard
         ) {
-            var pos = Check.FindKing(startBoard, color);
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    if(i == pos.x && j == pos.y) {
+                    var piece = board[i,j].Peel();
+                    if(piece.type == PieceType.King) {
                         continue;
                     }
-                    if (board[i,j].IsSome()
-                        && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
+                    if (board[i,j].IsSome() && piece.color == color) {
                         board[i, j] = Option<Piece>.None();
                     }
                 }

@@ -55,17 +55,17 @@ namespace check {
             var pos = FindKing(startBoard, color);
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
 
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    if(i == pos.x && j == pos.y) {
-                        continue;
-                    }
-                    if (board[i,j].IsSome()
-                        && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
-                        board[i, j] = Option<Piece>.None();
-                    }
-                }
-            }
+            // for (int i = 0; i < 8; i++) {
+            //     for (int j = 0; j < 8; j++) {
+            //         if(i == pos.x && j == pos.y) {
+            //             continue;
+            //         }
+            //         if (board[i,j].IsSome()
+            //             && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
+            //             board[i, j] = Option<Piece>.None();
+            //         }
+            //     }
+            // }
             var moveType = movement[PieceType.Queen];
 
             foreach (var dir in moveType) {
@@ -105,10 +105,10 @@ namespace check {
         public static List<CheckInfo> GetCheckInfo(
             PieceColor color,
             Option<Piece>[,] startBoard,
-            Dictionary<PieceType,List<Movement>> movement
+            List<AttackInfo> attackInfo
         ) {
             var checkInfo = new List<CheckInfo>();
-            var attackInfo = GetAttackInfo(color, startBoard, movement);
+            // var attackInfo = GetAttackInfo(color, startBoard, movement);
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
             var pos = FindKing(startBoard, color);
             var kingCell = startBoard[pos.x, pos.y];
