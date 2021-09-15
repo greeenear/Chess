@@ -23,30 +23,32 @@ namespace chess {
             var checkInfo = Check.GetCheckInfo(color, board, Storage.movement);
 
             foreach (var info in checkInfo) {
-                if (info.realCheck.HasValue) {
+                if (info.attackingPiecePos.HasValue) {
                     movementList.Clear();
-                    var attackDir = new Vector2Int(-info.linear.dir.x,-info.linear.dir.y);
-                    movementList.Add(Movement.Linear(Linear.Mk(attackDir)));
+                    if (info.linear.HasValue) {
+                        var dir = new Vector2Int(-info.linear.Value.dir.x,-info.linear.Value.dir.y);
+                        movementList.Add(Movement.Linear(Linear.Mk(dir)));
+                    }
 
                     var possibleAttackPos = move.Move.GetMoveCells(
                         movementList,
-                        info.realCheck.Value,
+                        info.attackingPiecePos.Value,
                         board,
                         lastMove
                     );
                     var possibleDefensePos = move.Move.GetMoveCells(
-                        movementList = Storage.movement[board[pos.x, pos.y].Peel().type],
+                        Storage.movement[board[pos.x, pos.y].Peel().type],
                         pos,
                         board,
                         lastMove
                     );
 
-                    foreach (var attack in possibleAttackPos) {
-                        foreach (var defense in possibleDefensePos) {
-                            if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
+                    foreach (var defense in possibleDefensePos) {
+                            if (defense.doubleMove.first.to == info.attackingPiecePos.Value) {
                                 possibleMoves.Add(defense);
                             }
-                            if (defense.doubleMove.first.to == info.realCheck.Value) {
+                        foreach (var attack in possibleAttackPos) {
+                            if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
                                 possibleMoves.Add(defense);
                             }
                         }
@@ -54,7 +56,11 @@ namespace chess {
                     return possibleMoves;
                 }
                 if (info.coveringPiece == pos) {
+                    if (board[pos.x , pos.y].Peel().type == PieceType.Knight) {
+                        return possibleMoves;
+                    }
                     movementList.Add(Movement.Linear(info.linear));
+                    
                 }
             }
 
@@ -76,7 +82,7 @@ namespace chess {
                 whoseMove = PieceColor.White;
             }
             foreach (var checkInfo in Check.GetCheckInfo(whoseMove, board, Storage.movement)) {
-                if (checkInfo.realCheck.HasValue) {
+                if (checkInfo.attackingPiecePos.HasValue) {
                     Debug.Log("Check");
                 }
             }
