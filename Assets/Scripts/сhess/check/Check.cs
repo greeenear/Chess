@@ -14,12 +14,13 @@ namespace check {
             return new AttackInfo { linear = linear, circleСenter = circleСenter };
         }
     }
+
     public struct CheckInfo {
         public Linear? linear;
         public Vector2Int? coveringPiece;
         public Vector2Int? attackingPiecePos;
 
-        public static CheckInfo BlokingInfo(Linear linear, Vector2Int? coveringPiece) {
+        public static CheckInfo BlokingInfo(Linear linear, Vector2Int coveringPiece) {
             return new CheckInfo { linear = linear, coveringPiece = coveringPiece };
         }
 
@@ -52,7 +53,6 @@ namespace check {
         ) {
             var attackInfo = new List<AttackInfo>();
             var pos = FindKing(startBoard, color);
-            var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
             Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
 
             for (int i = 0; i < 8; i++) {
@@ -67,7 +67,7 @@ namespace check {
                 }
             }
             var moveType = movement[PieceType.Queen];
-            
+
             foreach (var dir in moveType) {
                 int lineLength = 0;
                 foreach (var move in Rules.GetLinearMoves(board, pos, dir.linear.Value, 8)) {
@@ -98,6 +98,7 @@ namespace check {
                     }
                 }
             }
+
             return attackInfo;
         }
 
@@ -112,15 +113,15 @@ namespace check {
             var pos = FindKing(startBoard, color);
             var kingCell = startBoard[pos.x, pos.y];
 
-            foreach (var attack in attackInfo) {
+            foreach (var info in attackInfo) {
                 var piecesCounter = 0;
-                if (attack.circleСenter.HasValue) {
-                   checkInfo.Add(CheckInfo.CheckingInfo(null, attack.circleСenter));
+                if (info.circleСenter.HasValue) {
+                   checkInfo.Add(CheckInfo.CheckingInfo(null, info.circleСenter));
                    continue;
                 }
 
                 for (int i = 1; i < 8; i++) {
-                    var next = pos + attack.linear.Value.dir * i;
+                    var next = pos + info.linear.Value.dir * i;
                     var nextPos = new Vector2Int(next.x, next.y);
                     var isOnBoard = Board.OnBoard(nextPos, boardSize);
                     if (!isOnBoard) {
@@ -132,7 +133,7 @@ namespace check {
                     }
                     if (nextCell.Peel().color == kingCell.Peel().color) {
                         if (piecesCounter == 0) {
-                            checkInfo.Add(CheckInfo.BlokingInfo(attack.linear.Value, nextPos));
+                            checkInfo.Add(CheckInfo.BlokingInfo(info.linear.Value, nextPos));
                             piecesCounter++;
                         } else {
                             checkInfo.RemoveAt(checkInfo.Count - 1);
@@ -140,7 +141,7 @@ namespace check {
                         }
                     }
                     if (nextCell.Peel().color != kingCell.Peel().color && piecesCounter == 0) {
-                        checkInfo.Add(CheckInfo.CheckingInfo(attack.linear.Value, nextPos));
+                        checkInfo.Add(CheckInfo.CheckingInfo(info.linear.Value, nextPos));
                         break;
                     }
                 }

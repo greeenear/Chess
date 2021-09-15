@@ -20,7 +20,8 @@ namespace chess {
             var possibleMoves = new List<MoveInfo>();
             List<Movement> movementList = new List<Movement>(); 
             var color = board[pos.x, pos.y].Peel().color;
-            var checkInfo = Check.GetCheckInfo(color, board, Storage.movement);
+            var cleanedBoard = DeletePiecesSameColor(PieceColor.Black, board);
+            var checkInfo = Check.GetCheckInfo(color, cleanedBoard, Storage.movement);
 
             foreach (var info in checkInfo) {
                 if (info.attackingPiecePos.HasValue) {
@@ -102,9 +103,9 @@ namespace chess {
             return false;
         }
 
-        public static bool CheckDraw(List<MoveInfo> completedMoves, int movesWithoutTaking) {
+        public static bool CheckDraw(List<MoveInfo> completedMoves, int noTakeMoves) {
             int moveCounter = 0;
-            if (completedMoves.Count > 10) {
+            if (completedMoves.Count > 9) {
                 var lastMove = completedMoves[completedMoves.Count - 1].doubleMove.first;
 
                 for (int i = completedMoves.Count - 1; i > completedMoves.Count - 10; i = i - 2) {
@@ -117,11 +118,33 @@ namespace chess {
             if (moveCounter == 3) {
                 return true;
             }
-            if(movesWithoutTaking == 50) {
+            if(noTakeMoves == 50) {
                 return true;
             }
 
             return false;
+        }
+
+        public static Option<Piece>[,] DeletePiecesSameColor(
+            PieceColor color,
+            Option<Piece>[,] startBoard
+        ) {
+            var pos = Check.FindKing(startBoard, color);
+            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if(i == pos.x && j == pos.y) {
+                        continue;
+                    }
+                    if (board[i,j].IsSome()
+                        && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
+                        board[i, j] = Option<Piece>.None();
+                    }
+                }
+            }
+
+            return board;
         }
 
         public static void ChangePiece(

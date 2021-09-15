@@ -104,12 +104,11 @@ namespace controller {
                     }
 
                     CheckMove(currentMove);
-
+                    CheckGameStatus();
                     completedMoves.Add(currentMove);
                     if(!isPaused) {
                         whoseMove = Chess.ChangeMove(whoseMove, board);
                     }
-
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
                     possibleMoves.Clear();
@@ -191,6 +190,12 @@ namespace controller {
             if (currentMove.pawnPromotion) {
                 resources.changePawn.SetActive(true);
                 isPaused = true;
+            }
+        }
+
+        private void CheckGameStatus() {
+            if (Chess.CheckDraw(completedMoves, noTakeMoves)) {
+                Debug.Log("Draw");
             }
         }
 
