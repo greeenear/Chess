@@ -7,9 +7,10 @@ using check;
 using System.Collections.Generic;
 
 namespace chess {
-    public struct Castling {
-        public Vector2Int kingPos;
-        public Vector2Int? rookPos;
+    public struct GameStatus {
+        public bool check;
+        public bool checkMate;
+        public bool draw;
     }
     public static class Chess {
         public static List<MoveInfo> GetPossibleMoves(
@@ -20,33 +21,37 @@ namespace chess {
             var possibleMoves = new List<MoveInfo>();
             List<Movement> movementList = new List<Movement>(); 
             var color = board[pos.x, pos.y].Peel().color;
-            var cleanedBoard = DeletePiecesSameColor(color, board);
-            var attackInfo = Check.GetAttackInfo(color, cleanedBoard, Storage.movement);
-            var checkInfo = Check.GetCheckInfo(color, board, attackInfo);
+            var movement = Storage.movement;
+            var checkInfo = CheckKing(board, color);
 
             foreach (var info in checkInfo) {
-                if (info.attackingPiecePos.HasValue) {
+                if (info.coveringPiece == null) {
                     movementList.Clear();
-                    if (info.linear.HasValue) {
-                        var dir = new Vector2Int(-info.linear.Value.dir.x,-info.linear.Value.dir.y);
+                    var linearMovement = info.attackInfo.movement.linear;
+
+                    if (linearMovement.HasValue) {
+                        var dir = new Vector2Int(
+                            -linearMovement.Value.dir.x,
+                            -linearMovement.Value.dir.y
+                        );
                         movementList.Add(Movement.Linear(Linear.Mk(dir)));
                     }
 
                     var possibleAttackPos = move.Move.GetMoveCells(
                         movementList,
-                        info.attackingPiecePos.Value,
+                        info.attackInfo.startPos,
                         board,
                         lastMove
                     );
                     var possibleDefensePos = move.Move.GetMoveCells(
-                        Storage.movement[board[pos.x, pos.y].Peel().type],
+                        movement[board[pos.x, pos.y].Peel().type],
                         pos,
                         board,
                         lastMove
                     );
 
                     foreach (var defense in possibleDefensePos) {
-                            if (defense.doubleMove.first.to == info.attackingPiecePos.Value) {
+                            if (defense.doubleMove.first.to == info.attackInfo.startPos) {
                                 possibleMoves.Add(defense);
                             }
                         foreach (var attack in possibleAttackPos) {
@@ -61,33 +66,24 @@ namespace chess {
                     if (board[pos.x , pos.y].Peel().type == PieceType.Knight) {
                         return possibleMoves;
                     }
-                    movementList.Add(Movement.Linear(info.linear));
-                    
+                    movementList.Add(Movement.Linear(info.attackInfo.movement.linear));
+
+                    return move.Move.GetMoveCells(movementList, pos, board, lastMove);
                 }
             }
 
-            if (movementList.Count == 0) {
-                movementList = Storage.movement[board[pos.x, pos.y].Peel().type];
-            }
+            movementList = movement[board[pos.x, pos.y].Peel().type];
             possibleMoves = move.Move.GetMoveCells(movementList, pos, board, lastMove);
 
             return possibleMoves;
         }
 
-        public static PieceColor ChangeMove(
-            PieceColor whoseMove,
-            Option<Piece>[,] board
-        ) {
+        public static PieceColor ChangeMove(PieceColor whoseMove) {
             if (whoseMove == PieceColor.White) {
                 whoseMove = PieceColor.Black;
             } else {
                 whoseMove = PieceColor.White;
             }
-            // foreach (var checkInfo in Check.GetCheckInfo(whoseMove, board, Storage.movement)) {
-            //     if (checkInfo.attackingPiecePos.HasValue) {
-            //         Debug.Log("Check");
-            //     }
-            // }
 
             return whoseMove;
         }
@@ -119,11 +115,66 @@ namespace chess {
             if (moveCounter == 3) {
                 return true;
             }
-            if(noTakeMoves == 50) {
+            if (noTakeMoves == 50) {
                 return true;
             }
 
             return false;
+        }
+
+        public static GameStatus GetCheckStatus(
+            Option<Piece>[,] board,
+            PieceColor color,
+            MoveInfo lastMove
+        ) {
+            var possibleMoves = new List<MoveInfo>();
+            var gameStatus = new GameStatus();
+            bool isCheck = false;
+
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    if (board[i, j].IsNone()) {
+                        continue;
+                    }
+
+                    var piece = board[i, j].Peel();
+                    if (piece.color == color && piece.type != PieceType.King) {
+                        var piecePos = new Vector2Int(i, j);
+                        possibleMoves.AddRange(GetPossibleMoves(piecePos, board, lastMove));
+                    }
+                }
+            }
+            var checkInfo = CheckKing(board, color);
+            foreach (var info in checkInfo) {
+                if (info.coveringPiece == null) {
+                    isCheck = true;
+                }
+            }
+            if (possibleMoves.Count == 0) {
+                if (isCheck) {
+                    Debug.Log("CheckMate");
+                } else {
+                    Debug.Log("Stalemate");
+                }
+                gameStatus.checkMate = true;
+                return gameStatus;
+            }
+            if (isCheck) {
+                gameStatus.check = true;
+                Debug.Log("Check");
+            }
+            return gameStatus;
+        }
+
+        public static List<CheckInfo> CheckKing(Option<Piece>[,] board, PieceColor color) {
+            var kingPos = Check.FindKing(board, color);
+            var movement = Storage.movement;
+
+            var singleColorBoard = DeletePiecesSameColor(color, board);
+            var attackInfo = Check.GetPotentialChecks(color, singleColorBoard, movement, kingPos);
+            var checkInfo = Check.GetCheckInfo(color, board, attackInfo, kingPos);
+
+            return checkInfo;
         }
 
         public static Option<Piece>[,] DeletePiecesSameColor(
@@ -135,7 +186,7 @@ namespace chess {
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     var piece = board[i,j].Peel();
-                    if(piece.type == PieceType.King) {
+                    if (piece.type == PieceType.King) {
                         continue;
                     }
                     if (board[i,j].IsSome() && piece.color == color) {

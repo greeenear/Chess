@@ -42,6 +42,15 @@ namespace board {
         }
     }
 
+    public struct FixedMovement {
+        public Movement movement;
+        public Vector2Int startPos;
+
+        public static FixedMovement Mk(Movement movement, Vector2Int startPos) {
+            return new FixedMovement { movement = movement, startPos = startPos };
+        }
+    }
+
     public static class Board {
         public static bool OnBoard(Vector2Int pos, Vector2Int boardSize) {
             if (pos.x < 0 || pos.x > boardSize.x - 1 || pos.y < 0 || pos.y > boardSize.y - 1) {

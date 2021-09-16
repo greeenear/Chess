@@ -1,3 +1,4 @@
+using System.Data.SqlTypes;
 using System.Collections.Generic;
 using UnityEngine;
 using board;
@@ -6,26 +7,12 @@ using rules;
 using move;
 
 namespace check {
-    public struct AttackInfo {
-        public Linear? linear;
-        public Vector2Int? circleСenter;
-
-        public static AttackInfo Mk(Linear? linear, Vector2Int? circleСenter) {
-            return new AttackInfo { linear = linear, circleСenter = circleСenter };
-        }
-    }
-
     public struct CheckInfo {
-        public Linear? linear;
+        public FixedMovement attackInfo;
         public Vector2Int? coveringPiece;
-        public Vector2Int? attackingPiecePos;
 
-        public static CheckInfo BlokingInfo(Linear linear, Vector2Int coveringPiece) {
-            return new CheckInfo { linear = linear, coveringPiece = coveringPiece };
-        }
-
-        public static CheckInfo CheckingInfo(Linear? linear, Vector2Int? attackingPiecePos) {
-            return new CheckInfo { linear = linear, attackingPiecePos = attackingPiecePos };
+        public static CheckInfo Mk(FixedMovement attackInfo, Vector2Int? coveringPiece) {
+            return new CheckInfo { attackInfo = attackInfo, coveringPiece = coveringPiece };
         }
     }
 
@@ -46,56 +33,55 @@ namespace check {
             return kingPosition;
         }
 
-        public static List<AttackInfo> GetAttackInfo(
+        public static List<FixedMovement> GetPotentialChecks(
             PieceColor color,
-            Option<Piece>[,] startBoard,
-            Dictionary<PieceType,List<Movement>> movement
+            Option<Piece>[,] board,
+            Dictionary<PieceType,List<Movement>> movement,
+            Vector2Int pos
         ) {
-            var attackInfo = new List<AttackInfo>();
-            var pos = FindKing(startBoard, color);
-            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
+            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            var attackInfo = new List<FixedMovement>();
+            var movementType = new List<Movement>(movement[PieceType.Queen]);
+            movementType.AddRange(movement[PieceType.Knight]);
+        
+            foreach (var type in movementType) {
+                if (type.circular.HasValue) {
+                    var moves = Rules.GetCirclularMoves(board, pos, type.circular.Value);
+                    foreach (var move in moves) {
+                        var cell = board[move.x, move.y];
+                        var circle = Movement.Circular(Circular.Mk(2));
+                        var attackingPiecePos = new Vector2Int(move.x, move.y);
 
-            // for (int i = 0; i < 8; i++) {
-            //     for (int j = 0; j < 8; j++) {
-            //         if(i == pos.x && j == pos.y) {
-            //             continue;
-            //         }
-            //         if (board[i,j].IsSome()
-            //             && board[i,j].Peel().color == board[pos.x, pos.y].Peel().color) {
-            //             board[i, j] = Option<Piece>.None();
-            //         }
-            //     }
-            // }
-            var moveType = movement[PieceType.Queen];
-
-            foreach (var dir in moveType) {
-                int lineLength = 0;
-                foreach (var move in Rules.GetLinearMoves(board, pos, dir.linear.Value, 8)) {
-                    lineLength++;
-
-                    if (board[move.x, move.y].IsSome()) {
-                        if (movement[board[move.x , move.y].Peel().type].Contains(dir)) {
-                            if (board[move.x, move.y].Peel().type == PieceType.Pawn) {
-                                if (lineLength == 1 && dir.movementType == MovementType.Attack) {
-                                    attackInfo.Add(AttackInfo.Mk(dir.linear.Value, null));
-                                    break;
-                                } else {
-                                    break;
-                                }
-                            }
-                            attackInfo.Add(AttackInfo.Mk(dir.linear.Value, null));
+                        if (cell.IsSome() && cell.Peel().type == PieceType.Knight) {
+                            attackInfo.Add(FixedMovement.Mk(circle, attackingPiecePos));
                         }
                     }
+                    continue;
                 }
-            }
-            moveType = movement[PieceType.Knight];
-            foreach (var circle in moveType) {
-                var moves = Rules.GetCirclularMoves(board, pos, circle.circular.Value, 22.5f);
-                foreach (var move in moves) {
-                    var cell = board[move.x, move.y];
-                    if (cell.IsSome() && cell.Peel().type == PieceType.Knight) {
-                        attackInfo.Add(AttackInfo.Mk(null, move));
+
+                int lineLength = 0;
+                var lineMoves = Rules.GetLinearMoves(board, pos, type.linear.Value, boardSize.x);
+                foreach (var move in lineMoves) {
+                    lineLength++;
+
+                    if (board[move.x, move.y].IsNone()) {
+                        continue;
                     }
+                    if (!movement[board[move.x , move.y].Peel().type].Contains(type)) {
+                        break;
+                    }
+                    var attackDir = Movement.Linear(type.linear.Value);
+                    var attackingPiecePos = new Vector2Int(move.x, move.y);
+
+                    if (board[move.x, move.y].Peel().type == PieceType.Pawn) {
+                        if (lineLength == 1 && type.movementType == MovementType.Attack) {
+                            attackInfo.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+                            break;
+                        } else {
+                            break;
+                        }
+                    }
+                    attackInfo.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
                 }
             }
 
@@ -105,43 +91,41 @@ namespace check {
         public static List<CheckInfo> GetCheckInfo(
             PieceColor color,
             Option<Piece>[,] startBoard,
-            List<AttackInfo> attackInfo
+            List<FixedMovement> attackInfo,
+            Vector2Int pos
         ) {
             var checkInfo = new List<CheckInfo>();
-            // var attackInfo = GetAttackInfo(color, startBoard, movement);
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
-            var pos = FindKing(startBoard, color);
-            var kingCell = startBoard[pos.x, pos.y];
 
             foreach (var info in attackInfo) {
                 var piecesCounter = 0;
-                if (info.circleСenter.HasValue) {
-                   checkInfo.Add(CheckInfo.CheckingInfo(null, info.circleСenter));
-                   continue;
+                if (info.movement.circular.HasValue) {
+                    checkInfo.Add(CheckInfo.Mk(info, null));
+                    continue;
                 }
 
-                for (int i = 1; i < 8; i++) {
-                    var next = pos + info.linear.Value.dir * i;
+                for (int i = 1; i < boardSize.x; i++) {
+                    var next = pos + info.movement.linear.Value.dir * i;
                     var nextPos = new Vector2Int(next.x, next.y);
                     var isOnBoard = Board.OnBoard(nextPos, boardSize);
                     if (!isOnBoard) {
                         break;
                     }
                     var nextCell = startBoard[next.x, next.y];
-                    if (!nextCell.IsSome()) {
+                    if (nextCell.IsNone()) {
                         continue;
                     }
-                    if (nextCell.Peel().color == kingCell.Peel().color) {
+                    if (nextCell.Peel().color == color) {
                         if (piecesCounter == 0) {
-                            checkInfo.Add(CheckInfo.BlokingInfo(info.linear.Value, nextPos));
+                            checkInfo.Add(CheckInfo.Mk(info, nextPos));
                             piecesCounter++;
                         } else {
                             checkInfo.RemoveAt(checkInfo.Count - 1);
                             break;
                         }
                     }
-                    if (nextCell.Peel().color != kingCell.Peel().color && piecesCounter == 0) {
-                        checkInfo.Add(CheckInfo.CheckingInfo(info.linear.Value, nextPos));
+                    if (nextCell.Peel().color != color && piecesCounter == 0) {
+                        checkInfo.Add(CheckInfo.Mk(info, null));
                         break;
                     }
                 }

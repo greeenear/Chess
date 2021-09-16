@@ -54,7 +54,6 @@ namespace move {
             var possibleMoves = new List<Vector2Int>();
             var moveResList = new List<MoveInfo>();
             int maxLength;
-            float startAngle;
 
             foreach (var movment in moveList) {
                 if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
@@ -70,16 +69,10 @@ namespace move {
                         maxLength
                     ));
                 } else {
-                    if (board[pos.x, pos.y].Peel().type == PieceType.King) {
-                        startAngle = StartAngle.King;
-                    } else {
-                        startAngle = StartAngle.Knight;
-                    }
                     possibleMoves = Rules.GetCirclularMoves(
                         board,
                         pos,
-                        movment.circular.Value,
-                        startAngle
+                        movment.circular.Value
                     );
                 }
             }

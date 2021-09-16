@@ -29,6 +29,11 @@ namespace rules {
         }
     }
 
+    public struct StartAngle {
+        public const float Knight = 22.5f;
+        public const float King = 20f;
+    }
+
     public static class Rules {
         public static List<Vector2Int> GetLinearMoves(
             Option<Piece>[,] board,
@@ -38,15 +43,20 @@ namespace rules {
         ) {
             int length = Board.GetLinearLength<Piece>(piecePos, linear, board, maxLength);
 
-            return CheckColorOnLine(board, piecePos, linear, length);
+            return GetPossibleLinearMoves(board, piecePos, linear, length);
         }
 
         public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
             Vector2Int pos,
-            Circular circlular,
-            float angle
+            Circular circlular
         ) {
+            float angle;
+            if (board[pos.x, pos.y].Peel().type == PieceType.King) {
+                angle = StartAngle.King;
+            } else {
+                angle = StartAngle.Knight;
+            }
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
             Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
@@ -65,7 +75,7 @@ namespace rules {
             return canMovePositions;
         }
 
-        private static List<Vector2Int> CheckColorOnLine(
+        private static List<Vector2Int> GetPossibleLinearMoves(
             Option<Piece>[,] board,
             Vector2Int piecePos,
             Linear linear,

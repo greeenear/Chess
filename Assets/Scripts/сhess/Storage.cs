@@ -5,6 +5,7 @@ using rules;
 
 namespace chess {
     public static class Storage {
+        public const int knightRadius = 2;
          public static readonly Dictionary<PieceType, List<Movement>> movement =
                 new Dictionary<PieceType, List<Movement>>() {
             {

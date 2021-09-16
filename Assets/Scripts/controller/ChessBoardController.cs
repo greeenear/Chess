@@ -71,7 +71,7 @@ namespace controller {
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
         }
- 
+
         private void Update() {
             if (!Input.GetMouseButtonDown(0)) {
                 return;
@@ -104,11 +104,13 @@ namespace controller {
                     }
 
                     CheckMove(currentMove);
-                    CheckGameStatus();
                     completedMoves.Add(currentMove);
-                    if(!isPaused) {
-                        whoseMove = Chess.ChangeMove(whoseMove, board);
+                    if (!isPaused) {
+
+                        whoseMove = Chess.ChangeMove(whoseMove);
+                        CheckGameStatus(board, whoseMove, lastMove, noTakeMoves);
                     }
+
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
                     possibleMoves.Clear();
@@ -158,7 +160,7 @@ namespace controller {
             isPaused = false;
             resources.changePawn.SetActive(false);
             var lastMove = completedMoves[completedMoves.Count - 1];
-            whoseMove = Chess.ChangeMove(whoseMove, board);
+            whoseMove = Chess.ChangeMove(whoseMove);
         }
 
         private void Move(MoveData moveData, Vector2Int? sentenced) {
@@ -193,7 +195,16 @@ namespace controller {
             }
         }
 
-        private void CheckGameStatus() {
+        private void CheckGameStatus(
+            Option<Piece>[,] board,
+            PieceColor whoseMove,
+            MoveInfo lastMove,
+            int noTakeMoves
+        ) {
+            var gameStatus = Chess.GetCheckStatus(board, whoseMove, lastMove);
+            if (gameStatus.checkMate) {
+                resources.gameMenu.SetActive(true);
+            }
             if (Chess.CheckDraw(completedMoves, noTakeMoves)) {
                 Debug.Log("Draw");
             }
