@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -29,7 +30,6 @@ namespace controller {
         private JsonObject jsonObject;
 
         private PlayerAction playerAction;
-        private bool isPaused;
 
         private void Awake() {
            board = Chess.CreateBoard();
@@ -70,6 +70,7 @@ namespace controller {
             }
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
+            this.enabled = true;
         }
 
         private void Update() {
@@ -92,7 +93,7 @@ namespace controller {
             var firstMove = currentMove.doubleMove.first;
 
             var pieceOpt = board[selectedPos.x, selectedPos.y];
-            if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove && !isPaused) {
+            if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove) {
                 playerAction = PlayerAction.Select;
             }
             var lastMove = completedMoves[completedMoves.Count - 1];
@@ -105,11 +106,8 @@ namespace controller {
 
                     CheckMove(currentMove);
                     completedMoves.Add(currentMove);
-                    if (!isPaused) {
-
-                        whoseMove = Chess.ChangeMove(whoseMove);
-                        CheckGameStatus(board, whoseMove, lastMove, noTakeMoves);
-                    }
+                    whoseMove = Chess.ChangeMove(whoseMove);
+                    CheckGameStatus(board, whoseMove, lastMove, noTakeMoves);
 
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
@@ -131,8 +129,10 @@ namespace controller {
         public void OpenMenu() {
             if (resources.gameMenu.activeSelf == true) {
                 resources.gameMenu.SetActive(false);
+                this.enabled = true;
             } else {
                 resources.gameMenu.SetActive(true);
+                this.enabled = false;
             }
         }
 
@@ -157,7 +157,7 @@ namespace controller {
                 Quaternion.identity,
                 resources.boardObj.transform
             );
-            isPaused = false;
+            this.enabled = true;
             resources.changePawn.SetActive(false);
             var lastMove = completedMoves[completedMoves.Count - 1];
             whoseMove = Chess.ChangeMove(whoseMove);
@@ -191,7 +191,7 @@ namespace controller {
             }
             if (currentMove.pawnPromotion) {
                 resources.changePawn.SetActive(true);
-                isPaused = true;
+                this.enabled = false;
             }
         }
 
@@ -202,10 +202,18 @@ namespace controller {
             int noTakeMoves
         ) {
             var gameStatus = Chess.GetCheckStatus(board, whoseMove, lastMove);
-            if (gameStatus.checkMate) {
-                resources.gameMenu.SetActive(true);
+            if (gameStatus == GameStatus.None) {
+                return;
             }
+            if (gameStatus == GameStatus.CheckMate) {
+                resources.gameMenu.SetActive(true);
+                this.enabled = false;
+            } else if (gameStatus == GameStatus.Check) {
+                Debug.Log("Check");
+            }
+
             if (Chess.CheckDraw(completedMoves, noTakeMoves)) {
+                this.enabled = false;
                 Debug.Log("Draw");
             }
         }

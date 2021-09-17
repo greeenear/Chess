@@ -29,15 +29,15 @@ namespace board {
         public Linear? linear;
         public Circular? circular;
 
-        public static Movement Linear(Linear? linear) {
+        public static Movement Linear(Linear linear) {
             return new Movement { linear = linear};
         }
 
-        public static Movement LinearOnlyMove(Linear? linear, MovementType movementType) {
+        public static Movement LinearOnlyMove(Linear linear, MovementType movementType) {
             return new Movement { linear = linear, movementType = movementType};
         }
 
-        public static Movement Circular(Circular? circular) {
+        public static Movement Circular(Circular circular) {
             return new Movement { circular = circular };
         }
     }

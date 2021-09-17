@@ -15,7 +15,8 @@ namespace rules {
 
     public enum PieceColor {
         White,
-        Black
+        Black,
+        Count
     }
 
     public struct Piece {
@@ -43,7 +44,7 @@ namespace rules {
         ) {
             int length = Board.GetLinearLength<Piece>(piecePos, linear, board, maxLength);
 
-            return GetPossibleLinearMoves(board, piecePos, linear, length);
+            return GetOppositeColorOnLine(board, piecePos, linear, length);
         }
 
         public static List<Vector2Int> GetCirclularMoves(
@@ -75,7 +76,7 @@ namespace rules {
             return canMovePositions;
         }
 
-        private static List<Vector2Int> GetPossibleLinearMoves(
+        private static List<Vector2Int> GetOppositeColorOnLine(
             Option<Piece>[,] board,
             Vector2Int piecePos,
             Linear linear,
