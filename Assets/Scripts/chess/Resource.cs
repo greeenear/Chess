@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using board;
-using rules;
 
 namespace chess {
     public class Resource : MonoBehaviour {

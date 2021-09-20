@@ -25,6 +25,7 @@ namespace move {
             return new DoubleMove {first = first, second = second};
         }
     }
+
     public struct MoveInfo {
         public DoubleMove doubleMove;
         public Vector2Int? sentenced;

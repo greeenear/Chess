@@ -1,10 +1,8 @@
-using System.Data.SqlTypes;
 using System.Collections.Generic;
 using UnityEngine;
 using board;
 using option;
 using rules;
-using move;
 
 namespace check {
     public struct CheckInfo {
