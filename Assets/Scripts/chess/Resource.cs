@@ -8,10 +8,12 @@ namespace chess {
         public GameObject boardObj;
         public GameObject canMoveCell;
         public GameObject underAttackCell;
+        public GameObject checkCell;
         public GameObject gameMenu;
         public GameObject changePawn;
         public Transform cellSize;
         public GameObject storageHighlightCells;
+        public GameObject storageHighlightCheckCell;
 
         public LayerMask highlightMask;
         public List<GameObject> pieceList = new List<GameObject>();

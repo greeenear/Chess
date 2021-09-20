@@ -1294,10 +1294,12 @@ MonoBehaviour:
   boardObj: {fileID: 965990723}
   canMoveCell: {fileID: 6169466877868371687, guid: 28ba2eb344ba1984387386c4f2470078, type: 3}
   underAttackCell: {fileID: 1527063711133394628, guid: a8bd9aa60866f6240bb2d51e83959785, type: 3}
+  checkCell: {fileID: 2067641488438392711, guid: 02aba3f18589522499e1dff326029c25, type: 3}
   gameMenu: {fileID: 1923249195}
   changePawn: {fileID: 1612427839}
   cellSize: {fileID: 1081007861}
   storageHighlightCells: {fileID: 1281635026}
+  storageHighlightCheckCell: {fileID: 1237379512}
   highlightMask:
     serializedVersion: 2
     m_Bits: 8
@@ -1543,6 +1545,36 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1081007860}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1237379512
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1237379513}
+  m_Layer: 0
+  m_Name: StorageHighlightCheckCell
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1237379513
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237379512}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 965990729}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1254916198
 GameObject:
   m_ObjectHideFlags: 0

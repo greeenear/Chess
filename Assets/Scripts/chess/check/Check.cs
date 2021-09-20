@@ -41,18 +41,18 @@ namespace check {
         public static List<FixedMovement> GetAttackMovements(
             PieceColor color,
             Option<Piece>[,] board,
-            Dictionary<PieceType,List<Movement>> movement,
+            Dictionary<PieceType,List<Movement>> movementStorage,
             Vector2Int target
         ) {
             var movements = new List<FixedMovement>();
-            var movementType = new List<Movement>(movement[PieceType.Queen]);
-            movementType.AddRange(movement[PieceType.Knight]);
+            var movementType = new List<Movement>(movementStorage[PieceType.Queen]);
+            movementType.AddRange(movementStorage[PieceType.Knight]);
         
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
                     InsertCircularMovements(board, target, type, movements);
                 } else if (type.linear.HasValue) {
-                    InsertLinearMoves(board, target, type, movements, movement);
+                    InsertLinearMoves(board, target, type, movements);
                 }
             }
 
@@ -62,15 +62,15 @@ namespace check {
         public static void InsertCircularMovements(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement movement,
+            Movement circularMovement,
             List<FixedMovement> movements
         ) {
-            var moves = Rules.GetCirclularMoves(board, target, movement.circular.Value);
+            var moves = Rules.GetCirclularMoves(board, target, circularMovement.circular.Value);
+
             foreach (var move in moves) {
                 var cell = board[move.x, move.y];
                 var circle = Movement.Circular(Circular.Mk(2));
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
-
                 if (cell.IsSome() && cell.Peel().type == PieceType.Knight) {
                     movements.Add(FixedMovement.Mk(circle, attackingPiecePos));
                 }
@@ -80,16 +80,15 @@ namespace check {
         public static void InsertLinearMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement movement,
-            List<FixedMovement> movements,
-            Dictionary<PieceType,List<Movement>> movementType
+            Movement linearMovement,
+            List<FixedMovement> movements
         ) {
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             int lineLength = 0;
             var lineMoves = Rules.GetLinearMoves(
                 board,
                 target,
-                movement.linear.Value,
+                linearMovement.linear.Value,
                 boardSize.x
             );
             
@@ -99,14 +98,15 @@ namespace check {
                 if (board[move.x, move.y].IsNone()) {
                     continue;
                 }
-                if (!movementType[board[move.x , move.y].Peel().type].Contains(movement)) {
+                var piece = board[move.x , move.y].Peel();
+                if (!storage.Storage.movement[piece.type].Contains(linearMovement)) {
                     break;
                 }
-                var attackDir = Movement.Linear(movement.linear.Value);
+                var attackDir = Movement.Linear(linearMovement.linear.Value);
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
 
-                if (board[move.x, move.y].Peel().type == PieceType.Pawn) {
-                    if (lineLength == 1 && movement.movementType == MovementType.Attack) {
+                if (piece.type == PieceType.Pawn) {
+                    if (lineLength == 1 && linearMovement.movementType == MovementType.Attack) {
                         movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
                         break;
                     } else {
@@ -121,7 +121,7 @@ namespace check {
             PieceColor color,
             Option<Piece>[,] startBoard,
             List<FixedMovement> attackInfo,
-            Vector2Int pos
+            Vector2Int target
         ) {
             var checkInfo = new List<CheckInfo>();
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
@@ -134,7 +134,7 @@ namespace check {
                 }
 
                 for (int i = 1; i < boardSize.x; i++) {
-                    var next = pos + info.movement.linear.Value.dir * i;
+                    var next = target + info.movement.linear.Value.dir * i;
                     var nextPos = new Vector2Int(next.x, next.y);
                     var isOnBoard = Board.OnBoard(nextPos, boardSize);
                     if (!isOnBoard) {

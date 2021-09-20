@@ -1,4 +1,5 @@
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -24,12 +25,14 @@ namespace controller {
         private PieceColor whoseMove = PieceColor.White;
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
-        private List<MoveInfo> completedMoves = new List<MoveInfo>();
+        private List<MoveInfo> movesHistory = new List<MoveInfo>();
         private int noTakeMoves;
 
         private JsonObject jsonObject;
 
         private PlayerAction playerAction;
+
+        private GameStatus gameStatus;
 
         private void Awake() {
            board = Chess.CreateBoard();
@@ -37,7 +40,7 @@ namespace controller {
 
         private void Start() {
             resources = gameObject.GetComponent<Resource>();
-            completedMoves.Add(new MoveInfo());
+            movesHistory.Add(new MoveInfo());
             AddPiecesOnBoard();
         }
 
@@ -96,29 +99,42 @@ namespace controller {
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove) {
                 playerAction = PlayerAction.Select;
             }
-            var lastMove = completedMoves[completedMoves.Count - 1];
+            var lastMove = movesHistory[movesHistory.Count - 1];
 
             switch (playerAction) {
                 case PlayerAction.Move:
+                    DestroyHighlightCell(resources.storageHighlightCells.transform);
+                    DestroyHighlightCell(resources.storageHighlightCheckCell.transform);
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
 
                     CheckMove(currentMove);
-                    completedMoves.Add(currentMove);
+                    movesHistory.Add(currentMove);
                     whoseMove = Chess.ChangeMove(whoseMove);
-                    CheckGameStatus(board, whoseMove, lastMove, noTakeMoves);
+                    gameStatus = Chess.GetGameStatus(
+                        board,
+                        whoseMove,
+                        lastMove,
+                        movesHistory,
+                        noTakeMoves
+                    );
+                    CheckGameStatus(board, whoseMove, gameStatus);
+                    possibleMoves.Clear();
 
                     selectedPiece = selectedPos;
                     playerAction = PlayerAction.None;
-                    possibleMoves.Clear();
-                    DestroyHighlightCell(resources.storageHighlightCells.transform);
                     break;
                 case PlayerAction.Select:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
 
-                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
+                    possibleMoves = Chess.GetPossibleMoves(
+                        selectedPos,
+                        board,
+                        lastMove,
+                        gameStatus
+                    );
 
                     playerAction = PlayerAction.Move;
                     HighlightCell(possibleMoves);
@@ -138,7 +154,7 @@ namespace controller {
 
         public void ChangePawn(int type) {
             var boardPos = resources.boardObj.transform.position;
-            var pawnPos = completedMoves[completedMoves.Count - 1].doubleMove.first.to;
+            var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
             var x = pawnPos.x;
             var y = pawnPos.y;
             PieceType pieceType = (PieceType)type;
@@ -159,7 +175,7 @@ namespace controller {
             );
             this.enabled = true;
             resources.changePawn.SetActive(false);
-            var lastMove = completedMoves[completedMoves.Count - 1];
+            var lastMove = movesHistory[movesHistory.Count - 1];
             whoseMove = Chess.ChangeMove(whoseMove);
         }
 
@@ -198,23 +214,40 @@ namespace controller {
         private void CheckGameStatus(
             Option<Piece>[,] board,
             PieceColor whoseMove,
-            MoveInfo lastMove,
-            int noTakeMoves
+            GameStatus gameStatus
         ) {
-            var gameStatus = Chess.GetCheckStatus(board, whoseMove, lastMove);
+            var kingPos = Check.FindKing(board, whoseMove);
             if (gameStatus == GameStatus.None) {
                 return;
             }
+
             if (gameStatus == GameStatus.CheckMate) {
                 resources.gameMenu.SetActive(true);
                 this.enabled = false;
+            } else if (gameStatus == GameStatus.StaleMate) {
+                resources.gameMenu.SetActive(true);
+                this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
-                Debug.Log("Check");
+                var boardPos = resources.boardObj.transform.position;
+                var halfBoardSize = resources.halfBoardSize.x;
+                var halfCellSize = resources.halfCellSize.x;
+
+                var highlightPos = new Vector3(
+                    kingPos.x + boardPos.x - halfBoardSize + halfCellSize,
+                    boardPos.y + halfCellSize,
+                    kingPos.y + boardPos.z - halfBoardSize + halfCellSize
+                );
+                Instantiate(
+                    resources.checkCell,
+                    highlightPos,
+                    Quaternion.identity,
+                    resources.storageHighlightCheckCell.transform
+                );
             }
 
-            if (Chess.CheckDraw(completedMoves, noTakeMoves)) {
+            if (gameStatus == GameStatus.Draw) {
                 this.enabled = false;
-                Debug.Log("Draw");
+                resources.gameMenu.SetActive(true);
             }
         }
 
@@ -255,10 +288,10 @@ namespace controller {
                 var toY = pos.doubleMove.first.to.y;
 
                 var highlightPos = new Vector3(
-                            toX + boardPos.x - halfBoardSize + halfCellSize,
-                            boardPos.y + halfCellSize,
-                            toY + boardPos.z - halfBoardSize + halfCellSize
-                        );
+                    toX + boardPos.x - halfBoardSize + halfCellSize,
+                    boardPos.y + halfCellSize,
+                    toY + boardPos.z - halfBoardSize + halfCellSize
+                );
                 if (board[toX, toY].IsSome()) {
                     Instantiate(
                         resources.underAttackCell,

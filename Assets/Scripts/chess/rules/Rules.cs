@@ -53,7 +53,7 @@ namespace rules {
             Circular circlular
         ) {
             float angle;
-            if (board[pos.x, pos.y].Peel().type == PieceType.King) {
+            if (circlular.radius == 1) {
                 angle = StartAngle.King;
             } else {
                 angle = StartAngle.Knight;
@@ -83,6 +83,9 @@ namespace rules {
             int length
         ) {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            if (board[piecePos.x, piecePos.y].IsNone()) {
+                return canMovePositions;
+            }
             Piece piece = board[piecePos.x, piecePos.y].Peel();
             for (int i = 1; i <= length; i++) {
                 Vector2Int pos = piecePos + linear.dir * i;

@@ -14,41 +14,85 @@ namespace chess {
         StaleMate,
         Draw
     }
+
     public static class Chess {
         public static List<MoveInfo> GetPossibleMoves(
             Vector2Int targetPiece,
             Option<Piece>[,] board,
-            MoveInfo lastMove
+            MoveInfo lastMove,
+            GameStatus gameStatus
         ) {
             var possibleMoves = new List<MoveInfo>();
             List<Movement> movementList = new List<Movement>(); 
             var color = board[targetPiece.x, targetPiece.y].Peel().color;
-            var movement = Storage.movement;
-            var checkInfos = GetCheckInfo(board, color);
+            var movement = storage.Storage.movement;
+            var kingPos = Check.FindKing(board, color);
+            var checkInfos = GetCheckInfo(board, color, kingPos);
+            if (board[targetPiece.x, targetPiece.y].IsNone()) {
+                return null;
+            }
 
+            if (board[targetPiece.x, targetPiece.y].Peel().type == PieceType.King) {
+                return GetKingPossibleMoves(board, targetPiece, lastMove, color);
+            }
 
             foreach (var checkInfo in checkInfos) {
                 if (checkInfo.coveringPiece == null) {
-                    InsertPossibleMoves(targetPiece, board, lastMove, possibleMoves, checkInfo);
+                    InsertСoveringMoves(targetPiece, board, lastMove, possibleMoves, checkInfo);
                     return possibleMoves;
                 }
-                if (checkInfo.coveringPiece == targetPiece) {
+                if (checkInfo.coveringPiece == targetPiece && gameStatus == GameStatus.None) {
                     if (board[targetPiece.x , targetPiece.y].Peel().type == PieceType.Knight) {
-                        return possibleMoves;
+                        return null;
                     }
                     movementList.Add(Movement.Linear(checkInfo.attackInfo.movement.linear.Value));
+                    Linear reverseDir = Linear.Mk(-checkInfo.attackInfo.movement.linear.Value.dir);
+                    movementList.Add(Movement.Linear(reverseDir));
 
                     return move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);
                 }
             }
 
             movementList = movement[board[targetPiece.x, targetPiece.y].Peel().type];
-            possibleMoves = move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);
 
-            return possibleMoves;
+            return move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);;
         }
 
-        public static void InsertPossibleMoves (
+        public static List<MoveInfo> GetKingPossibleMoves(
+            Option<Piece>[,] board,
+            Vector2Int target,
+            MoveInfo lastMove,
+            PieceColor color
+        ) {
+            List<MoveInfo> newKingMoves = new List<MoveInfo>();
+            if (board[target.x, target.y].IsNone()) {
+                return null;
+            }
+            var kingMoves = move.Move.GetMoveCells(
+                storage.Storage.movement[board[target.x, target.y].Peel().type],
+                target,
+                board,
+                lastMove
+            );
+            foreach (var move in kingMoves) {
+                var king = board[target.x, target.y];
+                board[target.x, target.y] = Option<Piece>.None();
+                var checkCellInfos = GetCheckInfo(board, color, move.doubleMove.first.to);
+                board[target.x, target.y] = king;
+                if (checkCellInfos.Count == 0) {
+                    newKingMoves.Add(move);
+                }
+                foreach (var info in checkCellInfos) {
+                    if (info.coveringPiece != null) {
+                        newKingMoves.Add(move);
+                    }
+                }
+            }
+
+            return newKingMoves;
+        }
+
+        public static void InsertСoveringMoves (
             Vector2Int target,
             Option<Piece>[,] board,
             MoveInfo lastMove,
@@ -58,11 +102,10 @@ namespace chess {
             var linearMovement = checkInfo.attackInfo.movement.linear;
             var movementList = new List<Movement>();
 
-            if (linearMovement == null) {
-                return;
+            if (linearMovement.HasValue) {
+                var dir = -linearMovement.Value.dir;
+                movementList.Add(Movement.Linear(Linear.Mk(dir)));
             }
-            var dir = -linearMovement.Value.dir;
-            movementList.Add(Movement.Linear(Linear.Mk(dir)));
 
             var possibleAttackPos = move.Move.GetMoveCells(
                 movementList,
@@ -71,16 +114,16 @@ namespace chess {
                 lastMove
             );
             var possibleDefensePos = move.Move.GetMoveCells(
-                Storage.movement[board[target.x, target.y].Peel().type],
+                storage.Storage.movement[board[target.x, target.y].Peel().type],
                 target,
                 board,
                 lastMove
             );
 
             foreach (var defense in possibleDefensePos) {
-                    if (defense.doubleMove.first.to == checkInfo.attackInfo.startPos) {
-                        possibleMoves.Add(defense);
-                    }
+                if (defense.doubleMove.first.to == checkInfo.attackInfo.startPos) {
+                    possibleMoves.Add(defense);
+                }
                 foreach (var attack in possibleAttackPos) {
                     if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
                         possibleMoves.Add(defense);
@@ -127,10 +170,12 @@ namespace chess {
             return false;
         }
 
-        public static GameStatus GetCheckStatus(
+        public static GameStatus GetGameStatus(
             Option<Piece>[,] board,
             PieceColor color,
-            MoveInfo lastMove
+            MoveInfo lastMove,
+            List<MoveInfo> completedMoves,
+            int noTakeMoves
         ) {
             var possibleMoves = new List<MoveInfo>();
             var gameStatus = new GameStatus();
@@ -147,9 +192,9 @@ namespace chess {
                     }
 
                     var piece = board[i, j].Peel();
-                    if (piece.color == color && piece.type != PieceType.King) {
+                    if (piece.color == color) {
                         var piecePos = new Vector2Int(i, j);
-                        var moves = GetPossibleMoves(piecePos, board, lastMove);
+                        var moves = GetPossibleMoves(piecePos, board, lastMove, gameStatus);
                         if (moves.Count != 0) {
                             noCheckMate = true;
                             break;
@@ -157,7 +202,8 @@ namespace chess {
                     }
                 }
             }
-            var checkInfo = GetCheckInfo(board, color);
+            var kingPos = Check.FindKing(board, color);
+            var checkInfo = GetCheckInfo(board, color, kingPos);
             foreach (var info in checkInfo) {
                 if (info.coveringPiece == null) {
                     gameStatus = GameStatus.Check;
@@ -169,25 +215,31 @@ namespace chess {
                 } else {
                     gameStatus = GameStatus.StaleMate;
                 }
+
                 return gameStatus;
+            }
+            if(CheckDraw(completedMoves, noTakeMoves)) {
+                gameStatus = GameStatus.Draw;
             }
 
             return gameStatus;
         }
 
-        public static List<CheckInfo> GetCheckInfo(Option<Piece>[,] board, PieceColor color) {
-            var kingPos = Check.FindKing(board, color);
-            var kingMoveCounter = board[kingPos.x, kingPos.y].Peel().moveCounter;
-            var movement = Storage.movement;
+        public static List<CheckInfo> GetCheckInfo(
+            Option<Piece>[,] board,
+            PieceColor color,
+            Vector2Int cellPos
+        ) {
+            var movement = storage.Storage.movement;
 
             var singleColorBoard = GetBoardWithOneColor(color, board);
-            var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, kingMoveCounter));
-            singleColorBoard[kingPos.x, kingPos.y] = king;
+            var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
+            singleColorBoard[cellPos.x, cellPos.y] = king;
 
-            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, movement, kingPos);
-            var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, kingPos);
+            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, movement, cellPos);
+            var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
 
-            return checkInfo;
+            return checkInfo; 
         }
 
         public static Option<Piece>[,] GetBoardWithOneColor(
