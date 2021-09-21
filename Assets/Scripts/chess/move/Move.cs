@@ -63,18 +63,12 @@ namespace move {
                     maxLength = board.GetLength(0);
                 }
                 if (movment.linear.HasValue) {
-                    possibleMoves.AddRange(Rules.GetLinearMoves(
-                        board,
-                        pos,
-                        movment.linear.Value,
-                        maxLength
-                    ));
-                } else {
-                    possibleMoves = Rules.GetCirclularMoves(
-                        board,
-                        pos,
-                        movment.circular.Value
-                    );
+                    var linear = movment.linear.Value;
+                    possibleMoves.AddRange(Rules.GetLinearMoves(board, pos, linear));
+
+                } else if (movment.circular.HasValue) {
+                    var circular = movment.circular.Value;
+                    possibleMoves = Rules.GetCirclularMoves(board, pos, circular);
                 }
             }
 
@@ -104,6 +98,37 @@ namespace move {
             }
 
             return moveResList;
+        }
+
+        public static List<FixedMovement> GetFixedMovements (
+            List<Movement> movementList,
+            Vector2Int startPos
+        ) {
+            var fixedMovements = new List<FixedMovement>();
+            foreach (var movement in movementList) {
+                fixedMovements.Add(FixedMovement.Mk(movement, startPos));
+            }
+
+            return fixedMovements;
+        }
+
+        public static List<LimitedMovement> GetLimetedMovements(
+            List<FixedMovement> fixedMovements,
+            Option<Piece>[,] board
+        ) {
+            var limitedMovements = new List<LimitedMovement>();
+            foreach (var movement in fixedMovements) {
+                if (board[movement.startPos.x, movement.startPos.y].IsNone()) {
+                    return limitedMovements;
+                }
+                var pieceOpt = board[movement.startPos.x, movement.startPos.y].Peel();
+                if (pieceOpt.type == PieceType.Pawn) {
+                    limitedMovements.Add(LimitedMovement.Mk(movement, 1));
+                } else {
+                    limitedMovements.Add(LimitedMovement.Mk(movement, board.GetLength(0)));
+                }
+            }
+            return limitedMovements;
         }
 
         public static List<MoveInfo> SelectPawnMoves(
