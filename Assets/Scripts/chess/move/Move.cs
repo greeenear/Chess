@@ -54,50 +54,92 @@ namespace move {
         ) {
             var possibleMoves = new List<Vector2Int>();
             var moveResList = new List<MoveInfo>();
-            int maxLength;
+            // int maxLength;
 
-            foreach (var movment in moveList) {
-                if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                    maxLength = 2;
-                } else {
-                    maxLength = board.GetLength(0);
-                }
-                if (movment.linear.HasValue) {
-                    var linear = movment.linear.Value;
-                    possibleMoves.AddRange(Rules.GetLinearMoves(board, pos, linear));
+            // foreach (var movment in moveList) {
+            //     if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
+            //         maxLength = 2;
+            //     } else {
+            //         maxLength = board.GetLength(0);
+            //     }
+            //     if (movment.linear.HasValue) {
+            //         var linear = movment.linear.Value;
+            //         possibleMoves.AddRange(Rules.GetLinearMoves(board, pos, linear));
 
-                } else if (movment.circular.HasValue) {
-                    var circular = movment.circular.Value;
-                    possibleMoves = Rules.GetCirclularMoves(board, pos, circular);
+            //     } else if (movment.circular.HasValue) {
+            //         var circular = movment.circular.Value;
+            //         possibleMoves = Rules.GetCirclularMoves(board, pos, circular);
+            //     }
+            // }
+
+            // foreach (var move in possibleMoves) {
+            //     if (board[move.x, move.y].IsSome()) {
+            //         moveResList.Add(
+            //             new MoveInfo {
+            //                 doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move)), 
+            //                 sentenced = move
+            //             }
+            //         );
+            //     } else {
+            //         moveResList.Add(
+            //             new MoveInfo {
+            //                 doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move))
+            //             }
+            //         );
+            //     }
+            // }
+
+            // if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
+            //     moveResList = SelectPawnMoves(board, pos, moveResList, lastMove);
+            // }
+            // if (board[pos.x, pos.y].Peel().type == PieceType.King) {
+            //     CheckCastling(pos, board, moveResList, -1);
+            //     CheckCastling(pos, board, moveResList, 1);
+            // }
+
+            return moveResList;
+        }
+
+        public static List<MoveInfo> GetMoveInfos(
+            List<Movement> moveList,
+            Vector2Int targetPos,
+            Option<Piece>[,] board,
+            MoveInfo lastMove
+        ) {
+            var moveInfos = new List<MoveInfo>();
+            var fixedMovements = GetFixedMovements(moveList, targetPos);
+            var limitedMovements = GetLimetedMovements(fixedMovements, board);
+            var possibleMoves = new List<Vector2Int>();
+
+            foreach (var limMovment in limitedMovements) {
+                if (limMovment.fixedMovement.movement.linear.HasValue) {
+                    var linear = limMovment.fixedMovement.movement.linear.Value;
+                    possibleMoves.AddRange(Rules.GetLinearMoves(board, limMovment));
+
+                } else if (limMovment.fixedMovement.movement.circular.HasValue) {
+                    var circular = limMovment.fixedMovement.movement.circular.Value;
+                    possibleMoves = Rules.GetCirclularMoves(board, targetPos, limMovment);
                 }
             }
 
             foreach (var move in possibleMoves) {
                 if (board[move.x, move.y].IsSome()) {
-                    moveResList.Add(
+                    moveInfos.Add(
                         new MoveInfo {
-                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move)), 
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move)), 
                             sentenced = move
                         }
                     );
                 } else {
-                    moveResList.Add(
+                    moveInfos.Add(
                         new MoveInfo {
-                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, move))
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move))
                         }
                     );
                 }
             }
 
-            if (board[pos.x, pos.y].Peel().type == PieceType.Pawn) {
-                moveResList = SelectPawnMoves(board, pos, moveResList, lastMove);
-            }
-            if (board[pos.x, pos.y].Peel().type == PieceType.King) {
-                CheckCastling(pos, board, moveResList, -1);
-                CheckCastling(pos, board, moveResList, 1);
-            }
-
-            return moveResList;
+            return moveInfos;
         }
 
         public static List<FixedMovement> GetFixedMovements (
