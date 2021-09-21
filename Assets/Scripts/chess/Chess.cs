@@ -22,15 +22,15 @@ namespace chess {
             MoveInfo lastMove,
             GameStatus gameStatus
         ) {
+            if (board[targetPiece.x, targetPiece.y].IsNone()) {
+                return null;
+            }
             var possibleMoves = new List<MoveInfo>();
             List<Movement> movementList = new List<Movement>(); 
             var color = board[targetPiece.x, targetPiece.y].Peel().color;
             var movement = storage.Storage.movement;
             var kingPos = Check.FindKing(board, color);
             var checkInfos = GetCheckInfo(board, color, kingPos);
-            if (board[targetPiece.x, targetPiece.y].IsNone()) {
-                return null;
-            }
 
             if (board[targetPiece.x, targetPiece.y].Peel().type == PieceType.King) {
                 return GetKingPossibleMoves(board, targetPiece, lastMove, color);
@@ -38,8 +38,7 @@ namespace chess {
 
             foreach (var checkInfo in checkInfos) {
                 if (checkInfo.coveringPiece == null) {
-                    InsertСoveringMoves(targetPiece, board, lastMove, possibleMoves, checkInfo);
-                    return possibleMoves;
+                    return GetСoveringMoves(targetPiece, board, lastMove, checkInfo);
                 }
 
                 if (checkInfo.coveringPiece == targetPiece && gameStatus == GameStatus.None) {
@@ -92,18 +91,18 @@ namespace chess {
             return newKingMoves;
         }
 
-        public static void InsertСoveringMoves (
+        public static List<MoveInfo> GetСoveringMoves (
             Vector2Int target,
             Option<Piece>[,] board,
             MoveInfo lastMove,
-            List<MoveInfo> possibleMoves,
             CheckInfo checkInfo
         ) {
+            if (board[target.x, target.y].IsNone()) {
+                return null;
+            }
+            var coveringMoves = new List<MoveInfo>();
             var linearMovement = checkInfo.attackInfo.movement.linear;
             var movementList = new List<Movement>();
-            if (board[target.x, target.y].IsNone()) {
-                return;
-            }
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
@@ -125,14 +124,15 @@ namespace chess {
 
             foreach (var defense in possibleDefensePos) {
                 if (defense.doubleMove.first.to == checkInfo.attackInfo.startPos) {
-                    possibleMoves.Add(defense);
+                    coveringMoves.Add(defense);
                 }
                 foreach (var attack in possibleAttackPos) {
                     if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
-                        possibleMoves.Add(defense);
+                        coveringMoves.Add(defense);
                     }
                 }
             }
+            return coveringMoves;
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {

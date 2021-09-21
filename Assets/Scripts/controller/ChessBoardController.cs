@@ -27,7 +27,7 @@ namespace controller {
         private List<MoveInfo> movesHistory = new List<MoveInfo>();
         private int noTakeMoves;
 
-        private JsonObject<MoveInfo> jsonObject;
+        private JsonObject jsonObject;
 
         private PlayerAction playerAction;
 
@@ -42,6 +42,7 @@ namespace controller {
             movesHistory.Add(new MoveInfo());
             AddPiecesOnBoard();
         }
+
 
         private void Update() {
             if (!Input.GetMouseButtonDown(0)) {
@@ -110,9 +111,9 @@ namespace controller {
         }
 
         public void Save() {
-            GameStats<MoveInfo> gameStats;
+            GameStats gameStats;
             var whoseMove = this.whoseMove;
-            gameStats = GameStats<MoveInfo>.Mk(whoseMove, movesHistory);
+            gameStats = GameStats.Mk(whoseMove);
             List<PieceInfo> pieceInfoList = new List<PieceInfo>();
 
             for (int i = 0; i < 8; i++) {
@@ -124,19 +125,15 @@ namespace controller {
                     }
                 }
             }
-            jsonObject = JsonObject<MoveInfo>.Mk(pieceInfoList, gameStats);
-            SaveLoad.WriteJson(
-                SaveLoad.GetJsonType<JsonObject<MoveInfo>>(jsonObject),
-                "json.json"
-            );
+            jsonObject = JsonObject.Mk(pieceInfoList, gameStats);
+            SaveLoad.WriteJson(SaveLoad.GetJsonType<JsonObject>(jsonObject), "json.json");
         }
 
         public void Load(string path) {
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             board = new Option<Piece>[8,8];
 
-            whoseMove = gameInfo.gameStats.whoseMove;
-            movesHistory = gameInfo.gameStats.movesHistory;
+            whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
