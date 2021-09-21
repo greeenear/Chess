@@ -5,7 +5,8 @@ using option;
 namespace board {
     public enum MovementType {
         Attack,
-        Move
+        Move,
+        Mixed
     }
 
     public struct Circular {
@@ -30,11 +31,15 @@ namespace board {
         public Circular? circular;
 
         public static Movement Linear(Linear linear) {
-            return new Movement { linear = linear};
+            return new Movement { linear = linear, movementType = MovementType.Mixed };
         }
 
         public static Movement LinearOnlyMove(Linear linear) {
-            return new Movement { linear = linear, movementType = MovementType.Move};
+            return new Movement { linear = linear, movementType = MovementType.Move };
+        }
+
+        public static Movement LinearOnlyAttack(Linear linear) {
+            return new Movement { linear = linear, movementType = MovementType.Attack };
         }
 
         public static Movement Circular(Circular circular) {
@@ -48,6 +53,15 @@ namespace board {
 
         public static FixedMovement Mk(Movement movement, Vector2Int startPos) {
             return new FixedMovement { movement = movement, startPos = startPos };
+        }
+    }
+
+    public struct LimitedMovement {
+        public FixedMovement fixedMovement;
+        public int length;
+
+        public static LimitedMovement Mk(FixedMovement fixedMovement, int length) {
+            return new LimitedMovement { fixedMovement = fixedMovement, length = length };
         }
     }
 

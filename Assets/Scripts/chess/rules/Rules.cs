@@ -38,21 +38,25 @@ namespace rules {
     public static class Rules {
         public static List<Vector2Int> GetLinearMoves(
             Option<Piece>[,] board,
-            Vector2Int piecePos,
-            Linear linear,
-            int maxLength
+            LimitedMovement linearMovement
         ) {
-            int length = Board.GetLinearLength<Piece>(piecePos, linear, board, maxLength);
+            var startPos = linearMovement.fixedMovement.startPos;
+            var linear = linearMovement.fixedMovement.movement.linear.Value;
+            var maxLength = linearMovement.length;
 
-            return GetOppositeColorOnLine(board, piecePos, linear, length);
+            int length = Board.GetLinearLength<Piece>(startPos, linear, board, maxLength);
+
+            return GetOppositeColorOnLine(board, linearMovement, length);
         }
 
         public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
-            Vector2Int pos,
-            Circular circlular
+            LimitedMovement circlularMovement
         ) {
             float angle;
+            var circlular = circlularMovement.fixedMovement.movement.circular.Value;
+            var pos = circlularMovement.fixedMovement.startPos;
+
             if (circlular.radius == 1) {
                 angle = StartAngle.King;
             } else {
@@ -78,26 +82,32 @@ namespace rules {
 
         private static List<Vector2Int> GetOppositeColorOnLine(
             Option<Piece>[,] board,
-            Vector2Int piecePos,
-            Linear linear,
+            LimitedMovement limitedMovement,
             int length
         ) {
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            var piecePos = limitedMovement.fixedMovement.startPos;
             if (board[piecePos.x, piecePos.y].IsNone()) {
-                return canMovePositions;
+                return null;
             }
-            Piece piece = board[piecePos.x, piecePos.y].Peel();
+            List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            var linear = limitedMovement.fixedMovement.movement.linear.Value;
+            var movementType = limitedMovement.fixedMovement.movement.movementType;
+            Piece targetPiece = board[piecePos.x, piecePos.y].Peel();
+
             for (int i = 1; i <= length; i++) {
                 Vector2Int pos = piecePos + linear.dir * i;
                 if (board[pos.x, pos.y].IsSome()) {
-                    if (board[pos.x, pos.y].Peel().color == piece.color) {
+                    if (board[pos.x, pos.y].Peel().color == targetPiece.color) {
                         break;
-                    } else {
+                    } else if (movementType == MovementType.Attack
+                        || movementType == MovementType.Mixed){
                         canMovePositions.Add(new Vector2Int(pos.x, pos.y));
                         break;
                     }
+                } else if (movementType == MovementType.Move
+                    || movementType == MovementType.Mixed) {
+                    canMovePositions.Add(new Vector2Int(pos.x, pos.y));
                 }
-                canMovePositions.Add(new Vector2Int(pos.x, pos.y));
             }
 
             return canMovePositions;

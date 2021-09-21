@@ -48,13 +48,13 @@ namespace chess {
                     movementList.Add(Movement.Linear(checkInfo.attackInfo.movement.linear.Value));
                     Linear reverseDir = Linear.Mk(-checkInfo.attackInfo.movement.linear.Value.dir);
                     movementList.Add(Movement.Linear(reverseDir));
-                    return move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);
+                    return move.Move.GetMoveInfos(movementList, targetPiece, board, lastMove);
                 }
             }
 
             movementList = movement[board[targetPiece.x, targetPiece.y].Peel().type];
 
-            return move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);;
+            return move.Move.GetMoveInfos(movementList, targetPiece, board, lastMove);;
         }
 
         public static List<MoveInfo> GetKingPossibleMoves(
@@ -67,7 +67,7 @@ namespace chess {
             if (board[target.x, target.y].IsNone()) {
                 return null;
             }
-            var kingMoves = move.Move.GetMoveCells(
+            var kingMoves = move.Move.GetMoveInfos(
                 storage.Storage.movement[board[target.x, target.y].Peel().type],
                 target,
                 board,
@@ -109,13 +109,13 @@ namespace chess {
                 movementList.Add(Movement.Linear(Linear.Mk(dir)));
             }
 
-            var possibleAttackPos = move.Move.GetMoveCells(
+            var possibleAttackPos = move.Move.GetMoveInfos(
                 movementList,
                 checkInfo.attackInfo.startPos,
                 board,
                 lastMove
             );
-            var possibleDefensePos = move.Move.GetMoveCells(
+            var possibleDefensePos = move.Move.GetMoveInfos(
                 storage.Storage.movement[board[target.x, target.y].Peel().type],
                 target,
                 board,

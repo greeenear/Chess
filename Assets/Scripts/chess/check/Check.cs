@@ -64,8 +64,8 @@ namespace check {
             Movement circularMovement,
             List<FixedMovement> movements
         ) {
-            var moves = Rules.GetCirclularMoves(board, target, circularMovement.circular.Value);
-
+            var a = LimitedMovement.Mk(FixedMovement.Mk(circularMovement, target), board.GetLength(0));///////
+            var moves = Rules.GetCirclularMoves(board, a);
             foreach (var move in moves) {
                 var cell = board[move.x, move.y];
                 var circle = Movement.Circular(Circular.Mk(2));
@@ -84,11 +84,10 @@ namespace check {
         ) {
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             int lineLength = 0;
+            var a = LimitedMovement.Mk(FixedMovement.Mk(linearMovement, target), board.GetLength(0));////////
             var lineMoves = Rules.GetLinearMoves(
                 board,
-                target,
-                linearMovement.linear.Value,
-                boardSize.x
+                a
             );
             
             foreach (var move in lineMoves) {
