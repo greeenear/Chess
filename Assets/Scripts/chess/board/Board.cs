@@ -33,8 +33,8 @@ namespace board {
             return new Movement { linear = linear};
         }
 
-        public static Movement LinearOnlyMove(Linear linear, MovementType movementType) {
-            return new Movement { linear = linear, movementType = movementType};
+        public static Movement LinearOnlyMove(Linear linear) {
+            return new Movement { linear = linear, movementType = MovementType.Move};
         }
 
         public static Movement Circular(Circular circular) {

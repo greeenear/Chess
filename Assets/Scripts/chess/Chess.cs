@@ -41,14 +41,14 @@ namespace chess {
                     InsertСoveringMoves(targetPiece, board, lastMove, possibleMoves, checkInfo);
                     return possibleMoves;
                 }
+
                 if (checkInfo.coveringPiece == targetPiece && gameStatus == GameStatus.None) {
                     if (board[targetPiece.x , targetPiece.y].Peel().type == PieceType.Knight) {
-                        return null;
+                        return possibleMoves;
                     }
                     movementList.Add(Movement.Linear(checkInfo.attackInfo.movement.linear.Value));
                     Linear reverseDir = Linear.Mk(-checkInfo.attackInfo.movement.linear.Value.dir);
                     movementList.Add(Movement.Linear(reverseDir));
-
                     return move.Move.GetMoveCells(movementList, targetPiece, board, lastMove);
                 }
             }
@@ -101,6 +101,9 @@ namespace chess {
         ) {
             var linearMovement = checkInfo.attackInfo.movement.linear;
             var movementList = new List<Movement>();
+            if (board[target.x, target.y].IsNone()) {
+                return;
+            }
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
@@ -139,6 +142,9 @@ namespace chess {
         public static bool CheckChangePawn(Option<Piece>[,] board, MoveInfo lastMove) {
             var last = board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y];
             var end = lastMove.doubleMove.first.to.x;
+            if (last.IsNone()) {
+                return false;
+            }
             if (last.Peel().type == PieceType.Pawn) {
                 if (end == 0 || end == board.GetLength(1)-1) {
                     return true;
@@ -236,7 +242,7 @@ namespace chess {
             var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
             singleColorBoard[cellPos.x, cellPos.y] = king;
 
-            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, movement, cellPos);
+            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos);
             var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
 
             return checkInfo; 
@@ -250,11 +256,12 @@ namespace chess {
 
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    if (board[i,j].IsSome()) {
-                        var piece = board[i,j].Peel();
-                        if (piece.color == color) {
-                            board[i, j] = Option<Piece>.None();
-                        }
+                    if (board[i,j].IsNone()) {
+                        continue;
+                    }
+                    var piece = board[i,j].Peel();
+                    if (piece.color == color) {
+                        board[i, j] = Option<Piece>.None();
                     }
                 }
             }

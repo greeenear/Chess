@@ -15,7 +15,7 @@ namespace json {
             File.WriteAllText(path, output);
         }
 
-        public static T LoadFromJson<T>(string path, T type) {
+        public static T ReadJson<T>(string path, T type) {
             string input = File.ReadAllText(path);
             Result<JSONType, JSONError> gameStatsRes = Jonson.Parse(input, 1024);
             var loadGameStats =  Reflect.FromJSON(type, gameStatsRes.AsOk());

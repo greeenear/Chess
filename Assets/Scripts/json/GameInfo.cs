@@ -12,20 +12,21 @@ namespace json {
         }
     }
 
-    public struct GameStats {
+    public struct GameStats<T> {
         public PieceColor whoseMove;
+        public List<T> movesHistory;
 
-        public static GameStats Mk(PieceColor whoseMove) {
-            return new GameStats{whoseMove = whoseMove};
+        public static GameStats<T> Mk(PieceColor whoseMove, List<T> movesHistory) {
+            return new GameStats<T>{whoseMove = whoseMove, movesHistory = movesHistory};
         }
     }
 
-    public struct JsonObject {
+    public struct JsonObject<T> {
         public List<PieceInfo> pieceInfo;
-        public GameStats gameStats;
+        public GameStats<T> gameStats;
 
-        public static JsonObject Mk(List<PieceInfo> pieceInfo, GameStats gameStats) {
-            return new JsonObject { pieceInfo = pieceInfo, gameStats = gameStats};
+        public static JsonObject<T> Mk(List<PieceInfo> pieceInfo, GameStats<T> gameStats) {
+            return new JsonObject<T> { pieceInfo = pieceInfo, gameStats = gameStats};
         }
     }
     

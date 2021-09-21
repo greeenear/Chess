@@ -14,8 +14,8 @@ namespace storage {
                     Movement.Linear(Linear.Mk(new Vector2Int(1, -1))),
                     Movement.Linear(Linear.Mk(new Vector2Int(-1, -1))),
                     Movement.Linear(Linear.Mk(new Vector2Int(-1, 1))),
-                    Movement.LinearOnlyMove(Linear.Mk(new Vector2Int(-1, 0)), MovementType.Move),
-                    Movement.LinearOnlyMove(Linear.Mk(new Vector2Int(1, 0)), MovementType.Move)
+                    Movement.LinearOnlyMove(Linear.Mk(new Vector2Int(-1, 0))),
+                    Movement.LinearOnlyMove(Linear.Mk(new Vector2Int(1, 0)))
                 }
             },
             {

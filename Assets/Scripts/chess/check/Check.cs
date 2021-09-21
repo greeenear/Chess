@@ -3,6 +3,7 @@ using UnityEngine;
 using board;
 using option;
 using rules;
+using storage;
 
 namespace check {
     public struct CheckInfo {
@@ -23,12 +24,13 @@ namespace check {
 
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    if ( board[i, j].IsSome()) {
-                        var piece = board[i, j].Peel();
-                        if (piece.type == PieceType.King && piece.color == color) {
-                            kingPosition.x = i;
-                            kingPosition.y = j;
-                        }
+                    if (board[i, j].IsNone()) {
+                        continue;
+                    }
+                    var piece = board[i, j].Peel();
+                    if (piece.type == PieceType.King && piece.color == color) {
+                        kingPosition.x = i;
+                        kingPosition.y = j;
                     }
                 }
             }
@@ -39,12 +41,11 @@ namespace check {
         public static List<FixedMovement> GetAttackMovements(
             PieceColor color,
             Option<Piece>[,] board,
-            Dictionary<PieceType,List<Movement>> movementStorage,
             Vector2Int target
         ) {
             var movements = new List<FixedMovement>();
-            var movementType = new List<Movement>(movementStorage[PieceType.Queen]);
-            movementType.AddRange(movementStorage[PieceType.Knight]);
+            var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
+            movementType.AddRange(Storage.movement[PieceType.Knight]);
         
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
@@ -97,19 +98,23 @@ namespace check {
                     continue;
                 }
                 var piece = board[move.x , move.y].Peel();
-                if (!storage.Storage.movement[piece.type].Contains(linearMovement)) {
-                    break;
-                }
                 var attackDir = Movement.Linear(linearMovement.linear.Value);
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
 
+                if (!storage.Storage.movement[piece.type].Contains(linearMovement)) {
+                    return;
+                }
+
                 if (piece.type == PieceType.Pawn) {
                     if (lineLength == 1 && linearMovement.movementType == MovementType.Attack) {
-                        movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-                        break;
-                    } else {
-                        break;
+                        if (piece.color == PieceColor.White && attackDir.linear.Value.dir.x > 0) {
+                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+                        }
+                        if (piece.color == PieceColor.Black && attackDir.linear.Value.dir.x < 0) {
+                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+                        }
                     }
+                    return;
                 }
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
             }
@@ -125,7 +130,8 @@ namespace check {
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
 
             foreach (var info in attackInfo) {
-                var piecesCounter = 0;
+                var coveringPiecesCounter = 0;
+                Vector2Int coveringPos = new Vector2Int();
                 if (info.movement.circular.HasValue) {
                     checkInfo.Add(CheckInfo.Mk(info));
                     continue;
@@ -142,19 +148,18 @@ namespace check {
                     if (nextCell.IsNone()) {
                         continue;
                     }
-                    if (nextCell.Peel().color == color) {
-                        if (piecesCounter == 0) {
-                            checkInfo.Add(CheckInfo.Mk(info, nextPos));
-                            piecesCounter++;
-                        } else {
-                            checkInfo.RemoveAt(checkInfo.Count - 1);
-                            break;
-                        }
+                    var pieceColor = nextCell.Peel().color;
+                    if (pieceColor == color && coveringPiecesCounter == 0) {
+                        coveringPiecesCounter++;
+                        coveringPos = nextPos;
                     }
-                    if (nextCell.Peel().color != color && piecesCounter == 0) {
+                    if (pieceColor != color && coveringPiecesCounter == 0) {
                         checkInfo.Add(CheckInfo.Mk(info));
                         break;
                     }
+                }
+                if (coveringPiecesCounter == 1) {
+                    checkInfo.Add(CheckInfo.Mk(info, coveringPos));
                 }
             }
 

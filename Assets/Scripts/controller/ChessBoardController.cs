@@ -27,7 +27,7 @@ namespace controller {
         private List<MoveInfo> movesHistory = new List<MoveInfo>();
         private int noTakeMoves;
 
-        private JsonObject jsonObject;
+        private JsonObject<MoveInfo> jsonObject;
 
         private PlayerAction playerAction;
 
@@ -41,38 +41,6 @@ namespace controller {
             resources = gameObject.GetComponent<Resource>();
             movesHistory.Add(new MoveInfo());
             AddPiecesOnBoard();
-        }
-
-        public void Save() {
-            GameStats gameStats;
-            var whoseMove = this.whoseMove;
-            gameStats = GameStats.Mk(whoseMove);
-            List<PieceInfo> pieceInfoList = new List<PieceInfo>();
-
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    var board = this.board[i,j];
-
-                    if (this.board[i,j].IsSome()) {
-                        pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
-                    }
-                }
-            }
-            jsonObject = JsonObject.Mk(pieceInfoList, gameStats);
-            SaveLoad.WriteJson(SaveLoad.GetJsonType<JsonObject>(jsonObject), "json.json");
-        }
-
-        public void Load(string path) {
-            var gameInfo = SaveLoad.LoadFromJson(path, jsonObject);
-            board = new Option<Piece>[8,8];
-
-            whoseMove = gameInfo.gameStats.whoseMove; 
-            foreach (var pieceInfo in gameInfo.pieceInfo) {
-                board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
-            }
-            AddPiecesOnBoard();
-            resources.gameMenu.SetActive(false);
-            this.enabled = true;
         }
 
         private void Update() {
@@ -141,6 +109,41 @@ namespace controller {
             }
         }
 
+        public void Save() {
+            GameStats<MoveInfo> gameStats;
+            var whoseMove = this.whoseMove;
+            gameStats = GameStats<MoveInfo>.Mk(whoseMove, movesHistory);
+            List<PieceInfo> pieceInfoList = new List<PieceInfo>();
+
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    var board = this.board[i,j];
+
+                    if (this.board[i,j].IsSome()) {
+                        pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
+                    }
+                }
+            }
+            jsonObject = JsonObject<MoveInfo>.Mk(pieceInfoList, gameStats);
+            SaveLoad.WriteJson(
+                SaveLoad.GetJsonType<JsonObject<MoveInfo>>(jsonObject),
+                "json.json"
+            );
+        }
+
+        public void Load(string path) {
+            var gameInfo = SaveLoad.ReadJson(path, jsonObject);
+            board = new Option<Piece>[8,8];
+
+            whoseMove = gameInfo.gameStats.whoseMove;
+            movesHistory = gameInfo.gameStats.movesHistory;
+            foreach (var pieceInfo in gameInfo.pieceInfo) {
+                board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
+            }
+            AddPiecesOnBoard();
+            resources.gameMenu.SetActive(false);
+            this.enabled = true;
+        }
         public void OpenMenu() {
             if (resources.gameMenu.activeSelf == true) {
                 resources.gameMenu.SetActive(false);
@@ -152,6 +155,7 @@ namespace controller {
         }
 
         public void ChangePawn(int type) {
+            whoseMove = Chess.ChangeMove(whoseMove);
             var boardPos = resources.boardObj.transform.position;
             var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
             var x = pawnPos.x;
