@@ -135,6 +135,34 @@ namespace chess {
             return coveringMoves;
         }
 
+        public static List<MoveInfo> GetNotOpeningMoves(
+            Vector2Int target,
+            Option<Piece>[,] board,
+            MoveInfo lastMove,
+            CheckInfo checkInfo
+        ) {
+            if (board[target.x, target.y].IsNone()) {
+                return null;
+            }
+            var possibleMoves = new List<MoveInfo>();
+            var movementList = new List<Movement>();
+            var targetPiece = board[target.x, target.y].Peel();
+            if (targetPiece.type == PieceType.Knight) {
+                return possibleMoves;
+            }
+
+            var linear = checkInfo.attackInfo.movement.linear.Value;
+            if (targetPiece.type == PieceType.Pawn) {
+                movementList.Add(Movement.LinearOnlyAttack(linear));
+            } else {
+                movementList.Add(Movement.Linear(linear));
+            }
+            Linear reverseDir = Linear.Mk(-linear.dir);
+            movementList.Add(Movement.Linear(reverseDir));
+
+            return move.Move.GetMoveInfos(movementList, target, board, lastMove);
+        }
+
         public static PieceColor ChangeMove(PieceColor whoseMove) {
             return (PieceColor)(((int)(whoseMove + 1) % (int)PieceColor.Count));
         }
