@@ -49,23 +49,26 @@ namespace check {
         
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
-                    InsertCircularMovements(board, target, type, movements);
+                    movements.AddRange(GetCircularMoves(board, target, type));
                 } else if (type.linear.HasValue) {
-                    InsertLinearMoves(board, target, type, movements);
+                    movements.AddRange(GetLinearMoves(board, target, type));
                 }
             }
 
             return movements;
         }
 
-        public static void InsertCircularMovements(
+        public static List<FixedMovement> GetCircularMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement circularMovement,
-            List<FixedMovement> movements
+            Movement circularMovement
+
         ) {
-            var a = LimitedMovement.Mk(FixedMovement.Mk(circularMovement, target), board.GetLength(0));///////
-            var moves = Rules.GetCirclularMoves(board, a);
+            List<FixedMovement> movements = new List<FixedMovement>();
+            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            var circular = FixedMovement.Mk(circularMovement, target);
+            var moves = Rules.GetCirclularMoves(board, circular);
+
             foreach (var move in moves) {
                 var cell = board[move.x, move.y];
                 var circle = Movement.Circular(Circular.Mk(2));
@@ -74,22 +77,21 @@ namespace check {
                     movements.Add(FixedMovement.Mk(circle, attackingPiecePos));
                 }
             }
+
+            return movements;
         }
 
-        public static void InsertLinearMoves(
+        public static List<FixedMovement> GetLinearMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement linearMovement,
-            List<FixedMovement> movements
+            Movement linearMovement
         ) {
+            List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             int lineLength = 0;
-            var a = LimitedMovement.Mk(FixedMovement.Mk(linearMovement, target), board.GetLength(0));////////
-            var lineMoves = Rules.GetLinearMoves(
-                board,
-                a
-            );
-            
+            var line = LimitedMovement.Mk(FixedMovement.Mk(linearMovement, target), boardSize.x);
+            var lineMoves = Rules.GetLinearMoves(board, line);
+
             foreach (var move in lineMoves) {
                 lineLength++;
 
@@ -101,7 +103,7 @@ namespace check {
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
 
                 if (!storage.Storage.movement[piece.type].Contains(linearMovement)) {
-                    return;
+                    return movements;
                 }
 
                 if (piece.type == PieceType.Pawn) {
@@ -113,10 +115,12 @@ namespace check {
                             movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
                         }
                     }
-                    return;
+                    return movements;
                 }
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
             }
+
+            return movements;
         }
 
         public static List<CheckInfo> AnalyzeAttackMovements(
@@ -148,7 +152,7 @@ namespace check {
                         continue;
                     }
                     var pieceColor = nextCell.Peel().color;
-                    if (pieceColor == color && coveringPiecesCounter == 0) {
+                    if (pieceColor == color) {
                         coveringPiecesCounter++;
                         coveringPos = nextPos;
                     }
@@ -163,6 +167,43 @@ namespace check {
             }
 
             return checkInfo;
+        }
+
+        public static List<CheckInfo> GetCheckInfo(
+            Option<Piece>[,] board,
+            PieceColor color,
+            Vector2Int cellPos
+        ) {
+            var movement = storage.Storage.movement;
+
+            var singleColorBoard = GetBoardWithOneColor(color, board);
+            var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
+            singleColorBoard[cellPos.x, cellPos.y] = king;
+
+            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos);
+            var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
+
+            return checkInfo; 
+        }
+
+        public static Option<Piece>[,] GetBoardWithOneColor(
+            PieceColor color,
+            Option<Piece>[,] startBoard
+        ) {
+            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
+
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    if (board[i,j].IsNone()) {
+                        continue;
+                    }
+                    var piece = board[i,j].Peel();
+                    if (piece.color == color) {
+                        board[i, j] = Option<Piece>.None();
+                    }
+                }
+            }
+            return board;
         }
     }
 }
