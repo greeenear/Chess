@@ -255,48 +255,11 @@ namespace chess {
 
                 return gameStatus;
             }
-            if(CheckDraw(completedMoves, noTakeMoves)) {
+            if(CheckDraw(movesHistory, noTakeMoves)) {
                 gameStatus = GameStatus.Draw;
             }
 
             return gameStatus;
-        }
-
-        public static List<CheckInfo> GetCheckInfo(
-            Option<Piece>[,] board,
-            PieceColor color,
-            Vector2Int cellPos
-        ) {
-            var movement = storage.Storage.movement;
-
-            var singleColorBoard = GetBoardWithOneColor(color, board);
-            var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
-            singleColorBoard[cellPos.x, cellPos.y] = king;
-
-            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos);
-            var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
-
-            return checkInfo; 
-        }
-
-        public static Option<Piece>[,] GetBoardWithOneColor(
-            PieceColor color,
-            Option<Piece>[,] startBoard
-        ) {
-            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
-
-            for (int i = 0; i < board.GetLength(0); i++) {
-                for (int j = 0; j < board.GetLength(1); j++) {
-                    if (board[i,j].IsNone()) {
-                        continue;
-                    }
-                    var piece = board[i,j].Peel();
-                    if (piece.color == color) {
-                        board[i, j] = Option<Piece>.None();
-                    }
-                }
-            }
-            return board;
         }
 
         public static void ChangePiece(
