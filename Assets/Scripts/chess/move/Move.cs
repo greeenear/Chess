@@ -86,6 +86,9 @@ namespace move {
                 CheckCastling(moveInfos, board, targetPos, 1);
                 CheckCastling(moveInfos, board, targetPos, -1);
             }
+            if (targetPiece.type == PieceType.Pawn) {
+                moveInfos = GetPawnPromotion(moveInfos, board);
+            }
             if (board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y].IsNone()) {
                 return moveInfos;
             }
@@ -159,6 +162,23 @@ namespace move {
             }
 
             return possibleMoveCells;
+        }
+
+        private static List<MoveInfo> GetPawnPromotion(
+            List<MoveInfo> moveInfos,
+            Option<Piece>[,] board
+        ) {
+            List<MoveInfo> newMoveInfos = new List<MoveInfo>();
+            foreach (var info in moveInfos) {
+                var moveTo = info.doubleMove.first.to;
+                if (moveTo.x == 0 || moveTo.x == board.GetLength(1)) {
+                    var promotion = info;
+                    promotion.pawnPromotion = true;
+                    newMoveInfos.Add(promotion);
+                }
+                newMoveInfos.Add(info);
+            }
+            return newMoveInfos;
         }
 
         private static List<MoveInfo> CheckEnPassant(
