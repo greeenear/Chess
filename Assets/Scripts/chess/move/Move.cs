@@ -31,6 +31,10 @@ namespace move {
         public DoubleMove doubleMove;
         public Vector2Int? sentenced;
         public bool pawnPromotion;
+
+        public static MoveInfo Mk(DoubleMove doubleMove) {
+            return new MoveInfo { doubleMove = doubleMove };
+        }
     }
 
     public struct StartAngle {
@@ -70,7 +74,7 @@ namespace move {
                 if (board[move.x, move.y].IsSome()) {
                     moveInfos.Add(
                         new MoveInfo {
-                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move)), 
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move)),
                             sentenced = move
                         }
                     );
@@ -233,7 +237,7 @@ namespace move {
                 return;
             }
             var king = board[pos.x, pos.y].Peel();
-            Vector2Int rookPos = new Vector2Int();
+            var rookPos = new Vector2Int();
             if (dir == -1) {
                 rookPos = new Vector2Int(pos.x, 0);
             } else {

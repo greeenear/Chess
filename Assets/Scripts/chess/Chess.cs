@@ -73,7 +73,7 @@ namespace chess {
             foreach (var move in kingMoves) {
                 var king = board[target.x, target.y];
                 board[target.x, target.y] = Option<Piece>.None();
-                var checkCellInfos = GetCheckInfo(board, color, move.doubleMove.first.to);
+                var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
                 board[target.x, target.y] = king;
                 if (checkCellInfos.Count == 0) {
                     newKingMoves.Add(move);
@@ -97,9 +97,9 @@ namespace chess {
             if (board[target.x, target.y].IsNone()) {
                 return null;
             }
-            var coveringMoves = new List<MoveInfo>();
             var linearMovement = checkInfo.attackInfo.movement.linear;
             var movementList = new List<Movement>();
+            var attakingPos = checkInfo.attackInfo.startPos;
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
@@ -112,6 +112,9 @@ namespace chess {
                 board,
                 lastMove
             );
+            var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(attakingPos, attakingPos));
+            possibleAttackPos.Add(MoveInfo.Mk(doubleMove));
+
             var possibleDefensePos = move.Move.GetMoveInfos(
                 storage.Storage.movement[board[target.x, target.y].Peel().type],
                 target,
@@ -210,8 +213,7 @@ namespace chess {
         public static GameStatus GetGameStatus(
             Option<Piece>[,] board,
             PieceColor color,
-            MoveInfo lastMove,
-            List<MoveInfo> completedMoves,
+            List<MoveInfo> movesHistory,
             int noTakeMoves
         ) {
             var possibleMoves = new List<MoveInfo>();
@@ -231,7 +233,11 @@ namespace chess {
                     var piece = board[i, j].Peel();
                     if (piece.color == color) {
                         var piecePos = new Vector2Int(i, j);
-                        var moves = GetPossibleMoves(piecePos, board, lastMove, gameStatus);
+                        var moves = GetPossibleMoves(
+                            piecePos,
+                            board,
+                            movesHistory[movesHistory.Count -1]
+                        );
                         if (moves.Count != 0) {
                             noCheckMate = true;
                             break;
@@ -240,7 +246,7 @@ namespace chess {
                 }
             }
             var kingPos = Check.FindKing(board, color);
-            var checkInfo = GetCheckInfo(board, color, kingPos);
+            var checkInfo = Check.GetCheckInfo(board, color, kingPos);
             foreach (var info in checkInfo) {
                 if (info.coveringPiece == null) {
                     gameStatus = GameStatus.Check;
@@ -255,7 +261,7 @@ namespace chess {
 
                 return gameStatus;
             }
-            if(CheckDraw(movesHistory, noTakeMoves)) {
+            if (CheckDraw(movesHistory, noTakeMoves)) {
                 gameStatus = GameStatus.Draw;
             }
 

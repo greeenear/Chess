@@ -31,8 +31,6 @@ namespace controller {
 
         private PlayerAction playerAction;
 
-        private GameStatus gameStatus;
-
         private void Awake() {
            board = Chess.CreateBoard();
         }
@@ -80,14 +78,8 @@ namespace controller {
                     CheckMove(currentMove);
                     movesHistory.Add(currentMove);
                     whoseMove = Chess.ChangeMove(whoseMove);
-                    gameStatus = Chess.GetGameStatus(
-                        board,
-                        whoseMove,
-                        lastMove,
-                        movesHistory,
-                        noTakeMoves
-                    );
-                    CheckGameStatus(board, whoseMove, gameStatus);
+
+                    CheckGameStatus(board, whoseMove);
                     possibleMoves.Clear();
 
                     selectedPiece = selectedPos;
@@ -97,12 +89,7 @@ namespace controller {
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
 
-                    possibleMoves = Chess.GetPossibleMoves(
-                        selectedPos,
-                        board,
-                        lastMove,
-                        gameStatus
-                    );
+                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
 
                     playerAction = PlayerAction.Move;
                     HighlightCell(possibleMoves);
@@ -213,9 +200,9 @@ namespace controller {
 
         private void CheckGameStatus(
             Option<Piece>[,] board,
-            PieceColor whoseMove,
-            GameStatus gameStatus
+            PieceColor whoseMove
         ) {
+            var gameStatus = Chess.GetGameStatus(board, whoseMove, movesHistory, noTakeMoves);
             var kingPos = Check.FindKing(board, whoseMove);
             if (gameStatus == GameStatus.None) {
                 return;

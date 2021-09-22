@@ -51,11 +51,11 @@ namespace rules {
 
         public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
-            LimitedMovement circlularMovement
+            FixedMovement circlularMovement
         ) {
             float angle;
-            var circlular = circlularMovement.fixedMovement.movement.circular.Value;
-            var pos = circlularMovement.fixedMovement.startPos;
+            var circlular = circlularMovement.movement.circular.Value;
+            var pos = circlularMovement.startPos;
 
             if (circlular.radius == 1) {
                 angle = StartAngle.King;
