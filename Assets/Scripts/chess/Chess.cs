@@ -17,44 +17,41 @@ namespace chess {
 
     public static class Chess {
         public static List<MoveInfo> GetPossibleMoves(
-            Vector2Int targetPiece,
+            Vector2Int targetPos,
             Option<Piece>[,] board,
-            MoveInfo lastMove,
-            GameStatus gameStatus
+            MoveInfo lastMove
         ) {
-            if (board[targetPiece.x, targetPiece.y].IsNone()) {
+            if (board[targetPos.x, targetPos.y].IsNone()) {
                 return null;
             }
-            var possibleMoves = new List<MoveInfo>();
-            List<Movement> movementList = new List<Movement>(); 
-            var color = board[targetPiece.x, targetPiece.y].Peel().color;
+            bool isCheck = false;
+            var targetPiece = board[targetPos.x, targetPos.y].Peel();
+            var color = targetPiece.color;
             var movement = storage.Storage.movement;
-            var kingPos = Check.FindKing(board, color);
-            var checkInfos = GetCheckInfo(board, color, kingPos);
+            var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color));
 
-            if (board[targetPiece.x, targetPiece.y].Peel().type == PieceType.King) {
-                return GetKingPossibleMoves(board, targetPiece, lastMove, color);
+            foreach (var info in checkInfos) {
+                if (info.coveringPiece == null) {
+                    isCheck = true;
+                }
+            }
+
+            if (targetPiece.type == PieceType.King) {
+                return GetKingPossibleMoves(board, targetPos, lastMove, color);
             }
 
             foreach (var checkInfo in checkInfos) {
                 if (checkInfo.coveringPiece == null) {
-                    return GetСoveringMoves(targetPiece, board, lastMove, checkInfo);
+                    return GetСoveringMoves(targetPos, board, lastMove, checkInfo);
                 }
-
-                if (checkInfo.coveringPiece == targetPiece && gameStatus == GameStatus.None) {
-                    if (board[targetPiece.x , targetPiece.y].Peel().type == PieceType.Knight) {
-                        return possibleMoves;
-                    }
-                    movementList.Add(Movement.Linear(checkInfo.attackInfo.movement.linear.Value));
-                    Linear reverseDir = Linear.Mk(-checkInfo.attackInfo.movement.linear.Value.dir);
-                    movementList.Add(Movement.Linear(reverseDir));
-                    return move.Move.GetMoveInfos(movementList, targetPiece, board, lastMove);
+                if (checkInfo.coveringPiece == targetPos && !isCheck) {
+                    return GetNotOpeningMoves(targetPos, board, lastMove, checkInfo);
                 }
             }
 
-            movementList = movement[board[targetPiece.x, targetPiece.y].Peel().type];
+            var movementList = movement[targetPiece.type];
 
-            return move.Move.GetMoveInfos(movementList, targetPiece, board, lastMove);;
+            return move.Move.GetMoveInfos(movementList, targetPos, board, lastMove);;
         }
 
         public static List<MoveInfo> GetKingPossibleMoves(
