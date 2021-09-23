@@ -64,17 +64,16 @@ namespace chess {
             if (board[target.x, target.y].IsNone()) {
                 return null;
             }
-            var kingMoves = move.Move.GetMoveInfos(
-                storage.Storage.movement[board[target.x, target.y].Peel().type],
-                target,
-                board,
-                lastMove
-            );
+
+            var movement = storage.Storage.movement[board[target.x, target.y].Peel().type];
+            var kingMoves = move.Move.GetMoveInfos(movement, target, board, lastMove);
             foreach (var move in kingMoves) {
+                var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
+
                 var king = board[target.x, target.y];
                 board[target.x, target.y] = Option<Piece>.None();
-                var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
                 board[target.x, target.y] = king;
+
                 if (checkCellInfos.Count == 0) {
                     newKingMoves.Add(move);
                 }
