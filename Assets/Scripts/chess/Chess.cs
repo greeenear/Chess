@@ -5,6 +5,7 @@ using move;
 using board;
 using check;
 using System.Collections.Generic;
+using System;
 
 namespace chess {
     public enum GameStatus {
@@ -24,18 +25,19 @@ namespace chess {
             if (board[targetPos.x, targetPos.y].IsNone()) {
                 return null;
             }
-            bool isCheck = false;
-            var targetPiece = board[targetPos.x, targetPos.y].Peel();
-            var color = targetPiece.color;
-            var movement = storage.Storage.movement;
+            var color = board[targetPos.x, targetPos.y].Peel().color;
             var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color));
 
+            bool isCheck = false;
             foreach (var info in checkInfos) {
                 if (info.coveringPiece == null) {
                     isCheck = true;
+                    break;
                 }
             }
 
+            var targetPiece = board[targetPos.x, targetPos.y].Peel();
+            var movement = storage.Storage.movement;
             if (targetPiece.type == PieceType.King) {
                 return GetKingPossibleMoves(board, targetPos, lastMove, color);
             }
@@ -102,7 +104,7 @@ namespace chess {
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
-                movementList.Add(Movement.Linear(Linear.Mk(dir)));
+                movementList.Add(Movement.Linear(Linear.Mk(dir, linearMovement.Value.length)));
             }
 
             var possibleAttackPos = move.Move.GetMoveInfos(
@@ -167,7 +169,7 @@ namespace chess {
             } else {
                 movementList.Add(Movement.Linear(linear));
             }
-            Linear reverseDir = Linear.Mk(-linear.dir);
+            Linear reverseDir = Linear.Mk(-linear.dir, linear.length);
             movementList.Add(Movement.Linear(reverseDir));
 
             return move.Move.GetMoveInfos(movementList, target, board, lastMove);

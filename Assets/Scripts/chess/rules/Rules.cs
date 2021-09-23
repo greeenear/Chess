@@ -38,11 +38,11 @@ namespace rules {
     public static class Rules {
         public static List<Vector2Int> GetLinearMoves(
             Option<Piece>[,] board,
-            LimitedMovement linearMovement
+            FixedMovement linearMovement
         ) {
-            var startPos = linearMovement.fixedMovement.startPos;
-            var linear = linearMovement.fixedMovement.movement.linear.Value;
-            var maxLength = linearMovement.length;
+            var startPos = linearMovement.startPos;
+            var linear = linearMovement.movement.linear.Value;
+            var maxLength = linearMovement.movement.linear.Value.length;
 
             int length = Board.GetLinearLength<Piece>(startPos, linear, board, maxLength);
 
@@ -82,19 +82,23 @@ namespace rules {
 
         private static List<Vector2Int> GetOppositeColorOnLine(
             Option<Piece>[,] board,
-            LimitedMovement limitedMovement,
-            int length
+            FixedMovement linearMovement,
+            int maxLength
         ) {
-            var piecePos = limitedMovement.fixedMovement.startPos;
+            var piecePos = linearMovement.startPos;
             if (board[piecePos.x, piecePos.y].IsNone()) {
                 return null;
             }
+
+            if (!linearMovement.movement.linear.HasValue) {
+                return null;
+            }
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            var linear = limitedMovement.fixedMovement.movement.linear.Value;
-            var movementType = limitedMovement.fixedMovement.movement.movementType;
+            var linear = linearMovement.movement.linear.Value;
+            var movementType = linearMovement.movement.movementType;
             Piece targetPiece = board[piecePos.x, piecePos.y].Peel();
 
-            for (int i = 1; i <= length; i++) {
+            for (int i = 1; i <= maxLength; i++) {
                 Vector2Int pos = piecePos + linear.dir * i;
                 if (board[pos.x, pos.y].IsSome()) {
                     if (board[pos.x, pos.y].Peel().color == targetPiece.color) {

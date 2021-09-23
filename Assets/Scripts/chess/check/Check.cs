@@ -89,7 +89,7 @@ namespace check {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             int lineLength = 0;
-            var line = LimitedMovement.Mk(FixedMovement.Mk(linearMovement, target), boardSize.x);
+            var line = FixedMovement.Mk(linearMovement, target);
             var lineMoves = Rules.GetLinearMoves(board, line);
 
             foreach (var move in lineMoves) {
@@ -98,16 +98,24 @@ namespace check {
                 if (board[move.x, move.y].IsNone()) {
                     continue;
                 }
-                var piece = board[move.x , move.y].Peel();
-                var attackDir = Movement.Linear(linearMovement.linear.Value);
-                var attackingPiecePos = new Vector2Int(move.x, move.y);
 
-                if (!storage.Storage.movement[piece.type].Contains(linearMovement)) {
+                var piece = board[move.x , move.y].Peel();
+                var attackMovement = new Movement();
+                bool isMovementContained = false;
+                foreach (var movement in storage.Storage.movement[piece.type]) {
+                    if (movement.linear.Value.dir == linearMovement.linear.Value.dir) {
+                        attackMovement = movement;
+                        isMovementContained = true;
+                    }
+                }
+                if (!isMovementContained) {
                     return movements;
                 }
 
+                var attackingPiecePos = new Vector2Int(move.x, move.y);
+                var attackDir = Movement.Linear(linearMovement.linear.Value);
                 if (piece.type == PieceType.Pawn) {
-                    if (lineLength == 1 && linearMovement.movementType == MovementType.Attack) {
+                    if (lineLength == 1 && attackMovement.movementType == MovementType.Attack) {
                         if (piece.color == PieceColor.White && attackDir.linear.Value.dir.x > 0) {
                             movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
                         }

@@ -19,9 +19,10 @@ namespace board {
 
     public struct Linear {
         public Vector2Int dir;
+        public int length;
 
-        public static Linear Mk(Vector2Int dir) {
-            return new Linear { dir = dir };
+        public static Linear Mk(Vector2Int dir, int length ) {
+            return new Linear { dir = dir, length = length };
         }
     }
 
@@ -56,15 +57,6 @@ namespace board {
         }
     }
 
-    public struct LimitedMovement {
-        public FixedMovement fixedMovement;
-        public int length;
-
-        public static LimitedMovement Mk(FixedMovement fixedMovement, int length) {
-            return new LimitedMovement { fixedMovement = fixedMovement, length = length };
-        }
-    }
-
     public static class Board {
         public static bool OnBoard(Vector2Int pos, Vector2Int boardSize) {
             if (pos.x < 0 || pos.x > boardSize.x - 1 || pos.y < 0 || pos.y > boardSize.y - 1) {
@@ -81,6 +73,9 @@ namespace board {
             int maxLength
         ) {
             int length = 0;
+            if (maxLength < 0) {
+                maxLength = board.GetLength(1);
+            }
 
             for (int i = 1; i <= maxLength; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;

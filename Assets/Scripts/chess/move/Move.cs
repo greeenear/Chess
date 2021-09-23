@@ -63,13 +63,12 @@ namespace move {
 
             var targetPiece = board[targetPos.x, targetPos.y].Peel();
             var moveInfos = new List<MoveInfo>();
-            List<LimitedMovement> limitedMovements = new List<LimitedMovement>();
+            List<FixedMovement> fixedMovements = new List<FixedMovement>();
             foreach (var movement in movementList) {
-                var fixedMovement = GetFixedMovement(movement, targetPos);
-                limitedMovements.Add(GetLimetedMovement(fixedMovement, board));
+                fixedMovements.Add(GetFixedMovement(movement, targetPos, board));
             }
             
-            var possibleMoveCells = GetMovePositions(limitedMovements, board);
+            var possibleMoveCells = GetMovePositions(fixedMovements, board);
             foreach (var move in possibleMoveCells) {
                 if (board[move.x, move.y].IsSome()) {
                     moveInfos.Add(
@@ -112,56 +111,52 @@ namespace move {
 
         public static FixedMovement GetFixedMovement (
             Movement movement,
-            Vector2Int startPos
-        ) {
-            var fixedMovements = FixedMovement.Mk(movement, startPos);
-
-            return fixedMovements;
-        }
-
-        public static LimitedMovement GetLimetedMovement(
-            FixedMovement fixedMovement,
+            Vector2Int startPos,
             Option<Piece>[,] board
         ) {
-            var limitedMovement = new LimitedMovement();
-            if (board[fixedMovement.startPos.x, fixedMovement.startPos.y].IsNone()) {
-                return limitedMovement;
-            }
+            var fixedMovement = new FixedMovement();
 
-            var pieceOpt = board[fixedMovement.startPos.x, fixedMovement.startPos.y].Peel();
+            var pieceOpt = board[startPos.x, startPos.y].Peel();
             if (pieceOpt.type == PieceType.Pawn) {
-                var moveDir = fixedMovement.movement.linear.Value.dir;
+                var moveDir = movement.linear.Value.dir;
                 if ((pieceOpt.color == PieceColor.White && moveDir.x > 0)
                     || (pieceOpt.color == PieceColor.Black && moveDir.x < 0)) {
-                    return limitedMovement;
+                    return fixedMovement;
                 }
 
-                var movementType = fixedMovement.movement.movementType;
+                var movementType = movement.movementType;
+                var pawnFixedMovement = new FixedMovement();
+                var newLinear = new Linear();
                 if (pieceOpt.moveCounter == 0 && movementType == MovementType.Move) {
-                    limitedMovement = LimitedMovement.Mk(fixedMovement, 2);
-                } else {
-                    limitedMovement = LimitedMovement.Mk(fixedMovement, 1);
-                }
-            } else {
-                limitedMovement = LimitedMovement.Mk(fixedMovement, board.GetLength(0));
-            }
-            
+                    newLinear = Linear.Mk(movement.linear.Value.dir, 2);
 
-            return limitedMovement;
+                } else {
+                    newLinear = Linear.Mk(movement.linear.Value.dir, 1);
+                }
+
+                var pawnMovement = movement;
+                pawnMovement.linear = newLinear;
+                pawnFixedMovement = FixedMovement.Mk(pawnMovement, startPos);
+
+                return pawnFixedMovement;
+            }
+            fixedMovement = FixedMovement.Mk(movement, startPos);
+
+            return fixedMovement;
         }
 
         public static List<Vector2Int> GetMovePositions(
-            List<LimitedMovement> limitedMovements,
+            List<FixedMovement> fixedMovements,
             Option<Piece>[,] board
         ) {
             var possibleMoveCells = new List<Vector2Int>();
 
-            foreach (var limMovment in limitedMovements) {
-                if (limMovment.fixedMovement.movement.linear.HasValue) {
-                    possibleMoveCells.AddRange(Rules.GetLinearMoves(board, limMovment));
+            foreach (var fixedMovement in fixedMovements) {
+                if (fixedMovement.movement.linear.HasValue) {
+                    possibleMoveCells.AddRange(Rules.GetLinearMoves(board, fixedMovement));
 
-                } else if (limMovment.fixedMovement.movement.circular.HasValue) {
-                    possibleMoveCells = Rules.GetCirclularMoves(board, limMovment.fixedMovement);
+                } else if (fixedMovement.movement.circular.HasValue) {
+                    possibleMoveCells = Rules.GetCirclularMoves(board, fixedMovement);
                 }
             }
 
