@@ -6,7 +6,6 @@ namespace board {
     public enum MovementType {
         Attack,
         Move,
-        Mixed
     }
 
     public struct Circular {
@@ -31,16 +30,8 @@ namespace board {
         public Linear? linear;
         public Circular? circular;
 
-        public static Movement Linear(Linear linear) {
-            return new Movement { linear = linear, movementType = MovementType.Mixed };
-        }
-
-        public static Movement LinearOnlyMove(Linear linear) {
-            return new Movement { linear = linear, movementType = MovementType.Move };
-        }
-
-        public static Movement LinearOnlyAttack(Linear linear) {
-            return new Movement { linear = linear, movementType = MovementType.Attack };
+        public static Movement Linear(Linear linear, MovementType type) {
+            return new Movement { linear = linear, movementType = type };
         }
 
         public static Movement Circular(Circular circular) {

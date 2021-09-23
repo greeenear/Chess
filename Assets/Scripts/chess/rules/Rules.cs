@@ -103,13 +103,11 @@ namespace rules {
                 if (board[pos.x, pos.y].IsSome()) {
                     if (board[pos.x, pos.y].Peel().color == targetPiece.color) {
                         break;
-                    } else if (movementType == MovementType.Attack
-                        || movementType == MovementType.Mixed){
+                    } else if (movementType == MovementType.Attack){
                         canMovePositions.Add(new Vector2Int(pos.x, pos.y));
                         break;
                     }
-                } else if (movementType == MovementType.Move
-                    || movementType == MovementType.Mixed) {
+                } else if (movementType == MovementType.Move) {
                     canMovePositions.Add(new Vector2Int(pos.x, pos.y));
                 }
             }
