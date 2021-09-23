@@ -122,17 +122,22 @@ namespace chess {
                 lastMove
             );
 
-            return GetMovesIntersection(possibleDefensePos, possibleAttackPos);
+            return GetListsIntersection<MoveInfo>(
+                possibleDefensePos,
+                possibleAttackPos,
+                (first, second) => first.doubleMove.first.to == second.doubleMove.first.to
+            );
         }
 
-        public static List<MoveInfo> GetMovesIntersection(
-            List<MoveInfo> possibleDefensePos,
-            List<MoveInfo> possibleAttackPos
+        public static List<T> GetListsIntersection<T>(
+            List<T> first,
+            List<T> second,
+            Func<T, T, bool> comparator
         ) {
-            var coveringMoves = new List<MoveInfo>();
-            foreach (var defense in possibleDefensePos) {
-                foreach (var attack in possibleAttackPos) {
-                    if (attack.doubleMove.first.to == defense.doubleMove.first.to) {
+            var coveringMoves = new List<T>();
+            foreach (var defense in first) {
+                foreach (var attack in second) {
+                    if (comparator(attack, defense)) {
                         coveringMoves.Add(defense);
                     }
                 }
