@@ -61,36 +61,45 @@ namespace move {
                 return null;
             }
 
-            var targetPiece = board[targetPos.x, targetPos.y].Peel();
-            var moveInfos = new List<MoveInfo>();
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
             foreach (var movement in movementList) {
                 fixedMovements.Add(GetFixedMovement(movement, targetPos, board));
             }
-            
+
+            var moveInfos = new List<MoveInfo>();
             var possibleMoveCells = GetMovePositions(fixedMovements, board);
-            foreach (var move in possibleMoveCells) {
-                if (board[move.x, move.y].IsSome()) {
+            foreach (var cell in possibleMoveCells) {
+                if (board[cell.x, cell.y].IsSome()) {
                     moveInfos.Add(
                         new MoveInfo {
-                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move)),
-                            sentenced = move
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, cell)),
+                            sentenced = cell
                         }
                     );
                 } else {
                     moveInfos.Add(
                         new MoveInfo {
-                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, move))
+                            doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(targetPos, cell))
                         }
                     );
                 }
             }
+
+            var targetPiece = board[targetPos.x, targetPos.y].Peel();
             if (targetPiece.type == PieceType.King) {
                 CheckCastling(moveInfos, board, targetPos, 1);
                 CheckCastling(moveInfos, board, targetPos, -1);
             }
             if (targetPiece.type == PieceType.Pawn) {
-                moveInfos = GetPawnPromotion(moveInfos, board);
+                foreach (var info in new List<MoveInfo>(moveInfos)) {
+                    var moveTo = info.doubleMove.first.to;
+                    if (moveTo.x == 0 || moveTo.x == board.GetLength(1)) {
+                        var promotion = info;
+                        promotion.pawnPromotion = true;
+                        moveInfos.Remove(info);
+                        moveInfos.Add(promotion);
+                    }
+                }
             }
             if (board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y].IsNone()) {
                 return moveInfos;
@@ -125,7 +134,6 @@ namespace move {
                 }
 
                 var movementType = movement.movementType;
-                var pawnFixedMovement = new FixedMovement();
                 var newLinear = new Linear();
                 if (pieceOpt.moveCounter == 0 && movementType == MovementType.Move) {
                     newLinear = Linear.Mk(movement.linear.Value.dir, 2);
@@ -134,6 +142,7 @@ namespace move {
                     newLinear = Linear.Mk(movement.linear.Value.dir, 1);
                 }
 
+                var pawnFixedMovement = new FixedMovement();
                 var pawnMovement = movement;
                 pawnMovement.linear = newLinear;
                 pawnFixedMovement = FixedMovement.Mk(pawnMovement, startPos);
@@ -163,23 +172,6 @@ namespace move {
             return possibleMoveCells;
         }
 
-        private static List<MoveInfo> GetPawnPromotion(
-            List<MoveInfo> moveInfos,
-            Option<Piece>[,] board
-        ) {
-            List<MoveInfo> newMoveInfos = new List<MoveInfo>();
-            foreach (var info in moveInfos) {
-                var moveTo = info.doubleMove.first.to;
-                if (moveTo.x == 0 || moveTo.x == board.GetLength(1)) {
-                    var promotion = info;
-                    promotion.pawnPromotion = true;
-                    newMoveInfos.Add(promotion);
-                }
-                newMoveInfos.Add(info);
-            }
-            return newMoveInfos;
-        }
-
         private static List<MoveInfo> CheckEnPassant(
             List<MoveInfo> newPossibleMoves,
             Option<Piece>[,] board,
@@ -188,7 +180,6 @@ namespace move {
         ) {
             Option<Piece> checkedCell = new Option<Piece>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            int colorDir = 1;
 
             if (Board.OnBoard(new Vector2Int(pos.x, pos.y + dir), boardSize)) {
                 checkedCell = board[pos.x, pos.y + dir];
@@ -196,9 +187,10 @@ namespace move {
             if (board[pos.x, pos.y].IsNone() || checkedCell.IsNone()) {
                 return newPossibleMoves;
             }
-
             var pawnOpt = board[pos.x, pos.y].Peel();
             var checkedCellOpt = checkedCell.Peel();
+
+            int colorDir = 1;
             if (pawnOpt.color == PieceColor.White) {
                 colorDir = -1;
             } else {
@@ -232,8 +224,8 @@ namespace move {
                 return;
             }
 
-            var king = board[pos.x, pos.y].Peel();
-            if (Check.isCheck(Check.GetCheckInfo(board, king.color, pos))) {
+            var piece = board[pos.x, pos.y].Peel();
+            if (Check.isCheck(Check.GetCheckInfo(board, piece.color, pos))) {
                 return;
             }
 
@@ -245,13 +237,13 @@ namespace move {
             }
 
             int i = pos.y + dir;
-            if (king.moveCounter != 0) {
+            if (piece.moveCounter != 0) {
                 return;
             }
 
             while (i != rookPos.y) {
                 var currentPos = new Vector2Int(pos.x, i);
-                if (Check.isCheck(Check.GetCheckInfo(board, king.color, currentPos))) {
+                if (Check.isCheck(Check.GetCheckInfo(board, piece.color, currentPos))) {
                     break;
                 }
 

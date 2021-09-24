@@ -116,9 +116,9 @@ namespace controller {
         }
 
         public void Load(string path) {
-            var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             board = new Option<Piece>[8,8];
 
+            var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {
                 board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
@@ -139,16 +139,16 @@ namespace controller {
 
         public void ChangePawn(int type) {
             whoseMove = Chess.ChangeMove(whoseMove);
-            var boardPos = resources.boardObj.transform.position;
+            PieceType pieceType = (PieceType)type;
+
             var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
             var x = pawnPos.x;
             var y = pawnPos.y;
-            PieceType pieceType = (PieceType)type;
-
             Chess.ChangePiece(board, pawnPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
             var piece = board[x, y];
 
+            var boardPos = resources.boardObj.transform.position;
             piecesMap[x, y] = GameObject.Instantiate(
                 resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color],
                 new Vector3(
@@ -163,6 +163,7 @@ namespace controller {
             resources.changePawn.SetActive(false);
             var lastMove = movesHistory[movesHistory.Count - 1];
             whoseMove = Chess.ChangeMove(whoseMove);
+            CheckGameStatus(board, whoseMove);
         }
 
         private void Move(MoveData moveData, Vector2Int? sentenced) {
@@ -201,7 +202,6 @@ namespace controller {
             PieceColor whoseMove
         ) {
             var gameStatus = Chess.GetGameStatus(board, whoseMove, movesHistory, noTakeMoves);
-            var kingPos = Check.FindKing(board, whoseMove);
             if (gameStatus == GameStatus.None) {
                 return;
             }
@@ -213,21 +213,8 @@ namespace controller {
                 resources.gameMenu.SetActive(true);
                 this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
-                var boardPos = resources.boardObj.transform.position;
-                var halfBoardSize = resources.halfBoardSize.x;
-                var halfCellSize = resources.halfCellSize.x;
-
-                var highlightPos = new Vector3(
-                    kingPos.x + boardPos.x - halfBoardSize + halfCellSize,
-                    boardPos.y + halfCellSize,
-                    kingPos.y + boardPos.z - halfBoardSize + halfCellSize
-                );
-                Instantiate(
-                    resources.checkCell,
-                    highlightPos,
-                    Quaternion.identity,
-                    resources.storageHighlightCheckCell.transform
-                );
+                var kingPos = Check.FindKing(board, whoseMove);
+                HighlightCell(kingPos, resources.checkCell);
             }
 
             if (gameStatus == GameStatus.Draw) {
@@ -238,15 +225,15 @@ namespace controller {
 
         public void AddPiecesOnBoard() {
             DestroyPieces(piecesMap);
-            var boardPos = resources.boardObj.transform.position;
-            var halfBoardSize = resources.halfBoardSize.x;
-            var halfCellSize = resources.halfCellSize.x;
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
                     var piece = board[i, j].Peel();
-
                     if (board[i, j].IsSome()) {
+                        var halfBoardSize = resources.halfBoardSize.x;
+                        var halfCellSize = resources.halfCellSize.x;
+                        var boardPos = resources.boardObj.transform.position;
+
                         piecesMap[i, j] = GameObject.Instantiate(
                             resources.pieceList[(int)piece.type * 2 + (int)piece.color],
                             new Vector3(
@@ -264,14 +251,13 @@ namespace controller {
         }
 
         private void HighlightCell(List<MoveInfo> possibleMoves) {
-            var boardPos = resources.boardObj.transform.position;
-            var halfBoardSize = resources.halfBoardSize.x;
-            var halfCellSize = resources.halfCellSize.x;
-
             foreach (var pos in possibleMoves) {
                 var toX = pos.doubleMove.first.to.x;
                 var toY = pos.doubleMove.first.to.y;
 
+                var boardPos = resources.boardObj.transform.position;
+                var halfBoardSize = resources.halfBoardSize.x;
+                var halfCellSize = resources.halfCellSize.x;
                 var highlightPos = new Vector3(
                     toX + boardPos.x - halfBoardSize + halfCellSize,
                     boardPos.y + halfCellSize,
@@ -293,6 +279,25 @@ namespace controller {
                 );
             }
         }
+
+        private void HighlightCell(Vector2Int pos, GameObject cell) {
+            var boardPos = resources.boardObj.transform.position;
+            var halfBoardSize = resources.halfBoardSize.x;
+            var halfCellSize = resources.halfCellSize.x;
+
+            var highlightPos = new Vector3(
+                pos.x + boardPos.x - halfBoardSize + halfCellSize,
+                boardPos.y + halfCellSize,
+                pos.y + boardPos.z - halfBoardSize + halfCellSize
+            );
+            Instantiate(
+                cell,
+                highlightPos,
+                Quaternion.identity,
+                resources.storageHighlightCheckCell.transform
+            );
+        }
+
 
         private void DestroyHighlightCell(Transform storageHighlightCells) {
             foreach (Transform child in storageHighlightCells) {
