@@ -70,20 +70,20 @@ namespace chess {
             var movement = storage.Storage.movement[board[target.x, target.y].Peel().type];
             var kingMoves = move.Move.GetMoveInfos(movement, target, board, lastMove);
             foreach (var move in kingMoves) {
-                // var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
+                var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
 
-                // var king = board[target.x, target.y];
-                // board[target.x, target.y] = Option<Piece>.None();
-                // board[target.x, target.y] = king;
+                var king = board[target.x, target.y];
+                board[target.x, target.y] = Option<Piece>.None();
+                board[target.x, target.y] = king;
 
-                // if (checkCellInfos.Count == 0) {
-                //     newKingMoves.Add(move);
-                // }
-                // foreach (var info in checkCellInfos) {
-                //     if (info.coveringPiece != null) {
-                //         newKingMoves.Add(move);
-                //     }
-                // }
+                if (checkCellInfos.Count == 0) {
+                    newKingMoves.Add(move);
+                }
+                foreach (var info in checkCellInfos) {
+                    if (info.coveringPiece != null) {
+                        newKingMoves.Add(move);
+                    }
+                }
             }
 
             return newKingMoves;
@@ -229,52 +229,52 @@ namespace chess {
         ) {
             var possibleMoves = new List<MoveInfo>();
             var gameStatus = new GameStatus();
-            // bool noCheckMate = false;
-            // gameStatus = GameStatus.None;
+            bool noCheckMate = false;
+            gameStatus = GameStatus.None;
 
-            // for (int i = 0; i < board.GetLength(0); i++) {
-            //     if (noCheckMate) {
-            //         break;
-            //     }
-            //     for (int j = 0; j < board.GetLength(1); j++) {
-            //         if (board[i, j].IsNone()) {
-            //             continue;
-            //         }
+            for (int i = 0; i < board.GetLength(0); i++) {
+                if (noCheckMate) {
+                    break;
+                }
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    if (board[i, j].IsNone()) {
+                        continue;
+                    }
 
-            //         var piece = board[i, j].Peel();
-            //         if (piece.color == color) {
-            //             var piecePos = new Vector2Int(i, j);
-            //             var moves = GetPossibleMoves(
-            //                 piecePos,
-            //                 board,
-            //                 movesHistory[movesHistory.Count -1]
-            //             );
-            //             if (moves.Count != 0) {
-            //                 noCheckMate = true;
-            //                 break;
-            //             }
-            //         }
-            //     }
-            // }
-            // var kingPos = Check.FindKing(board, color);
-            // var checkInfo = Check.GetCheckInfo(board, color, kingPos);
-            // foreach (var info in checkInfo) {
-            //     if (info.coveringPiece == null) {
-            //         gameStatus = GameStatus.Check;
-            //     }
-            // }
-            // if (!noCheckMate) {
-            //     if (gameStatus == GameStatus.Check) {
-            //         gameStatus = GameStatus.CheckMate;
-            //     } else {
-            //         gameStatus = GameStatus.StaleMate;
-            //     }
+                    var piece = board[i, j].Peel();
+                    if (piece.color == color) {
+                        var piecePos = new Vector2Int(i, j);
+                        var moves = GetPossibleMoves(
+                            piecePos,
+                            board,
+                            movesHistory[movesHistory.Count -1]
+                        );
+                        if (moves.Count != 0) {
+                            noCheckMate = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            var kingPos = Check.FindKing(board, color);
+            var checkInfo = Check.GetCheckInfo(board, color, kingPos);
+            foreach (var info in checkInfo) {
+                if (info.coveringPiece == null) {
+                    gameStatus = GameStatus.Check;
+                }
+            }
+            if (!noCheckMate) {
+                if (gameStatus == GameStatus.Check) {
+                    gameStatus = GameStatus.CheckMate;
+                } else {
+                    gameStatus = GameStatus.StaleMate;
+                }
 
-            //     return gameStatus;
-            // }
-            // if (CheckDraw(movesHistory, noTakeMoves)) {
-            //     gameStatus = GameStatus.Draw;
-            // }
+                return gameStatus;
+            }
+            if (CheckDraw(movesHistory, noTakeMoves)) {
+                gameStatus = GameStatus.Draw;
+            }
 
             return gameStatus;
         }

@@ -89,55 +89,46 @@ namespace check {
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            int lineLength = 0;
-            var line = FixedMovement.Mk(linearMovement, target);
-            var lineMoves = Rules.GetLinearMoves(board, line);
-            int counter = 0;
-            foreach (var a in lineMoves) {
-                counter++;
-                Debug.Log(new Vector2Int(a.x, a.y));
-                if (board[a.x, a.y].IsSome()) {
-                    Debug.Log(counter + " " + new Vector2Int(a.x, a.y) + target);
-                }
-            }
-            // foreach (var move in lineMoves) {
-            //     Debug.Log("-");
-            //     lineLength++;
-            //     if (board[move.x, move.y].IsNone()) {
-            //         // Debug.Log(move);
-            //         continue;
-            //     }
+            var fixedLine = FixedMovement.Mk(linearMovement, target);
+            var lineMoves = Rules.GetLinearMoves(board, fixedLine);
 
-            //     var piece = board[move.x , move.y].Peel();
-            //     var attackMovement = new Movement();
-            //     bool isMovementContained = false;
-            //     foreach (var movement in storage.Storage.movement[piece.type]) {
-            //         if (movement.linear.Value.dir == linearMovement.linear.Value.dir) {
-            //             attackMovement = movement;
-            //             isMovementContained = true;
-            //         }
-            //     }
-            //     if (!isMovementContained) {
-            //         return movements;
-            //     }
-            //     var attackingPiecePos = new Vector2Int(move.x, move.y);
-            //     var attackDir = Movement.Linear(linearMovement.linear.Value, MovementType.Attack);
-            //     //Debug.Log(lineLength + " " + attackDir.linear.Value.dir + " " + move);
-            //     // var attackDir = Movement.Linear(linearMovement.linear.Value, MovementType.Move);
-            // //Debug.Log(lineLength);
-            //     if (piece.type == PieceType.Pawn) {
-            //         if (lineLength == 1 && attackMovement.movementType == MovementType.Attack) {
-            //             if (piece.color == PieceColor.White && attackDir.linear.Value.dir.x > 0) {
-            //                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-            //             }
-            //             if (piece.color == PieceColor.Black && attackDir.linear.Value.dir.x < 0) {
-            //                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-            //             }
-            //         }
-            //         return movements;
-            //     }
-            //     movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-            // }
+            foreach (var move in lineMoves) {
+                if (board[move.x, move.y].IsNone()) {
+                    continue;
+                }
+
+                var piece = board[move.x , move.y].Peel();
+                var attackMovement = new Movement();
+                bool isMovementContained = false;
+                foreach (var movement in storage.Storage.movement[piece.type]) {
+                    if (!movement.linear.HasValue) {
+                        break;
+                    }
+                    if (movement.linear.Value.dir == linearMovement.linear.Value.dir) {
+                        attackMovement = movement;
+                        isMovementContained = true;
+                    }
+                }
+                if (!isMovementContained) {
+                    return movements;
+                }
+                var attackingPiecePos = new Vector2Int(move.x, move.y);
+                var attackDir = Movement.Linear(linearMovement.linear.Value, MovementType.Attack);
+
+                if (piece.type == PieceType.Pawn) {
+                    var lineLength = Math.Abs(attackingPiecePos.x - target.x);
+                    if (lineLength == 1 && attackMovement.movementType == MovementType.Attack) {
+                        if (piece.color == PieceColor.White && attackDir.linear.Value.dir.x > 0) {
+                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+                        }
+                        if (piece.color == PieceColor.Black && attackDir.linear.Value.dir.x < 0) {
+                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+                        }
+                    }
+                    return movements;
+                }
+                movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
+            }
             return movements;
         }
 
