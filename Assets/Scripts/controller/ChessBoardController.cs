@@ -41,7 +41,6 @@ namespace controller {
             AddPiecesOnBoard();
         }
 
-
         private void Update() {
             if (!Input.GetMouseButtonDown(0)) {
                 return;
@@ -187,7 +186,6 @@ namespace controller {
 
         private void CheckMove(MoveInfo currentMove) {
             noTakeMoves++;
-            
             Move(currentMove.doubleMove.first, currentMove.sentenced);
             if (currentMove.doubleMove.second.HasValue) {
                 Move(currentMove.doubleMove.second.Value, currentMove.sentenced);

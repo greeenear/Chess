@@ -28,13 +28,7 @@ namespace chess {
             var color = board[targetPos.x, targetPos.y].Peel().color;
             var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color));
 
-            bool isCheck = false;
-            foreach (var info in checkInfos) {
-                if (info.coveringPiece == null) {
-                    isCheck = true;
-                    break;
-                }
-            }
+            bool isCheck = Check.isCheck(checkInfos);
 
             var targetPiece = board[targetPos.x, targetPos.y].Peel();
             var movement = storage.Storage.movement;
@@ -134,20 +128,20 @@ namespace chess {
         }
 
         public static List<T> GetListsIntersection<T>(
-            List<T> first,
-            List<T> second,
+            List<T> firstList,
+            List<T> secondList,
             Func<T, T, bool> comparator
         ) {
-            var coveringMoves = new List<T>();
-            foreach (var defense in first) {
-                foreach (var attack in second) {
-                    if (comparator(attack, defense)) {
-                        coveringMoves.Add(defense);
+            var newList = new List<T>();
+            foreach (var first in firstList) {
+                foreach (var second in secondList) {
+                    if (comparator(first, second)) {
+                        newList.Add(first);
                     }
                 }
             }
 
-            return coveringMoves;
+            return newList;
         }
 
         public static List<MoveInfo> GetNotOpeningMoves(
@@ -258,11 +252,10 @@ namespace chess {
             }
             var kingPos = Check.FindKing(board, color);
             var checkInfo = Check.GetCheckInfo(board, color, kingPos);
-            foreach (var info in checkInfo) {
-                if (info.coveringPiece == null) {
-                    gameStatus = GameStatus.Check;
-                }
+            if (Check.isCheck(checkInfo)) {
+                gameStatus = GameStatus.Check;
             }
+
             if (!noCheckMate) {
                 if (gameStatus == GameStatus.Check) {
                     gameStatus = GameStatus.CheckMate;

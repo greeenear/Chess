@@ -231,13 +231,19 @@ namespace move {
             if (board[pos.x, pos.y].IsNone()) {
                 return;
             }
+
             var king = board[pos.x, pos.y].Peel();
+            if (Check.isCheck(Check.GetCheckInfo(board, king.color, pos))) {
+                return;
+            }
+
             var rookPos = new Vector2Int();
             if (dir == -1) {
                 rookPos = new Vector2Int(pos.x, 0);
             } else {
                 rookPos = new Vector2Int(pos.x, board.GetLength(0) - 1);
             }
+
             int i = pos.y + dir;
             if (king.moveCounter != 0) {
                 return;
@@ -245,10 +251,8 @@ namespace move {
 
             while (i != rookPos.y) {
                 var currentPos = new Vector2Int(pos.x, i);
-                foreach (var info in Check.GetCheckInfo(board, king.color, currentPos)) {
-                    if (info.coveringPiece == null) {
-                        break;
-                    }
+                if (Check.isCheck(Check.GetCheckInfo(board, king.color, currentPos))) {
+                    break;
                 }
 
                 i = i + dir;
