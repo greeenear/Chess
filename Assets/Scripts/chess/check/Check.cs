@@ -195,6 +195,16 @@ namespace check {
             return checkInfo; 
         }
 
+        public static bool isCheck(List<CheckInfo> checkInfos) {
+            foreach (var info in checkInfos) {
+                if (info.coveringPiece == null) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static Option<Piece>[,] GetBoardWithOneColor(
             PieceColor color,
             Option<Piece>[,] startBoard
