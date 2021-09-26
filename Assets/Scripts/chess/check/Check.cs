@@ -47,6 +47,7 @@ namespace check {
             var movements = new List<FixedMovement>();
             var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
             movementType.AddRange(Storage.movement[PieceType.Knight]);
+            movementType.AddRange(Storage.movement[PieceType.King]);
         
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
@@ -69,13 +70,21 @@ namespace check {
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var circular = FixedMovement.Mk(circularMovement, target);
             var moves = Rules.GetCirclularMoves(board, circular);
+            var radius = circular.movement.circular.Value.radius;
 
             foreach (var move in moves) {
                 var cell = board[move.x, move.y];
-                var circle = Movement.Circular(Circular.Mk(2));
+                var circle = Movement.Circular(Circular.Mk(radius));
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
-                if (cell.IsSome() && cell.Peel().type == PieceType.Knight) {
-                    movements.Add(FixedMovement.Mk(circle, attackingPiecePos));
+                if (cell.IsNone()) {
+                    continue;
+                }
+
+                var attackMovements = storage.Storage.movement[cell.Peel().type];
+                foreach (var movement in attackMovements) {
+                    if (movement.circular.HasValue && movement.circular.Value.radius == radius) {
+                        movements.Add(FixedMovement.Mk(circle, attackingPiecePos));
+                    }
                 }
             }
 
@@ -97,7 +106,7 @@ namespace check {
                     continue;
                 }
 
-                var piece = board[move.x , move.y].Peel();
+                var piece = board[move.x, move.y].Peel();
                 var attackMovement = new Movement();
                 bool isMovementContained = false;
                 foreach (var movement in storage.Storage.movement[piece.type]) {
