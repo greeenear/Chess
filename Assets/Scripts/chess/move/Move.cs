@@ -118,40 +118,32 @@ namespace move {
             return moveInfos;
         }
 
-        public static FixedMovement GetFixedMovement (
-            Movement movement,
-            Vector2Int startPos,
-            Option<Piece>[,] board
-        ) {
-            var fixedMovement = new FixedMovement();
-
-            var pieceOpt = board[startPos.x, startPos.y].Peel();
-            if (pieceOpt.type == PieceType.Pawn) {
-                var moveDir = movement.linear.Value.dir;
-                if ((pieceOpt.color == PieceColor.White && moveDir.x > 0)
-                    || (pieceOpt.color == PieceColor.Black && moveDir.x < 0)) {
-                    return fixedMovement;
-                }
-
-                var movementType = movement.movementType;
-                var newLinear = new Linear();
-                if (pieceOpt.moveCounter == 0 && movementType == MovementType.Move) {
-                    newLinear = Linear.Mk(movement.linear.Value.dir, 2);
-
-                } else {
-                    newLinear = Linear.Mk(movement.linear.Value.dir, 1);
-                }
-
-                var pawnFixedMovement = new FixedMovement();
-                var pawnMovement = movement;
-                pawnMovement.linear = newLinear;
-                pawnFixedMovement = FixedMovement.Mk(pawnMovement, startPos);
-
-                return pawnFixedMovement;
+        public static List<Movement> GetRealMovements(Option<Piece>[,] board, Vector2Int pos) {
+            var pieceOpt = board[pos.x, pos.y];
+            if (pieceOpt.IsNone()) {
+                return null;
             }
-            fixedMovement = FixedMovement.Mk(movement, startPos);
+            var piece = pieceOpt.Peel();
+            var realMovements = new List<Movement>();
 
-            return fixedMovement;
+            if (piece.type == PieceType.Pawn) {
+                foreach (var movement in storage.Storage.movement[piece.type]) {
+                    var moveDir = movement.linear.Value.dir;
+                    if ((piece.color == PieceColor.White && moveDir.x > 0)
+                        || (piece.color == PieceColor.Black && moveDir.x < 0)) {
+                        continue;
+                    }
+                    var movementType = movement.movementType;
+                    var newLinear = movement.linear.Value;
+                    if (piece.moveCounter == 0 && movementType == MovementType.Move) {
+                        newLinear.length = 2;
+                    }
+                    realMovements.Add(Movement.Linear(newLinear, movementType));
+                }
+                return realMovements;
+            }
+
+            return storage.Storage.movement[piece.type];
         }
 
         public static List<Vector2Int> GetMovePositions(
