@@ -63,7 +63,7 @@ namespace move {
 
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
             foreach (var movement in movementList) {
-                fixedMovements.Add(GetFixedMovement(movement, targetPos, board));
+                fixedMovements.Add(FixedMovement.Mk(movement, targetPos));
             }
 
             var moveInfos = new List<MoveInfo>();
@@ -93,7 +93,7 @@ namespace move {
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
-                    if (moveTo.x == 0 || moveTo.x == board.GetLength(1)) {
+                    if (moveTo.x == 0 || moveTo.x == board.GetLength(1) - 1) {
                         var promotion = info;
                         promotion.pawnPromotion = true;
                         moveInfos.Remove(info);
@@ -153,12 +153,7 @@ namespace move {
             var possibleMoveCells = new List<Vector2Int>();
 
             foreach (var fixedMovement in fixedMovements) {
-                if (fixedMovement.movement.linear.HasValue) {
-                    possibleMoveCells.AddRange(Rules.GetLinearMoves(board, fixedMovement));
-
-                } else if (fixedMovement.movement.circular.HasValue) {
-                    possibleMoveCells = Rules.GetCirclularMoves(board, fixedMovement);
-                }
+                possibleMoveCells.AddRange(Rules.GetMoves(board, fixedMovement));
             }
 
             return possibleMoveCells;
@@ -217,7 +212,7 @@ namespace move {
             }
 
             var piece = board[pos.x, pos.y].Peel();
-            if (Check.isCheck(Check.GetCheckInfo(board, piece.color, pos))) {
+            if (Check.IsCheck(Check.GetCheckInfo(board, piece.color, pos))) {
                 return;
             }
 
@@ -235,7 +230,7 @@ namespace move {
 
             while (i != rookPos.y) {
                 var currentPos = new Vector2Int(pos.x, i);
-                if (Check.isCheck(Check.GetCheckInfo(board, piece.color, currentPos))) {
+                if (Check.IsCheck(Check.GetCheckInfo(board, piece.color, currentPos))) {
                     break;
                 }
 

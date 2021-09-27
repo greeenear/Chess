@@ -69,7 +69,7 @@ namespace check {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var circular = FixedMovement.Mk(circularMovement, target);
-            var moves = Rules.GetCirclularMoves(board, circular);
+            var moves = Rules.GetMoves(board, circular);
             var radius = circular.movement.circular.Value.radius;
 
             foreach (var move in moves) {
@@ -99,8 +99,10 @@ namespace check {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var fixedLine = FixedMovement.Mk(linearMovement, target);
-            var lineMoves = Rules.GetLinearMoves(board, fixedLine);
-
+            var lineMoves = Rules.GetMoves(board, fixedLine);
+            if (lineMoves == null) {
+                return movements;
+            }
             foreach (var move in lineMoves) {
                 if (board[move.x, move.y].IsNone()) {
                     continue;
@@ -204,7 +206,7 @@ namespace check {
             return checkInfo; 
         }
 
-        public static bool isCheck(List<CheckInfo> checkInfos) {
+        public static bool IsCheck(List<CheckInfo> checkInfos) {
             foreach (var info in checkInfos) {
                 if (info.coveringPiece == null) {
                     return true;

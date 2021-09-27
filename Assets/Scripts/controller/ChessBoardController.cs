@@ -91,7 +91,7 @@ namespace controller {
                     possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
 
                     playerAction = PlayerAction.Move;
-                    HighlightCell(possibleMoves);
+                    HighlightCells(possibleMoves);
                     break;
             }
         }
@@ -250,7 +250,7 @@ namespace controller {
             }
         }
 
-        private void HighlightCell(List<MoveInfo> possibleMoves) {
+        private void HighlightCells(List<MoveInfo> possibleMoves) {
             foreach (var pos in possibleMoves) {
                 var toX = pos.doubleMove.first.to.x;
                 var toY = pos.doubleMove.first.to.y;

@@ -85,7 +85,6 @@ namespace board {
                     length++;
                 }
             }
-
             return length;
         }
 

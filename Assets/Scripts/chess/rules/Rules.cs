@@ -94,39 +94,43 @@ namespace rules {
             return canMovePositions;
         }
 
-        private static List<Vector2Int> GetOppositeColorOnLine(
+        private static int GetFixedLength(
             Option<Piece>[,] board,
             FixedMovement linearMovement,
             int maxLength
         ) {
             var piecePos = linearMovement.startPos;
             if (board[piecePos.x, piecePos.y].IsNone()) {
-                return null;
+                return 0;
             }
+            Piece targetPiece = board[piecePos.x, piecePos.y].Peel();
 
-            if (!linearMovement.movement.linear.HasValue) {
-                return null;
-            }
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
             var linear = linearMovement.movement.linear.Value;
             var movementType = linearMovement.movement.movementType;
-            Piece targetPiece = board[piecePos.x, piecePos.y].Peel();
+            int moveCounter = 0;
 
             for (int i = 1; i <= maxLength; i++) {
                 Vector2Int pos = piecePos + linear.dir * i;
-                if (board[pos.x, pos.y].IsSome()) {
-                    if (board[pos.x, pos.y].Peel().color == targetPiece.color) {
-                        break;
-                    } else if (movementType == MovementType.Attack){
-                        canMovePositions.Add(new Vector2Int(pos.x, pos.y));
-                        break;
+                var pieceOpt = board[pos.x, pos.y];
+                if (movementType == MovementType.Move) {
+                    if (pieceOpt.IsNone()) {
+                        moveCounter++;
                     }
-                } else if (movementType == MovementType.Move) {
-                    canMovePositions.Add(new Vector2Int(pos.x, pos.y));
+                } else if (movementType == MovementType.Attack) {
+                    if (pieceOpt.IsSome()) {
+                        var piece = pieceOpt.Peel();
+                        if (piece.color != targetPiece.color) {
+                            moveCounter = i;
+                            return moveCounter;
+                        } else {
+                            moveCounter = i - 1;
+                            return moveCounter - 1;
+                        }
+                    }
                 }
             }
 
-            return canMovePositions;
+            return moveCounter;
         }
     }
 }

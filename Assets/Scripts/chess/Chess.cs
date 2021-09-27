@@ -25,13 +25,12 @@ namespace chess {
             if (board[targetPos.x, targetPos.y].IsNone()) {
                 return null;
             }
-            var color = board[targetPos.x, targetPos.y].Peel().color;
+            var targetPiece = board[targetPos.x, targetPos.y].Peel();
+            var color = targetPiece.color;
             var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color));
 
-            bool isCheck = Check.isCheck(checkInfos);
+            bool isCheck = Check.IsCheck(checkInfos);
 
-            var targetPiece = board[targetPos.x, targetPos.y].Peel();
-            var movement = storage.Storage.movement;
             if (targetPiece.type == PieceType.King) {
                 return GetKingPossibleMoves(board, targetPos, lastMove, color);
             }
@@ -45,7 +44,7 @@ namespace chess {
                 }
             }
 
-            var movementList = movement[targetPiece.type];
+            var movementList = Move.GetRealMovements(board, targetPos);
 
             return move.Move.GetMoveInfos(movementList, targetPos, board, lastMove);;
         }
@@ -83,7 +82,7 @@ namespace chess {
             return newKingMoves;
         }
 
-        public static List<MoveInfo> GetСoveringMoves (
+        public static List<MoveInfo> GetСoveringMoves(
             Vector2Int target,
             Option<Piece>[,] board,
             MoveInfo lastMove,
@@ -237,7 +236,7 @@ namespace chess {
             }
             var kingPos = Check.FindKing(board, color);
             var checkInfo = Check.GetCheckInfo(board, color, kingPos);
-            if (Check.isCheck(checkInfo)) {
+            if (Check.IsCheck(checkInfo)) {
                 gameStatus = GameStatus.Check;
             }
 
