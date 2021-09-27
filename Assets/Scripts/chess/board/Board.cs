@@ -64,8 +64,11 @@ namespace board {
             int maxLength
         ) {
             int length = 0;
+            int maxSize = Mathf.Max(board.GetLength(1), board.GetLength(0));
             if (maxLength < 0) {
-                maxLength = board.GetLength(1);
+                maxLength = maxSize;
+            } else if (maxLength > maxSize) {
+                maxLength = maxSize;
             }
 
             for (int i = 1; i <= maxLength; i++) {
