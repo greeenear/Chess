@@ -36,27 +36,41 @@ namespace rules {
     }
 
     public static class Rules {
+        public static List<Vector2Int> GetMoves(Option<Piece>[,] board, FixedMovement movement) {
+            if (movement.movement.linear.HasValue) {
+                var linear = movement.movement.linear.Value;
+                var startPos = movement.startPos;
+                int length = Board.GetLinearLength<Piece>(startPos, linear, board, linear.length);
+                length = GetFixedLength(board, movement, length);
+                return GetLinearMoves(linear, movement.startPos, length);
+            } else if (movement.movement.circular.HasValue) {
+                var circular = movement.movement.circular.Value;
+                return GetCirclularMoves(board, circular, movement.startPos);
+            }
+
+            return null;
+        }
+
         public static List<Vector2Int> GetLinearMoves(
-            Option<Piece>[,] board,
-            FixedMovement linearMovement
+            Linear linear,
+            Vector2Int piecePos,
+            int length
         ) {
-            var startPos = linearMovement.startPos;
-            var linear = linearMovement.movement.linear.Value;
-            var maxLength = linearMovement.movement.linear.Value.length;
+            
+            var moves = new List<Vector2Int>();
+            for (int i = 1; i <= length; i++) {
+                moves.Add(piecePos + linear.dir * i);
+            }
 
-            int length = Board.GetLinearLength<Piece>(startPos, linear, board, maxLength);
-
-            return GetOppositeColorOnLine(board, linearMovement, length);
+            return moves;
         }
 
         public static List<Vector2Int> GetCirclularMoves(
             Option<Piece>[,] board,
-            FixedMovement circlularMovement
+            Circular circlular,
+            Vector2Int pos
         ) {
             float angle;
-            var circlular = circlularMovement.movement.circular.Value;
-            var pos = circlularMovement.startPos;
-
             if (circlular.radius == 1) {
                 angle = StartAngle.King;
             } else {
