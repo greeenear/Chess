@@ -178,21 +178,6 @@ namespace chess {
             return (PieceColor)(((int)(whoseMove + 1) % (int)PieceColor.Count));
         }
 
-        public static bool CheckChangePawn(Option<Piece>[,] board, MoveInfo lastMove) {
-            var last = board[lastMove.doubleMove.first.to.x, lastMove.doubleMove.first.to.y];
-            var end = lastMove.doubleMove.first.to.x;
-            if (last.IsNone()) {
-                return false;
-            }
-            if (last.Peel().type == PieceType.Pawn) {
-                if (end == 0 || end == board.GetLength(1)-1) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         public static bool CheckDraw(List<MoveInfo> completedMoves, int noTakeMoves) {
             int moveCounter = 0;
             if (completedMoves.Count > 9) {
