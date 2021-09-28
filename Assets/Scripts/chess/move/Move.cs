@@ -3,7 +3,6 @@ using UnityEngine;
 using board;
 using rules;
 using option;
-using check;
 
 namespace move {
     public struct MoveData {
@@ -92,6 +91,10 @@ namespace move {
                                 moveInfo.sentenced = new Vector2Int(pos.x, pawnTrace.Value.y);
                             }
                         }
+                    }
+                    if (targetPiece.type == PieceType.King) {
+
+
                     }
                     moveInfos.Add(moveInfo);
                 }

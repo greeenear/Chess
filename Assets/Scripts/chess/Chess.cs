@@ -161,15 +161,14 @@ namespace chess {
             }
 
             var linear = checkInfo.attackInfo.movement.linear.Value;
-            if (targetPiece.type == PieceType.Pawn) {
-                movementList.Add(Movement.Linear(linear, MovementType.Attack));
-            } else {
-                movementList.Add(Movement.Linear(linear, MovementType.Attack));
-                movementList.Add(Movement.Linear(linear, MovementType.Move));
+            foreach (var movement in Move.GetRealMovements(board, target)) {
+                if (movement.linear.Value.dir == linear.dir) {
+                    movementList.Add(movement);
+                }
+                if (movement.linear.Value.dir == -linear.dir) {
+                    movementList.Add(movement);
+                }
             }
-            Linear reverseDir = Linear.Mk(-linear.dir, linear.length);
-            movementList.Add(Movement.Linear(reverseDir, MovementType.Attack));
-            movementList.Add(Movement.Linear(reverseDir, MovementType.Move));
 
             return move.Move.GetMoveInfos(movementList, target, board, pieceTrace);
         }

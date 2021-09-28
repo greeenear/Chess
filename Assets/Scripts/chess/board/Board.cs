@@ -63,14 +63,9 @@ namespace board {
             Option<T>[,] board,
             int maxLength
         ) {
-            int length = 0;
-            int maxSize = Mathf.Max(board.GetLength(1), board.GetLength(0));
-            if (maxLength < 0) {
-                maxLength = maxSize;
-            } else if (maxLength > maxSize) {
-                maxLength = maxSize;
-            }
+            maxLength = GetMaxLength(board, maxLength);
 
+            int length = 0;
             for (int i = 1; i <= maxLength; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
 
@@ -85,6 +80,7 @@ namespace board {
                     length++;
                 }
             }
+
             return length;
         }
 
@@ -120,6 +116,17 @@ namespace board {
             }
 
             return canMovePositions;
+        }
+
+        public static int GetMaxLength<T>(Option<T>[,] board, int length) {
+            int maxBoardSize = Mathf.Max(board.GetLength(1), board.GetLength(0));
+            if (length < 0) {
+                length = maxBoardSize;
+            } else if (length > maxBoardSize) {
+                length = maxBoardSize;
+            }
+
+            return length;
         }
     }
 }

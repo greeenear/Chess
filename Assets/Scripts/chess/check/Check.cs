@@ -5,6 +5,7 @@ using board;
 using option;
 using rules;
 using storage;
+using move;
 
 namespace check {
     public struct CheckInfo {
@@ -45,11 +46,11 @@ namespace check {
             Vector2Int target,
             PieceTrace? trace
         ) {
-            var movements = new List<FixedMovement>();
             var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
             movementType.AddRange(Storage.movement[PieceType.Knight]);
             movementType.AddRange(Storage.movement[PieceType.King]);
-        
+
+            var movements = new List<FixedMovement>();
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
                     movements.AddRange(GetCircularMoves(board, target, type, trace));
@@ -66,10 +67,8 @@ namespace check {
             Vector2Int target,
             Movement circularMovement,
             PieceTrace? trace
-
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
-            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var circular = FixedMovement.Mk(circularMovement, target);
             var moves = Rules.GetMoves(board, circular, trace);
             var radius = circular.movement.circular.Value.radius;
@@ -114,13 +113,15 @@ namespace check {
                 var piece = board[move.x, move.y].Peel();
                 var attackMovement = new Movement();
                 bool isMovementContained = false;
-                foreach (var movement in storage.Storage.movement[piece.type]) {
+                var pieceMovements = Move.GetRealMovements(board, new Vector2Int(move.x, move.y));
+                foreach (var movement in pieceMovements) {
                     if (!movement.linear.HasValue) {
                         break;
                     }
-                    if (movement.linear.Value.dir == linearMovement.linear.Value.dir) {
+                    if (-movement.linear.Value.dir == linearMovement.linear.Value.dir) {
                         attackMovement = movement;
                         isMovementContained = true;
+                        break;
                     }
                 }
                 if (!isMovementContained) {
@@ -129,20 +130,14 @@ namespace check {
                 var attackingPiecePos = new Vector2Int(move.x, move.y);
                 var attackDir = Movement.Linear(linearMovement.linear.Value, MovementType.Attack);
 
-                if (piece.type == PieceType.Pawn) {
-                    var lineLength = Math.Abs(attackingPiecePos.x - target.x);
-                    if (lineLength == 1 && attackMovement.movementType == MovementType.Attack) {
-                        if (piece.color == PieceColor.White && attackDir.linear.Value.dir.x > 0) {
-                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-                        }
-                        if (piece.color == PieceColor.Black && attackDir.linear.Value.dir.x < 0) {
-                            movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
-                        }
-                    }
-                    return movements;
+                var lineLength = Math.Abs(attackingPiecePos.x - target.x);
+                var attackLength = Board.GetMaxLength(board, attackMovement.linear.Value.length);
+                var attackMovementType = attackMovement.movementType;
+                if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
+                    movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
                 }
-                movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
             }
+
             return movements;
         }
 

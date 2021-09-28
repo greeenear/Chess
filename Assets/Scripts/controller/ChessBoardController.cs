@@ -164,6 +164,7 @@ namespace controller {
             this.enabled = true;
             resources.changePawn.SetActive(false);
             var lastMove = movesHistory[movesHistory.Count - 1];
+
             whoseMove = Chess.ChangeMove(whoseMove);
             CheckGameStatus(board, whoseMove);
         }
@@ -269,6 +270,7 @@ namespace controller {
                 var boardPos = resources.boardObj.transform.position;
                 var halfBoardSize = resources.halfBoardSize.x;
                 var halfCellSize = resources.halfCellSize.x;
+
                 var highlightPos = new Vector3(
                     toX + boardPos.x - halfBoardSize + halfCellSize,
                     boardPos.y + halfCellSize,
@@ -308,7 +310,6 @@ namespace controller {
                 resources.storageHighlightCheckCell.transform
             );
         }
-
 
         private void DestroyHighlightCell(Transform storageHighlightCells) {
             foreach (Transform child in storageHighlightCells) {
