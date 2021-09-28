@@ -20,39 +20,39 @@ namespace chess {
         public static List<MoveInfo> GetPossibleMoves(
             Vector2Int targetPos,
             Option<Piece>[,] board,
-            MoveInfo lastMove
+            PieceTrace? trace
         ) {
             if (board[targetPos.x, targetPos.y].IsNone()) {
                 return null;
             }
             var targetPiece = board[targetPos.x, targetPos.y].Peel();
             var color = targetPiece.color;
-            var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color));
+            var checkInfos = Check.GetCheckInfo(board, color, Check.FindKing(board, color), trace);
 
             bool isCheck = Check.IsCheck(checkInfos);
 
             if (targetPiece.type == PieceType.King) {
-                return GetKingPossibleMoves(board, targetPos, lastMove, color);
+                return GetKingPossibleMoves(board, targetPos, trace, color);
             }
 
             foreach (var checkInfo in checkInfos) {
                 if (checkInfo.coveringPiece == null) {
-                    return GetСoveringMoves(targetPos, board, lastMove, checkInfo);
+                    return GetСoveringMoves(targetPos, board, trace, checkInfo);
                 }
                 if (checkInfo.coveringPiece == targetPos && !isCheck) {
-                    return GetNotOpeningMoves(targetPos, board, lastMove, checkInfo);
+                    return GetNotOpeningMoves(targetPos, board, trace, checkInfo);
                 }
             }
 
             var movementList = Move.GetRealMovements(board, targetPos);
 
-            return move.Move.GetMoveInfos(movementList, targetPos, board, lastMove);;
+            return move.Move.GetMoveInfos(movementList, targetPos, board, trace);;
         }
 
         public static List<MoveInfo> GetKingPossibleMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            MoveInfo lastMove,
+            PieceTrace? trace,
             PieceColor color
         ) {
             List<MoveInfo> newKingMoves = new List<MoveInfo>();
@@ -61,11 +61,12 @@ namespace chess {
             }
 
             var movement = storage.Storage.movement[board[target.x, target.y].Peel().type];
-            var kingMoves = move.Move.GetMoveInfos(movement, target, board, lastMove);
+            var kingMoves = move.Move.GetMoveInfos(movement, target, board, trace);
             foreach (var move in kingMoves) {
                 var king = board[target.x, target.y];
                 board[target.x, target.y] = Option<Piece>.None();
-                var checkCellInfos = Check.GetCheckInfo(board, color, move.doubleMove.first.to);
+                var moveTo = move.doubleMove.first.to;
+                var checkCellInfos = Check.GetCheckInfo(board, color, moveTo, trace);
 
                 board[target.x, target.y] = king;
 
@@ -85,7 +86,7 @@ namespace chess {
         public static List<MoveInfo> GetСoveringMoves(
             Vector2Int target,
             Option<Piece>[,] board,
-            MoveInfo lastMove,
+            PieceTrace? pieceTrace,
             CheckInfo checkInfo
         ) {
             if (board[target.x, target.y].IsNone()) {
@@ -107,7 +108,7 @@ namespace chess {
                 movementList,
                 checkInfo.attackInfo.startPos,
                 board,
-                lastMove
+                pieceTrace
             );
             var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(attakingPos, attakingPos));
             possibleAttackPos.Add(MoveInfo.Mk(doubleMove));
@@ -116,7 +117,7 @@ namespace chess {
                 storage.Storage.movement[board[target.x, target.y].Peel().type],
                 target,
                 board,
-                lastMove
+                pieceTrace
             );
 
             return GetListsIntersection<MoveInfo>(
@@ -146,7 +147,7 @@ namespace chess {
         public static List<MoveInfo> GetNotOpeningMoves(
             Vector2Int target,
             Option<Piece>[,] board,
-            MoveInfo lastMove,
+            PieceTrace? pieceTrace,
             CheckInfo checkInfo
         ) {
             if (board[target.x, target.y].IsNone()) {
@@ -170,7 +171,7 @@ namespace chess {
             movementList.Add(Movement.Linear(reverseDir, MovementType.Attack));
             movementList.Add(Movement.Linear(reverseDir, MovementType.Move));
 
-            return move.Move.GetMoveInfos(movementList, target, board, lastMove);
+            return move.Move.GetMoveInfos(movementList, target, board, pieceTrace);
         }
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {
@@ -203,7 +204,8 @@ namespace chess {
             Option<Piece>[,] board,
             PieceColor color,
             List<MoveInfo> movesHistory,
-            int noTakeMoves
+            int noTakeMoves,
+            PieceTrace? pieceTrace
         ) {
             var possibleMoves = new List<MoveInfo>();
             var gameStatus = new GameStatus();
@@ -225,7 +227,7 @@ namespace chess {
                         var moves = GetPossibleMoves(
                             piecePos,
                             board,
-                            movesHistory[movesHistory.Count -1]
+                            pieceTrace
                         );
                         if (moves.Count != 0) {
                             noCheckMate = true;
@@ -235,7 +237,7 @@ namespace chess {
                 }
             }
             var kingPos = Check.FindKing(board, color);
-            var checkInfo = Check.GetCheckInfo(board, color, kingPos);
+            var checkInfo = Check.GetCheckInfo(board, color, kingPos, pieceTrace);
             if (Check.IsCheck(checkInfo)) {
                 gameStatus = GameStatus.Check;
             }

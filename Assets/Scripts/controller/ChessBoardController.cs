@@ -25,6 +25,7 @@ namespace controller {
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private List<MoveInfo> movesHistory = new List<MoveInfo>();
+        private PieceTrace? trace;
         private int noTakeMoves;
 
         private JsonObject jsonObject;
@@ -70,6 +71,7 @@ namespace controller {
                 case PlayerAction.Move:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     DestroyHighlightCell(resources.storageHighlightCheckCell.transform);
+                    trace = null;
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
@@ -88,7 +90,7 @@ namespace controller {
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
 
-                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, lastMove);
+                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, trace);
 
                     playerAction = PlayerAction.Move;
                     HighlightCells(possibleMoves);
@@ -195,13 +197,22 @@ namespace controller {
                 resources.changePawn.SetActive(true);
                 this.enabled = false;
             }
+            if (currentMove.trace.HasValue) {
+                trace = currentMove.trace.Value;
+            }
         }
 
         private void CheckGameStatus(
             Option<Piece>[,] board,
             PieceColor whoseMove
         ) {
-            var gameStatus = Chess.GetGameStatus(board, whoseMove, movesHistory, noTakeMoves);
+            var gameStatus = Chess.GetGameStatus(
+                board,
+                whoseMove,
+                movesHistory,
+                noTakeMoves,
+                trace
+            );
             if (gameStatus == GameStatus.None) {
                 return;
             }

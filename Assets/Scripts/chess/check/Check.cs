@@ -42,7 +42,8 @@ namespace check {
         public static List<FixedMovement> GetAttackMovements(
             PieceColor color,
             Option<Piece>[,] board,
-            Vector2Int target
+            Vector2Int target,
+            PieceTrace? trace
         ) {
             var movements = new List<FixedMovement>();
             var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
@@ -51,9 +52,9 @@ namespace check {
         
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
-                    movements.AddRange(GetCircularMoves(board, target, type));
+                    movements.AddRange(GetCircularMoves(board, target, type, trace));
                 } else if (type.linear.HasValue) {
-                    movements.AddRange(GetLinearMoves(board, target, type));
+                    movements.AddRange(GetLinearMoves(board, target, type, trace));
                 }
             }
 
@@ -63,13 +64,14 @@ namespace check {
         public static List<FixedMovement> GetCircularMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement circularMovement
+            Movement circularMovement,
+            PieceTrace? trace
 
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var circular = FixedMovement.Mk(circularMovement, target);
-            var moves = Rules.GetMoves(board, circular);
+            var moves = Rules.GetMoves(board, circular, trace);
             var radius = circular.movement.circular.Value.radius;
 
             foreach (var move in moves) {
@@ -94,12 +96,13 @@ namespace check {
         public static List<FixedMovement> GetLinearMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement linearMovement
+            Movement linearMovement,
+            PieceTrace? trace
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var fixedLine = FixedMovement.Mk(linearMovement, target);
-            var lineMoves = Rules.GetMoves(board, fixedLine);
+            var lineMoves = Rules.GetMoves(board, fixedLine, trace);
             if (lineMoves == null) {
                 return movements;
             }
@@ -192,7 +195,8 @@ namespace check {
         public static List<CheckInfo> GetCheckInfo(
             Option<Piece>[,] board,
             PieceColor color,
-            Vector2Int cellPos
+            Vector2Int cellPos,
+            PieceTrace? trace
         ) {
             var movement = storage.Storage.movement;
 
@@ -200,7 +204,7 @@ namespace check {
             var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
             singleColorBoard[cellPos.x, cellPos.y] = king;
 
-            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos);
+            var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos, trace);
             var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
 
             return checkInfo; 

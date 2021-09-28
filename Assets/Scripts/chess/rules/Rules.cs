@@ -30,18 +30,27 @@ namespace rules {
         }
     }
 
+    public struct PieceTrace {
+        public Vector2Int? kingTrace;
+        public Vector2Int? pawnTrace;
+    }
+
     public struct StartAngle {
         public const float Knight = 22.5f;
         public const float King = 20f;
     }
 
     public static class Rules {
-        public static List<Vector2Int> GetMoves(Option<Piece>[,] board, FixedMovement movement) {
+        public static List<Vector2Int> GetMoves(
+            Option<Piece>[,] board,
+            FixedMovement movement,
+            PieceTrace? trace
+        ) {
             if (movement.movement.linear.HasValue) {
                 var linear = movement.movement.linear.Value;
                 var startPos = movement.startPos;
                 int length = Board.GetLinearLength<Piece>(startPos, linear, board, linear.length);
-                length = GetFixedLength(board, movement, length);
+                length = GetFixedLength(board, movement, length, trace);
                 return GetLinearMoves(linear, movement.startPos, length);
             } else if (movement.movement.circular.HasValue) {
                 var circular = movement.movement.circular.Value;
@@ -97,7 +106,8 @@ namespace rules {
         private static int GetFixedLength(
             Option<Piece>[,] board,
             FixedMovement linearMovement,
-            int maxLength
+            int maxLength,
+            PieceTrace? trace
         ) {
             var piecePos = linearMovement.startPos;
             if (board[piecePos.x, piecePos.y].IsNone()) {
@@ -117,16 +127,21 @@ namespace rules {
                         moveCounter++;
                     }
                 } else if (movementType == MovementType.Attack) {
+                            moveCounter = i;
                     if (pieceOpt.IsSome()) {
                         var piece = pieceOpt.Peel();
                         if (piece.color != targetPiece.color) {
-                            moveCounter = i;
                             return moveCounter;
                         } else {
-                            moveCounter = i - 1;
                             return moveCounter - 1;
                         }
                     }
+                    if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
+                        if (targetPiece.type == PieceType.Pawn && pos == trace.Value.pawnTrace) {
+                            return moveCounter;
+                        }
+                    }
+                    moveCounter = 0;
                 }
             }
 
