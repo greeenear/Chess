@@ -44,7 +44,7 @@ namespace chess {
                 }
             }
 
-            var movementList = Move.GetRealMovements(board, targetPos);
+            var movementList = Move.GetMovements(board, targetPos);
 
             return move.Move.GetMoveInfos(movementList, targetPos, board, trace);;
         }
@@ -114,7 +114,7 @@ namespace chess {
             possibleAttackPos.Add(MoveInfo.Mk(doubleMove));
 
             var possibleDefensePos = move.Move.GetMoveInfos(
-                Move.GetRealMovements(board, target),
+                Move.GetMovements(board, target),
                 target,
                 board,
                 pieceTrace
@@ -161,7 +161,7 @@ namespace chess {
             }
 
             var linear = checkInfo.attackInfo.movement.linear.Value;
-            foreach (var movement in Move.GetRealMovements(board, target)) {
+            foreach (var movement in Move.GetMovements(board, target)) {
                 if (movement.linear.Value.dir == linear.dir) {
                     movementList.Add(movement);
                 }

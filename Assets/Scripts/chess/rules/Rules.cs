@@ -65,7 +65,7 @@ namespace rules {
             Vector2Int piecePos,
             int length
         ) {
-            
+
             var moves = new List<Vector2Int>();
             for (int i = 1; i <= length; i++) {
                 moves.Add(piecePos + linear.dir * i);
@@ -109,10 +109,11 @@ namespace rules {
             int maxLength,
             PieceTrace? trace
         ) {
-            if (board[linearMovement.startPos.x, linearMovement.startPos.y].IsNone()) {
+            var targetPieceOpt = board[linearMovement.startPos.x, linearMovement.startPos.y];
+            if (targetPieceOpt.IsNone()) {
                 return 0;
             }
-            Piece targetPiece = board[linearMovement.startPos.x, linearMovement.startPos.y].Peel();
+            Piece targetPiece = targetPieceOpt.Peel();
 
             var linear = linearMovement.movement.linear.Value;
             var movementType = linearMovement.movement.movementType;
@@ -134,7 +135,7 @@ namespace rules {
                 if (pieceOpt.IsSome() && pieceOpt.Peel().color != targetPiece.color) {
                     return maxLength;
                 } else {
-                    return 0;
+                    return maxLength - 1;
                 }
             }
             return maxLength;

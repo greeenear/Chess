@@ -117,7 +117,7 @@ namespace check {
 
             var attackMovement = new Movement();
             var attackingPiecePos = new Vector2Int(lastPos.x, lastPos.y);
-            var pieceMovements = Move.GetRealMovements(board, attackingPiecePos);
+            var pieceMovements = Move.GetMovements(board, attackingPiecePos);
 
             bool isMovementContained = false;
             foreach (var movement in pieceMovements) {

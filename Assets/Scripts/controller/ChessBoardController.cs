@@ -264,7 +264,6 @@ namespace controller {
             Vector2Int spawnPos,
             Transform parentTransform
         ) {
-            GameObject generatedObject = new GameObject();
             var boardPos = resources.boardObj.transform.position;
             var halfBoardSize = resources.halfBoardSize.x;
             var halfCellSize = resources.halfCellSize.x;
@@ -275,14 +274,12 @@ namespace controller {
                 spawnPos.y + boardPos.z - halfBoardSize + halfCellSize
             );
 
-            generatedObject = Instantiate(
+            return Instantiate(
                 gameObject,
                 spawnWorldPos,
                 Quaternion.identity,
                 parentTransform
             );
-
-            return generatedObject;
         }
 
         private void DestroyHighlightCell(Transform storageHighlightCells) {
