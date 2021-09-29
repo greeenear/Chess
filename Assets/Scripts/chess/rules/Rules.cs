@@ -109,44 +109,35 @@ namespace rules {
             int maxLength,
             PieceTrace? trace
         ) {
-            var piecePos = linearMovement.startPos;
-            if (board[piecePos.x, piecePos.y].IsNone()) {
+            if (board[linearMovement.startPos.x, linearMovement.startPos.y].IsNone()) {
                 return 0;
             }
-            Piece targetPiece = board[piecePos.x, piecePos.y].Peel();
+            Piece targetPiece = board[linearMovement.startPos.x, linearMovement.startPos.y].Peel();
 
             var linear = linearMovement.movement.linear.Value;
             var movementType = linearMovement.movement.movementType;
-            int moveCounter = 0;
+            var lastPos = linearMovement.startPos + linear.dir * maxLength;
 
-            for (int i = 1; i <= maxLength; i++) {
-                Vector2Int pos = piecePos + linear.dir * i;
-                var pieceOpt = board[pos.x, pos.y];
-                if (movementType == MovementType.Move) {
-                    if (pieceOpt.IsNone()) {
-                        moveCounter++;
+            var pieceOpt = board[lastPos.x, lastPos.y];
+            if (movementType == MovementType.Move) {
+                if (pieceOpt.IsSome()) {
+                    return maxLength - 1;
+                } else {
+                    return maxLength;
+                }
+            } else if (movementType == MovementType.Attack) {
+                if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
+                    if (targetPiece.type == PieceType.Pawn && lastPos == trace.Value.pawnTrace) {
+                        return maxLength;
                     }
-                } else if (movementType == MovementType.Attack) {
-                            moveCounter = i;
-                    if (pieceOpt.IsSome()) {
-                        var piece = pieceOpt.Peel();
-                        if (piece.color != targetPiece.color) {
-                            return moveCounter;
-                        } else {
-                            return moveCounter - 1;
-                        }
-                    }
-                    if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
-                        if (targetPiece.type == PieceType.Pawn && pos == trace.Value.pawnTrace) {
-                            return moveCounter;
-                        }
-                    }
-                    moveCounter = 0;
+                }
+                if (pieceOpt.IsSome() && pieceOpt.Peel().color != targetPiece.color) {
+                    return maxLength;
+                } else {
+                    return 0;
                 }
             }
-
-            return moveCounter;
+            return maxLength;
         }
     }
 }
-

@@ -259,10 +259,6 @@ namespace controller {
             }
         }
 
-        private void HighlightCell(Vector2Int pos, GameObject cell) {
-            ObjectSpawner(cell, pos, resources.storageHighlightCheckCell.transform);
-        }
-
         private GameObject ObjectSpawner(
             GameObject gameObject,
             Vector2Int spawnPos,

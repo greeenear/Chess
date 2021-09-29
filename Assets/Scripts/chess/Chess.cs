@@ -114,7 +114,7 @@ namespace chess {
             possibleAttackPos.Add(MoveInfo.Mk(doubleMove));
 
             var possibleDefensePos = move.Move.GetMoveInfos(
-                storage.Storage.movement[board[target.x, target.y].Peel().type],
+                Move.GetRealMovements(board, target),
                 target,
                 board,
                 pieceTrace
