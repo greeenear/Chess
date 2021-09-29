@@ -76,7 +76,7 @@ namespace controller {
                         return;
                     }
 
-                    CheckMove(currentMove);
+                    CheckMoveInfo(currentMove);
                     movesHistory.Add(currentMove);
                     whoseMove = Chess.ChangeMove(whoseMove);
 
@@ -129,6 +129,7 @@ namespace controller {
             resources.gameMenu.SetActive(false);
             this.enabled = true;
         }
+
         public void OpenMenu() {
             if (resources.gameMenu.activeSelf == true) {
                 resources.gameMenu.SetActive(false);
@@ -148,19 +149,13 @@ namespace controller {
             var y = pawnPos.y;
             Chess.ChangePiece(board, pawnPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
+            if (board[x, y].IsNone()) {
+                return;
+            }
             var piece = board[x, y];
 
-            var boardPos = resources.boardObj.transform.position;
-            piecesMap[x, y] = GameObject.Instantiate(
-                resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color],
-                new Vector3(
-                    x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
-                    boardPos.y + resources.halfCellSize.x,
-                    y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
-                ),
-                Quaternion.identity,
-                resources.boardObj.transform
-            );
+            var Obj = resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color];
+            piecesMap[x, y] = ObjectSpawner(Obj, pawnPos, resources.boardObj.transform);
             this.enabled = true;
             resources.changePawn.SetActive(false);
             var lastMove = movesHistory[movesHistory.Count - 1];
@@ -188,7 +183,7 @@ namespace controller {
             piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
         }
 
-        private void CheckMove(MoveInfo currentMove) {
+        private void CheckMoveInfo(MoveInfo currentMove) {
             noTakeMoves++;
             Move(currentMove.doubleMove.first, currentMove.sentenced);
             if (currentMove.doubleMove.second.HasValue) {
@@ -226,7 +221,8 @@ namespace controller {
                 this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
                 var kingPos = Check.FindKing(board, whoseMove);
-                HighlightCell(kingPos, resources.checkCell);
+                var checkCell = resources.checkCell;
+                ObjectSpawner(checkCell, kingPos, resources.storageHighlightCheckCell.transform);
             }
 
             if (gameStatus == GameStatus.Draw) {
@@ -242,21 +238,9 @@ namespace controller {
                 for (int j = 0; j < 8; j++) {
                     var piece = board[i, j].Peel();
                     if (board[i, j].IsSome()) {
-                        var halfBoardSize = resources.halfBoardSize.x;
-                        var halfCellSize = resources.halfCellSize.x;
-                        var boardPos = resources.boardObj.transform.position;
-
-                        piecesMap[i, j] = GameObject.Instantiate(
-                            resources.pieceList[(int)piece.type * 2 + (int)piece.color],
-                            new Vector3(
-                                i + boardPos.x - halfBoardSize + halfCellSize,
-                                boardPos.y + halfCellSize,
-                                j + boardPos.z - halfBoardSize + halfCellSize
-                            ),
-
-                            Quaternion.identity,
-                            resources.boardObj.transform
-                        );
+                        var obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
+                        var pos = new Vector2Int(i, j);
+                        piecesMap[i, j] = ObjectSpawner(obj, pos, resources.boardObj.transform);
                     }
                 }
             }
@@ -264,51 +248,45 @@ namespace controller {
 
         private void HighlightCells(List<MoveInfo> possibleMoves) {
             foreach (var pos in possibleMoves) {
-                var toX = pos.doubleMove.first.to.x;
-                var toY = pos.doubleMove.first.to.y;
+                var cellPos = pos.doubleMove.first.to;
+                var parentTransfrom =resources.storageHighlightCells.transform;
 
-                var boardPos = resources.boardObj.transform.position;
-                var halfBoardSize = resources.halfBoardSize.x;
-                var halfCellSize = resources.halfCellSize.x;
+                if (board[cellPos.x, cellPos.y].IsSome()) {
+                    ObjectSpawner(resources.underAttackCell, cellPos, parentTransfrom);
 
-                var highlightPos = new Vector3(
-                    toX + boardPos.x - halfBoardSize + halfCellSize,
-                    boardPos.y + halfCellSize,
-                    toY + boardPos.z - halfBoardSize + halfCellSize
-                );
-                if (board[toX, toY].IsSome()) {
-                    Instantiate(
-                        resources.underAttackCell,
-                        highlightPos,
-                        Quaternion.identity,
-                        resources.storageHighlightCells.transform
-                    );
                 }
-                Instantiate(
-                    resources.canMoveCell,
-                    highlightPos,
-                    Quaternion.identity,
-                    resources.storageHighlightCells.transform
-                );
+                ObjectSpawner(resources.canMoveCell, cellPos, parentTransfrom);
             }
         }
 
         private void HighlightCell(Vector2Int pos, GameObject cell) {
+            ObjectSpawner(cell, pos, resources.storageHighlightCheckCell.transform);
+        }
+
+        private GameObject ObjectSpawner(
+            GameObject gameObject,
+            Vector2Int spawnPos,
+            Transform parentTransform
+        ) {
+            GameObject generatedObject = new GameObject();
             var boardPos = resources.boardObj.transform.position;
             var halfBoardSize = resources.halfBoardSize.x;
             var halfCellSize = resources.halfCellSize.x;
 
-            var highlightPos = new Vector3(
-                pos.x + boardPos.x - halfBoardSize + halfCellSize,
+            var spawnWorldPos = new Vector3(
+                spawnPos.x + boardPos.x - halfBoardSize + halfCellSize,
                 boardPos.y + halfCellSize,
-                pos.y + boardPos.z - halfBoardSize + halfCellSize
+                spawnPos.y + boardPos.z - halfBoardSize + halfCellSize
             );
-            Instantiate(
-                cell,
-                highlightPos,
+
+            generatedObject = Instantiate(
+                gameObject,
+                spawnWorldPos,
                 Quaternion.identity,
-                resources.storageHighlightCheckCell.transform
+                parentTransform
             );
+
+            return generatedObject;
         }
 
         private void DestroyHighlightCell(Transform storageHighlightCells) {

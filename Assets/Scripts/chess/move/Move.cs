@@ -92,18 +92,14 @@ namespace move {
                             }
                         }
                     }
-                    if (targetPiece.type == PieceType.King) {
-
-
-                    }
                     moveInfos.Add(moveInfo);
                 }
             }
 
-            // if (targetPiece.type == PieceType.King) {
-            //     CheckCastling(moveInfos, board, pos, 1);
-            //     CheckCastling(moveInfos, board, pos, -1);
-            // }
+            if (targetPiece.type == PieceType.King) {
+                CheckCastling(moveInfos, board, pos, 1);
+                CheckCastling(moveInfos, board, pos, -1);
+            }
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
@@ -161,57 +157,19 @@ namespace move {
             return possibleMoveCells;
         }
 
-        // private static void CheckCastling(
-        //     List<MoveInfo> newPossibleMoves,
-        //     Option<Piece>[,] board,
-        //     Vector2Int pos,
-        //     int dir
-        // ) {
-        //     if (board[pos.x, pos.y].IsNone()) {
-        //         return;
-        //     }
-
-        //     var piece = board[pos.x, pos.y].Peel();
-        //     if (Check.IsCheck(Check.GetCheckInfo(board, piece.color, pos))) {
-        //         return;
-        //     }
-
-        //     var rookPos = new Vector2Int();
-        //     if (dir == -1) {
-        //         rookPos = new Vector2Int(pos.x, 0);
-        //     } else {
-        //         rookPos = new Vector2Int(pos.x, board.GetLength(0) - 1);
-        //     }
-
-        //     int i = pos.y + dir;
-        //     if (piece.moveCounter != 0) {
-        //         return;
-        //     }
-
-        //     while (i != rookPos.y) {
-        //         var currentPos = new Vector2Int(pos.x, i);
-        //         if (Check.IsCheck(Check.GetCheckInfo(board, piece.color, currentPos))) {
-        //             break;
-        //         }
-
-        //         i = i + dir;
-        //         if (board[pos.x, i].IsNone()) {
-        //             continue;
-        //         }
-
-        //         var currentPieceOpt = board[pos.x, i].Peel();
-        //         if (currentPieceOpt.type != PieceType.Rook) {
-        //             break;
-        //         } else if (currentPieceOpt.type == PieceType.Rook){
-        //             if (i == rookPos.y && currentPieceOpt.moveCounter == 0) {
-        //                 newPossibleMoves.Add(new MoveInfo {
-        //                     doubleMove = DoubleMove.MkDoubleMove(
-        //                         MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2 * dir)),
-        //                         MoveData.Mk(rookPos, new Vector2Int(pos.x, pos.y + dir)))
-        //                 });
-        //             }
-        //         }
-        //     }
-        // }
+        private static void CheckCastling(
+            List<MoveInfo> newPossibleMoves,
+            Option<Piece>[,] board,
+            Vector2Int pos,
+            int dir
+        ) {
+            if (board[pos.x, pos.y].IsNone()) {
+                return;
+            }
+            var piece = board[pos.x, pos.y].Peel();
+            if (piece.moveCounter != 0) {
+                return;
+            }
+        }
     }
 }
