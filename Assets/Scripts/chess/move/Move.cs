@@ -37,11 +37,6 @@ namespace move {
         }
     }
 
-    public struct StartAngle {
-        public const float Knight = 22.5f;
-        public const float King = 20f;
-    }
-
     public static class Move {
         public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
             board[end.x, end.y] = board[start.x, start.y];

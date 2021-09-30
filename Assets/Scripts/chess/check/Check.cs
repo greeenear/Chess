@@ -53,9 +53,11 @@ namespace check {
             var movements = new List<FixedMovement>();
             foreach (var type in movementType) {
                 if (type.circular.HasValue) {
-                    movements.AddRange(GetCircularMoves(board, target, type, trace));
+                    var circular = type.circular.Value;
+                    movements.AddRange(GetCircularMoves(board, target, circular, trace));
                 } else if (type.linear.HasValue) {
-                    movements.AddRange(GetLinearMoves(board, target, type, trace));
+                    var linear = type.linear.Value;
+                    movements.AddRange(GetLinearMoves(board, target, linear, trace));
                 }
             }
 
@@ -65,26 +67,32 @@ namespace check {
         public static List<FixedMovement> GetCircularMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement circularMovement,
+            Circular circular,
             PieceTrace? trace
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
-            var circular = FixedMovement.Mk(circularMovement, target);
-            var moves = Rules.GetMoves(board, circular, trace);
-            var radius = circular.movement.circular.Value.radius;
+            var radius = circular.radius;
+            var angle = 0f;
 
-            foreach (var move in moves) {
-                var cell = board[move.x, move.y];
-                var circle = Movement.Circular(Circular.Mk(radius));
-                var attackingPiecePos = new Vector2Int(move.x, move.y);
-                if (cell.IsNone()) {
+            for (int i = 1; angle < Mathf.PI * 2; i += 2) {
+                angle = StartAngle.Knight * i * Mathf.PI / 180;
+                var cell = Board.GetCircularMove<Piece>(target, circular, angle, board);
+                if (!cell.HasValue) {
                     continue;
                 }
+                var cellOpt = board[cell.Value.x, cell.Value.y];
+                if (cellOpt.IsNone()) {
+                    continue;
+                }
+                var piece = cellOpt.Peel();
+                if (cellOpt.IsSome() && piece.color != board[target.x, target.y].Peel().color) {
+                    var attackMovements = storage.Storage.movement[piece.type];
+                    foreach (var movement in attackMovements) {
+                        var circle = Movement.Circular(Circular.Mk(radius));
 
-                var attackMovements = storage.Storage.movement[cell.Peel().type];
-                foreach (var movement in attackMovements) {
-                    if (movement.circular.HasValue && movement.circular.Value.radius == radius) {
-                        movements.Add(FixedMovement.Mk(circle, attackingPiecePos));
+                        if (movement.circular.HasValue && movement.circular.Value.radius == radius) {
+                            movements.Add(FixedMovement.Mk(circle, cell.Value));
+                        }
                     }
                 }
             }
@@ -95,22 +103,13 @@ namespace check {
         public static List<FixedMovement> GetLinearMoves(
             Option<Piece>[,] board,
             Vector2Int target,
-            Movement linearMovement,
+            Linear linear,
             PieceTrace? trace
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
-            var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            var fixedLine = FixedMovement.Mk(linearMovement, target);
-            var length = Board.GetLinearLength(
-                target,
-                linearMovement.linear.Value,
-                board, Board.GetMaxLength(
-                    board,
-                    linearMovement.linear.Value.length
-                )
-            );
+            var length = Board.GetLinearLength(target, linear, board, linear.length);
 
-            var lastPos = target + linearMovement.linear.Value.dir * length;
+            var lastPos = target + linear.dir * length;
             if (board[lastPos.x, lastPos.y].IsNone()) {
                 return movements;
             }
@@ -124,7 +123,7 @@ namespace check {
                 if (!movement.linear.HasValue) {
                     break;
                 }
-                if (-movement.linear.Value.dir == linearMovement.linear.Value.dir) {
+                if (-movement.linear.Value.dir == linear.dir) {
                     attackMovement = movement;
                     isMovementContained = true;
                     break;
@@ -133,7 +132,7 @@ namespace check {
             if (!isMovementContained) {
                 return movements;
             }
-            var attackDir = Movement.Linear(linearMovement.linear.Value, MovementType.Attack);
+            var attackDir = Movement.Linear(linear, MovementType.Attack);
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
             var attackLength = Board.GetMaxLength(board, attackMovement.linear.Value.length);

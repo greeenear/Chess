@@ -79,26 +79,31 @@ namespace rules {
             Circular circlular,
             Vector2Int pos
         ) {
-            float angle;
+            float startAngle;
             if (circlular.radius == 1) {
-                angle = StartAngle.King;
+                startAngle = StartAngle.King;
             } else {
-                angle = StartAngle.Knight;
+                startAngle = StartAngle.Knight;
             }
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
-            List<Vector2Int> allCanMovePositions = new List<Vector2Int>();
             Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
+            float angle = 0;
 
-            allCanMovePositions = Board.GetAllCircularMoves<Piece>(pos, circlular, angle, board);
-            foreach (var movePos in allCanMovePositions) {
-                var piece = board[movePos.x, movePos.y];
-                if (piece.IsNone()) {
-                    canMovePositions.Add(movePos);
+            for (int i = 1; angle < Mathf.PI * 2; i += 2) {
+                angle = startAngle * i * Mathf.PI / 180;
+                var cell = Board.GetCircularMove<Piece>(pos, circlular, angle, board);
+                if (!cell.HasValue) {
+                    continue;
                 }
-                if (piece.IsSome() && piece.Peel().color != board[pos.x, pos.y].Peel().color) {
-                    canMovePositions.Add(movePos);
+                var cellOpt = board[cell.Value.x, cell.Value.y];
+                if (cellOpt.IsNone()) {
+                    canMovePositions.Add(cell.Value);
+                }
+                if (cellOpt.IsSome() && cellOpt.Peel().color != board[pos.x, pos.y].Peel().color) {
+                    canMovePositions.Add(cell.Value);
                 }
             }
+
 
             return canMovePositions;
         }

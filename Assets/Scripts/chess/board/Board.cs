@@ -61,9 +61,9 @@ namespace board {
             Vector2Int startPosition,
             Linear linear,
             Option<T>[,] board,
-            int maxLength
+            int linearLength
         ) {
-            maxLength = GetMaxLength(board, maxLength);
+            var maxLength = GetMaxLength(board, linearLength);
 
             int length = 0;
             for (int i = 1; i <= maxLength; i++) {
@@ -84,38 +84,34 @@ namespace board {
             return length;
         }
 
-        public static List<Vector2Int> GetAllCircularMoves<T>(
+        public static Vector2Int? GetCircularMove<T>(
             Vector2Int center,
             Circular circular,
             float startAngle,
             Option<T>[,] board
         ) {
-            List<Vector2Int> canMovePositions = new List<Vector2Int>();
+            Vector2Int movePos = new Vector2Int();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
-            float angle = 0;
             var offset = new Vector2(0.5f + center.x, 0.5f + center.y);
 
-            for (int i = 1; angle < Mathf.PI * 2; i += 2) {
-                angle = startAngle * i * Mathf.PI / 180;
-                var pos = new Vector2(
-                    Mathf.Sin(angle) * circular.radius,
-                    Mathf.Cos(angle) * circular.radius
-                );
-                pos = pos + offset;
+            var pos = new Vector2(
+                Mathf.Sin(startAngle) * circular.radius,
+                Mathf.Cos(startAngle) * circular.radius
+            );
+            pos = pos + offset;
 
-                if (pos.x < 0) {
-                    pos.x--;
-                }
-                if (pos.y < 0) {
-                    pos.y--;
-                }
-                var movePos = new Vector2Int((int)pos.x, (int)pos.y);
-                if (Board.OnBoard(movePos, boardSize)) {
-                    canMovePositions.Add(movePos);
-                }
+            if (pos.x < 0) {
+                pos.x--;
+            }
+            if (pos.y < 0) {
+                pos.y--;
+            }
+            movePos = new Vector2Int((int)pos.x, (int)pos.y);
+            if (Board.OnBoard(movePos, boardSize)) {
+                return movePos;
             }
 
-            return canMovePositions;
+            return null;
         }
 
         public static int GetMaxLength<T>(Option<T>[,] board, int length) {
