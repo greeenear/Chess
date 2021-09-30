@@ -30,9 +30,25 @@ namespace rules {
         }
     }
 
+    public struct PieceMovement {
+        public Movement movement;
+        public PieceTrace? trace;
+
+        public static PieceMovement Mk(Movement movement) {
+            return new PieceMovement { movement = movement };
+        }
+    }
+
+    public struct CellInfo {
+        public Option<Piece> piece;
+        public PieceTrace? trace;
+    }
+
     public struct PieceTrace {
-        public Vector2Int? kingTrace;
-        public Vector2Int? pawnTrace;
+        public Vector2Int? tracePos;
+        public bool isCanTake;
+        public bool isCheckUnderAttack;
+
     }
 
     public struct StartAngle {
@@ -42,15 +58,16 @@ namespace rules {
 
     public static class Rules {
         public static List<Vector2Int> GetMoves(
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             FixedMovement movement,
             PieceTrace? trace
         ) {
             if (movement.movement.linear.HasValue) {
                 var linear = movement.movement.linear.Value;
                 var startPos = movement.startPos;
-                int length = Board.GetLinearLength<Piece>(startPos, linear, board, linear.length);
-                length = GetFixedLength(board, movement, length, trace);
+                var boardOpt = GetOptBoard(board);
+                int length = Board.GetLinearLength<Piece>(startPos, linear, boardOpt, linear.length);
+                length = GetFixedLength(boardOpt, movement, length, trace);
                 return GetLinearMoves(linear, movement.startPos, length);
             } else if (movement.movement.circular.HasValue) {
                 var circular = movement.movement.circular.Value;
@@ -75,7 +92,7 @@ namespace rules {
         }
 
         public static List<Vector2Int> GetCirclularMoves(
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             Circular circlular,
             Vector2Int pos
         ) {
@@ -88,18 +105,17 @@ namespace rules {
             List<Vector2Int> canMovePositions = new List<Vector2Int>();
             Vector2Int boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             float angle = 0;
-
+            var boardOpt = GetOptBoard(board);
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = startAngle * i * Mathf.PI / 180;
-                var cell = Board.GetCircularMove<Piece>(pos, circlular, angle, board);
+                var cell = Board.GetCircularMove<Piece>(pos, circlular, angle, boardOpt);
                 if (!cell.HasValue) {
                     continue;
                 }
                 var cellOpt = board[cell.Value.x, cell.Value.y];
-                if (cellOpt.IsNone()) {
+                if (cellOpt.piece.IsNone()) {
                     canMovePositions.Add(cell.Value);
-                }
-                if (cellOpt.IsSome() && cellOpt.Peel().color != board[pos.x, pos.y].Peel().color) {
+                } else if (cellOpt.piece.Peel().color != board[pos.x, pos.y].piece.Peel().color) {
                     canMovePositions.Add(cell.Value);
                 }
             }
@@ -132,18 +148,34 @@ namespace rules {
                     return maxLength;
                 }
             } else if (movementType == MovementType.Attack) {
-                if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
-                    if (targetPiece.type == PieceType.Pawn && lastPos == trace.Value.pawnTrace) {
-                        return maxLength;
-                    }
-                }
+                // if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
+                //     if (targetPiece.type == PieceType.Pawn && lastPos == trace.Value.pawnTrace) {
+                //         return maxLength;
+                //     }
+                // }
                 if (pieceOpt.IsSome() && pieceOpt.Peel().color != targetPiece.color) {
                     return maxLength;
                 } else {
                     return maxLength - 1;
                 }
+            } else if (movementType == MovementType.AttackTrace) {
+
             }
             return maxLength;
+        }
+
+        public static Option<Piece>[,] GetOptBoard(CellInfo[,] cellInfoBoard) {
+            var boardSize = new Vector2Int(cellInfoBoard.GetLength(0), cellInfoBoard.GetLength(1));
+            Option<Piece>[,] board = new Option<Piece>[boardSize.x,boardSize.y];
+            for (int i = 0; i < boardSize.x; i++) {
+                for (int j = 0; j < boardSize.y; j++) {
+                    if (cellInfoBoard[i,j].piece.IsSome()) {
+                        board[i,j] = Option<Piece>.Some(cellInfoBoard[i,j].piece.Peel());
+                    }
+                }
+            }
+
+            return board;
         }
     }
 }

@@ -38,63 +38,59 @@ namespace move {
     }
 
     public static class Move {
-        public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
+        public static void MovePiece(Vector2Int start, Vector2Int end, CellInfo[,] board) {
             board[end.x, end.y] = board[start.x, start.y];
-            board[start.x, start.y] = Option<Piece>.None();
-            var piece = board[end.x, end.y].Peel();
+            board[start.x, start.y].piece = Option<Piece>.None();
+            var piece = board[end.x, end.y].piece.Peel();
             piece.moveCounter++;
-            board[end.x, end.y] = Option<Piece>.Some(piece);
+            board[end.x, end.y].piece = Option<Piece>.Some(piece);
         }
 
         public static List<MoveInfo> GetMoveInfos(
-            List<Movement> movementList,
+            List<PieceMovement> movementList,
             Vector2Int pos,
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             PieceTrace? trace
         ) {
-            if (board[pos.x, pos.y].IsNone()) {
+            if (board[pos.x, pos.y].piece.IsNone()) {
                 return null;
             }
 
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
             foreach (var movement in movementList) {
-                fixedMovements.Add(FixedMovement.Mk(movement, pos));
+                fixedMovements.Add(FixedMovement.Mk(movement.movement, pos));
             }
 
             var moveInfos = new List<MoveInfo>();
             var possibleMoveCells = GetMovePositions(fixedMovements, board, trace);
-            var targetPiece = board[pos.x, pos.y].Peel();
+            var targetPiece = board[pos.x, pos.y].piece.Peel();
             foreach (var cell in possibleMoveCells) {
                 var moveInfo = new MoveInfo {
                     doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
                 };
-                if (board[cell.x, cell.y].IsSome()) {
+                if (board[cell.x, cell.y].piece.IsSome()) {
                     moveInfo.sentenced = cell;
                     moveInfos.Add(moveInfo);
                 } else {
                     var moveLength = pos.x - cell.x;
-                    if (targetPiece.type == PieceType.Pawn) {
-                        if (Mathf.Abs(moveLength) == 2) {
-                            var tracePos = new Vector2Int(Mathf.Abs((pos + cell).x) / 2, cell.y);
-                            var newTrace = new PieceTrace { pawnTrace = tracePos };
+                    // if (targetPiece.type == PieceType.Pawn) {
+                    //     if (Mathf.Abs(moveLength) == 2) {
+                    //         var tracePos = new Vector2Int(Mathf.Abs((pos + cell).x) / 2, cell.y);
+                    //         var newTrace = new PieceTrace { pawnTrace = tracePos };
 
-                            moveInfo.trace = newTrace;
-                        }
-                        if (trace.HasValue) {
-                            var pawnTrace = trace.Value.pawnTrace;
-                            if (pawnTrace.HasValue && cell == pawnTrace.Value) {
-                                moveInfo.sentenced = new Vector2Int(pos.x, pawnTrace.Value.y);
-                            }
-                        }
-                    }
+                    //         moveInfo.trace = newTrace;
+                    //     }
+                    //     if (trace.HasValue) {
+                    //         var pawnTrace = trace.Value.pawnTrace;
+                    //         if (pawnTrace.HasValue && cell == pawnTrace.Value) {
+                    //             moveInfo.sentenced = new Vector2Int(pos.x, pawnTrace.Value.y);
+                    //         }
+                    //     }
+                    // }
                     moveInfos.Add(moveInfo);
                 }
             }
 
-            if (targetPiece.type == PieceType.King) {
-                CheckCastling(moveInfos, board, pos, 1);
-                CheckCastling(moveInfos, board, pos, -1);
-            }
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
@@ -110,13 +106,13 @@ namespace move {
             return moveInfos;
         }
 
-        public static List<Movement> GetMovements(Option<Piece>[,] board, Vector2Int pos) {
+        public static List<PieceMovement> GetMovements(CellInfo[,] board, Vector2Int pos) {
             var pieceOpt = board[pos.x, pos.y];
-            if (pieceOpt.IsNone()) {
+            if (pieceOpt.piece.IsNone()) {
                 return null;
             }
-            var piece = pieceOpt.Peel();
-            var movements = new List<Movement>();
+            var piece = pieceOpt.piece.Peel();
+            var movements = new List<PieceMovement>();
             var startMovements = storage.Storage.movement[piece.type];
 
             if (piece.type == PieceType.Pawn) {
@@ -131,17 +127,23 @@ namespace move {
                     if (piece.moveCounter == 0 && movementType == MovementType.Move) {
                         newLinear.length = 2;
                     }
-                    movements.Add(Movement.Linear(newLinear, movementType));
+                    var newMovement = Movement.Linear(newLinear, movementType);
+                    var tracePosX = (pos.x + (pos.x + newLinear.dir.x * 2)) / 2;
+                    var tracePos = new Vector2Int(tracePosX, pos.y);
+                    var trace = new PieceTrace { tracePos = tracePos, isCanTake = true };
+                    movements.Add(new PieceMovement {movement = newMovement, trace = trace});
                 }
                 return movements;
             }
-
-            return startMovements;
+            foreach (var movement in startMovements) {
+                movements.Add(new PieceMovement {movement = movement});
+            }
+            return movements;
         }
 
         public static List<Vector2Int> GetMovePositions(
             List<FixedMovement> fixedMovements,
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             PieceTrace? trace
         ) {
             var possibleMoveCells = new List<Vector2Int>();
@@ -151,21 +153,6 @@ namespace move {
             }
 
             return possibleMoveCells;
-        }
-
-        private static void CheckCastling(
-            List<MoveInfo> newPossibleMoves,
-            Option<Piece>[,] board,
-            Vector2Int pos,
-            int dir
-        ) {
-            if (board[pos.x, pos.y].IsNone()) {
-                return;
-            }
-            var piece = board[pos.x, pos.y].Peel();
-            if (piece.moveCounter != 0) {
-                return;
-            }
         }
     }
 }

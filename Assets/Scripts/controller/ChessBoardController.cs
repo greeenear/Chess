@@ -17,7 +17,7 @@ namespace controller {
 
     public class ChessBoardController : MonoBehaviour {
         private Resource resources;
-        private Option<Piece>[,] board = new Option<Piece>[8, 8];
+        private CellInfo[,] board = new CellInfo[8, 8];
         private GameObject[,] piecesMap = new GameObject[8, 8];
 
         private Vector2Int selectedPiece;
@@ -61,7 +61,7 @@ namespace controller {
             var currentMove = GetCurrentMove(selectedPos);
             var firstMove = currentMove.doubleMove.first;
 
-            var pieceOpt = board[selectedPos.x, selectedPos.y];
+            var pieceOpt = board[selectedPos.x, selectedPos.y].piece;
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove) {
                 playerAction = PlayerAction.Select;
             }
@@ -108,8 +108,8 @@ namespace controller {
                 for (int j = 0; j < 8; j++) {
                     var board = this.board[i,j];
 
-                    if (this.board[i,j].IsSome()) {
-                        pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
+                    if (this.board[i,j].piece.IsSome()) {
+                        pieceInfoList.Add(PieceInfo.Mk(board.piece.Peel(), i, j));
                     }
                 }
             }
@@ -118,12 +118,12 @@ namespace controller {
         }
 
         public void Load(string path) {
-            board = new Option<Piece>[8,8];
+            board = new CellInfo[8,8];
 
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {
-                board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
+                board[pieceInfo.xPos, pieceInfo.yPos].piece = Option<Piece>.Some(pieceInfo.piece);
             }
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
@@ -149,12 +149,12 @@ namespace controller {
             var y = pawnPos.y;
             Chess.ChangePiece(board, pawnPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
-            if (board[x, y].IsNone()) {
+            if (board[x, y].piece.IsNone()) {
                 return;
             }
-            var piece = board[x, y];
+            var piece = board[x, y].piece.Peel();
 
-            var Obj = resources.pieceList[(int)piece.Peel().type * 2 + (int)piece.Peel().color];
+            var Obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
             piecesMap[x, y] = ObjectSpawner(Obj, pawnPos, resources.boardObj.transform);
             this.enabled = true;
             resources.changePawn.SetActive(false);
@@ -199,7 +199,7 @@ namespace controller {
         }
 
         private void CheckGameStatus(
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             PieceColor whoseMove
         ) {
             var gameStatus = Chess.GetGameStatus(
@@ -236,8 +236,8 @@ namespace controller {
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    var piece = board[i, j].Peel();
-                    if (board[i, j].IsSome()) {
+                    var piece = board[i, j].piece.Peel();
+                    if (board[i, j].piece.IsSome()) {
                         var obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
                         var pos = new Vector2Int(i, j);
                         piecesMap[i, j] = ObjectSpawner(obj, pos, resources.boardObj.transform);
@@ -251,7 +251,7 @@ namespace controller {
                 var cellPos = pos.doubleMove.first.to;
                 var parentTransfrom =resources.storageHighlightCells.transform;
 
-                if (board[cellPos.x, cellPos.y].IsSome()) {
+                if (board[cellPos.x, cellPos.y].piece.IsSome()) {
                     ObjectSpawner(resources.underAttackCell, cellPos, parentTransfrom);
 
                 }

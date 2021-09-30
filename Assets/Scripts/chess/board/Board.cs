@@ -6,6 +6,7 @@ namespace board {
     public enum MovementType {
         Attack,
         Move,
+        AttackTrace
     }
 
     public struct Circular {
