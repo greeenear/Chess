@@ -49,20 +49,22 @@ namespace move {
         public static List<MoveInfo> GetMoveInfos(
             List<PieceMovement> movementList,
             Vector2Int pos,
-            CellInfo[,] board,
-            PieceTrace? trace
+            CellInfo[,] board
         ) {
             if (board[pos.x, pos.y].piece.IsNone()) {
                 return null;
             }
 
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
-            foreach (var movement in movementList) {
-                fixedMovements.Add(FixedMovement.Mk(movement.movement, pos));
-            }
+            // foreach (var movement in movementList) {
+            //     fixedMovements.Add(FixedMovement.Mk(movement.movement, pos));
+            // }
 
             var moveInfos = new List<MoveInfo>();
-            var possibleMoveCells = GetMovePositions(fixedMovements, board, trace);
+            var possibleMoveCells = new List<Vector2Int>();
+            foreach (var movement in movementList) {
+                possibleMoveCells.AddRange(Rules.GetMoves(board, movement, pos));
+            }
             var targetPiece = board[pos.x, pos.y].piece.Peel();
             foreach (var cell in possibleMoveCells) {
                 var moveInfo = new MoveInfo {
@@ -106,7 +108,7 @@ namespace move {
             return moveInfos;
         }
 
-        public static List<PieceMovement> GetMovements(CellInfo[,] board, Vector2Int pos) {
+        public static List<PieceMovement> GetPieceMovements(CellInfo[,] board, Vector2Int pos) {
             var pieceOpt = board[pos.x, pos.y];
             if (pieceOpt.piece.IsNone()) {
                 return null;
@@ -136,23 +138,9 @@ namespace move {
                 return movements;
             }
             foreach (var movement in startMovements) {
-                movements.Add(new PieceMovement {movement = movement});
+                movements.Add(new PieceMovement { movement = movement });
             }
             return movements;
-        }
-
-        public static List<Vector2Int> GetMovePositions(
-            List<FixedMovement> fixedMovements,
-            CellInfo[,] board,
-            PieceTrace? trace
-        ) {
-            var possibleMoveCells = new List<Vector2Int>();
-
-            foreach (var fixedMovement in fixedMovements) {
-                possibleMoveCells.AddRange(Rules.GetMoves(board, fixedMovement, trace));
-            }
-
-            return possibleMoveCells;
         }
     }
 }

@@ -59,19 +59,19 @@ namespace rules {
     public static class Rules {
         public static List<Vector2Int> GetMoves(
             CellInfo[,] board,
-            FixedMovement movement,
-            PieceTrace? trace
+            PieceMovement movement,
+            Vector2Int startPos
         ) {
             if (movement.movement.linear.HasValue) {
                 var linear = movement.movement.linear.Value;
-                var startPos = movement.startPos;
                 var boardOpt = GetOptBoard(board);
-                int length = Board.GetLinearLength<Piece>(startPos, linear, boardOpt, linear.length);
-                length = GetFixedLength(boardOpt, movement, length, trace);
-                return GetLinearMoves(linear, movement.startPos, length);
+
+                int length = Board.GetLinearLength(startPos, linear, boardOpt, linear.length);
+                //length = GetFixedLength(board, movement, length);
+                return GetLinearMoves(linear, startPos, length);
             } else if (movement.movement.circular.HasValue) {
                 var circular = movement.movement.circular.Value;
-                return GetCirclularMoves(board, circular, movement.startPos);
+                return GetCirclularMoves(board, circular, startPos);
             }
 
             return null;
@@ -125,41 +125,37 @@ namespace rules {
         }
 
         private static int GetFixedLength(
-            Option<Piece>[,] board,
+            CellInfo[,] board,
             FixedMovement linearMovement,
-            int maxLength,
-            PieceTrace? trace
+            int maxLength
         ) {
             var targetPieceOpt = board[linearMovement.startPos.x, linearMovement.startPos.y];
-            if (targetPieceOpt.IsNone()) {
+            if (targetPieceOpt.piece.IsNone()) {
                 return 0;
             }
-            Piece targetPiece = targetPieceOpt.Peel();
-
+            var targetPiece = targetPieceOpt.piece.Peel();
             var linear = linearMovement.movement.linear.Value;
             var movementType = linearMovement.movement.movementType;
             var lastPos = linearMovement.startPos + linear.dir * maxLength;
 
             var pieceOpt = board[lastPos.x, lastPos.y];
             if (movementType == MovementType.Move) {
-                if (pieceOpt.IsSome()) {
+                if (pieceOpt.piece.IsSome()) {
                     return maxLength - 1;
                 } else {
                     return maxLength;
                 }
             } else if (movementType == MovementType.Attack) {
-                // if (pieceOpt.IsNone() && trace.HasValue && trace.Value.pawnTrace.HasValue) {
-                //     if (targetPiece.type == PieceType.Pawn && lastPos == trace.Value.pawnTrace) {
-                //         return maxLength;
-                //     }
-                // }
-                if (pieceOpt.IsSome() && pieceOpt.Peel().color != targetPiece.color) {
+                if (pieceOpt.piece.IsSome() && pieceOpt.piece.Peel().color != targetPiece.color) {
                     return maxLength;
                 } else {
                     return maxLength - 1;
                 }
             } else if (movementType == MovementType.AttackTrace) {
-
+                var trace = board[lastPos.x, lastPos.y].trace;
+                if (pieceOpt.piece.IsNone() && trace.HasValue && trace.Value.isCanTake) {
+                    return maxLength;
+                }
             }
             return maxLength;
         }

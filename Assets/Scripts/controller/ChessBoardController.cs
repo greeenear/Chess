@@ -90,7 +90,7 @@ namespace controller {
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
 
-                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board, trace);
+                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board);
 
                     playerAction = PlayerAction.Move;
                     HighlightCells(possibleMoves);
@@ -206,8 +206,7 @@ namespace controller {
                 board,
                 whoseMove,
                 movesHistory,
-                noTakeMoves,
-                trace
+                noTakeMoves
             );
             if (gameStatus == GameStatus.None) {
                 return;
