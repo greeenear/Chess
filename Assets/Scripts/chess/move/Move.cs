@@ -56,42 +56,29 @@ namespace move {
             }
 
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
-            // foreach (var movement in movementList) {
-            //     fixedMovements.Add(FixedMovement.Mk(movement.movement, pos));
-            // }
 
             var moveInfos = new List<MoveInfo>();
-            var possibleMoveCells = new List<Vector2Int>();
             foreach (var movement in movementList) {
-                possibleMoveCells.AddRange(Rules.GetMoves(board, movement, pos));
-            }
-            var targetPiece = board[pos.x, pos.y].piece.Peel();
-            foreach (var cell in possibleMoveCells) {
-                var moveInfo = new MoveInfo {
-                    doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
-                };
-                if (board[cell.x, cell.y].piece.IsSome()) {
-                    moveInfo.sentenced = cell;
-                    moveInfos.Add(moveInfo);
-                } else {
-                    var moveLength = pos.x - cell.x;
-                    // if (targetPiece.type == PieceType.Pawn) {
-                    //     if (Mathf.Abs(moveLength) == 2) {
-                    //         var tracePos = new Vector2Int(Mathf.Abs((pos + cell).x) / 2, cell.y);
-                    //         var newTrace = new PieceTrace { pawnTrace = tracePos };
-
-                    //         moveInfo.trace = newTrace;
-                    //     }
-                    //     if (trace.HasValue) {
-                    //         var pawnTrace = trace.Value.pawnTrace;
-                    //         if (pawnTrace.HasValue && cell == pawnTrace.Value) {
-                    //             moveInfo.sentenced = new Vector2Int(pos.x, pawnTrace.Value.y);
-                    //         }
-                    //     }
-                    // }
+                var possibleMoveCells = Rules.GetMoves(board, movement, pos);
+                foreach (var cell in possibleMoveCells) {
+                    var moveInfo = new MoveInfo {
+                        doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
+                    };
+                    if (board[cell.x, cell.y].piece.IsSome()) {
+                        moveInfo.sentenced = cell;
+                    }
+                    if (movement.trace.HasValue) {
+                        moveInfo.trace = movement.trace;
+                    }
+                    if (board[cell.x, cell.y].trace.HasValue){
+                        if (board[cell.x, cell.y].trace.Value.isCanTake) {
+                            moveInfo.sentenced = new Vector2Int(pos.x, cell.y);
+                        }
+                    }
                     moveInfos.Add(moveInfo);
                 }
             }
+            var targetPiece = board[pos.x, pos.y].piece.Peel();
 
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {

@@ -12,6 +12,8 @@ namespace storage {
                 new List<Movement> {
                     Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1), MovementType.Attack),
                     Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1), MovementType.Attack),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1), MovementType.AttackTrace),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1), MovementType.AttackTrace),
                     Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 1), MovementType.Move)
                 }
             },

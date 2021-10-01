@@ -25,7 +25,6 @@ namespace controller {
 
         private List<MoveInfo> possibleMoves = new List<MoveInfo>();
         private List<MoveInfo> movesHistory = new List<MoveInfo>();
-        private PieceTrace? trace;
         private int noTakeMoves;
 
         private JsonObject jsonObject;
@@ -71,7 +70,7 @@ namespace controller {
                 case PlayerAction.Move:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     DestroyHighlightCell(resources.storageHighlightCheckCell.transform);
-                    trace = null;
+                    TraceCleaner(board);
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
@@ -104,8 +103,8 @@ namespace controller {
             gameStats = GameStats.Mk(whoseMove);
             List<PieceInfo> pieceInfoList = new List<PieceInfo>();
 
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
                     var board = this.board[i,j];
 
                     if (this.board[i,j].piece.IsSome()) {
@@ -167,13 +166,14 @@ namespace controller {
         private void Move(MoveData moveData, Vector2Int? sentenced) {
             var start = moveData.from;
             var end = moveData.to;
-            move.Move.MovePiece(start, end, board);
 
             var boardPos = resources.boardObj.transform.position;
             if (sentenced.HasValue) {
                 noTakeMoves = 0;
                 Destroy(piecesMap[sentenced.Value.x, sentenced.Value.y]);
+                board[sentenced.Value.x, sentenced.Value.y].piece = Option<Piece>.None();
             }
+            move.Move.MovePiece(start, end, board);
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
                 end.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
@@ -194,7 +194,8 @@ namespace controller {
                 this.enabled = false;
             }
             if (currentMove.trace.HasValue) {
-                trace = currentMove.trace.Value;
+                var tracePos = currentMove.trace.Value.tracePos;
+                board[tracePos.x, tracePos.y].trace = currentMove.trace.Value;
             }
         }
 
@@ -279,6 +280,14 @@ namespace controller {
                 Quaternion.identity,
                 parentTransform
             );
+        }
+
+        public static void TraceCleaner(CellInfo[,] board) {
+            for (int i = 0; i < board.GetLength(0); i++) {
+                for (int j = 0; j < board.GetLength(1); j++) {
+                    board[i,j].trace = null;
+                }
+            }
         }
 
         private void DestroyHighlightCell(Transform storageHighlightCells) {

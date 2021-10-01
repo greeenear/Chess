@@ -45,7 +45,7 @@ namespace rules {
     }
 
     public struct PieceTrace {
-        public Vector2Int? tracePos;
+        public Vector2Int tracePos;
         public bool isCanTake;
         public bool isCheckUnderAttack;
 
@@ -67,7 +67,8 @@ namespace rules {
                 var boardOpt = GetOptBoard(board);
 
                 int length = Board.GetLinearLength(startPos, linear, boardOpt, linear.length);
-                //length = GetFixedLength(board, movement, length);
+                var movementType = movement.movement.movementType;
+                length = GetFixedLength(board, linear, length, startPos, movementType);
                 return GetLinearMoves(linear, startPos, length);
             } else if (movement.movement.circular.HasValue) {
                 var circular = movement.movement.circular.Value;
@@ -126,18 +127,17 @@ namespace rules {
 
         private static int GetFixedLength(
             CellInfo[,] board,
-            FixedMovement linearMovement,
-            int maxLength
+            Linear linearMovement,
+            int maxLength,
+            Vector2Int startPos,
+            MovementType movementType
         ) {
-            var targetPieceOpt = board[linearMovement.startPos.x, linearMovement.startPos.y];
+            var targetPieceOpt = board[startPos.x, startPos.y];
             if (targetPieceOpt.piece.IsNone()) {
                 return 0;
             }
             var targetPiece = targetPieceOpt.piece.Peel();
-            var linear = linearMovement.movement.linear.Value;
-            var movementType = linearMovement.movement.movementType;
-            var lastPos = linearMovement.startPos + linear.dir * maxLength;
-
+            var lastPos = startPos + linearMovement.dir * maxLength;
             var pieceOpt = board[lastPos.x, lastPos.y];
             if (movementType == MovementType.Move) {
                 if (pieceOpt.piece.IsSome()) {
@@ -155,6 +155,8 @@ namespace rules {
                 var trace = board[lastPos.x, lastPos.y].trace;
                 if (pieceOpt.piece.IsNone() && trace.HasValue && trace.Value.isCanTake) {
                     return maxLength;
+                } else {
+                    return 0;
                 }
             }
             return maxLength;
