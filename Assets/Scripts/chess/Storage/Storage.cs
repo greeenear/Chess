@@ -10,58 +10,40 @@ namespace storage {
             {
                 PieceType.Pawn,
                 new List<Movement> {
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1), MovementType.AttackTrace),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1), MovementType.AttackTrace),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 1), MovementType.Move)
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 1))
                 }
             },
             {
                 PieceType.Bishop,
                 new List<Movement> {
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1), MovementType.Move)
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1))
                 }
             },
             {
                 PieceType.Rook,
                 new List<Movement> {
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1), MovementType.Move)
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1))
                 }
             },
             {
                 PieceType.Queen,
                 new List<Movement> {
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1), MovementType.Attack),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1), MovementType.Move),
-                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1), MovementType.Move)
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 0), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(0, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(0, 1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, 1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(1, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), -1)),
+                    Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), -1))
                 }
             },
             {

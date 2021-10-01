@@ -3,12 +3,6 @@ using UnityEngine;
 using option;
 
 namespace board {
-    public enum MovementType {
-        Attack,
-        Move,
-        AttackTrace
-    }
-
     public struct Circular {
         public float radius;
 
@@ -27,12 +21,11 @@ namespace board {
     }
 
     public struct Movement {
-        public MovementType movementType;
         public Linear? linear;
         public Circular? circular;
 
-        public static Movement Linear(Linear linear, MovementType type) {
-            return new Movement { linear = linear, movementType = type };
+        public static Movement Linear(Linear linear) {
+            return new Movement { linear = linear, };
         }
 
         public static Movement Circular(Circular circular) {

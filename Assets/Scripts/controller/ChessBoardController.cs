@@ -194,8 +194,8 @@ namespace controller {
                 this.enabled = false;
             }
             if (currentMove.trace.HasValue) {
-                var tracePos = currentMove.trace.Value.tracePos;
-                board[tracePos.x, tracePos.y].trace = currentMove.trace.Value;
+                var tracePos = currentMove.trace.Value.pos;
+                board[tracePos.x, tracePos.y].trace = Option<PieceTrace>.Some(currentMove.trace.Value);
             }
         }
 
@@ -285,7 +285,7 @@ namespace controller {
         public static void TraceCleaner(CellInfo[,] board) {
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    board[i,j].trace = null;
+                    board[i,j].trace = Option<PieceTrace>.None();
                 }
             }
         }

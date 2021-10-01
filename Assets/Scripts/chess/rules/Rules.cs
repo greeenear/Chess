@@ -19,6 +19,11 @@ namespace rules {
         Count
     }
 
+    public enum MovementType {
+        Attack,
+        Move
+    }
+
     public struct Piece {
         public PieceType type;
         public PieceColor color;
@@ -31,23 +36,22 @@ namespace rules {
     }
 
     public struct PieceMovement {
-        public Movement movement;
-        public PieceTrace? trace;
+        public FixedMovement movement;
+        public MovementType movementType;
 
-        public static PieceMovement Mk(Movement movement) {
-            return new PieceMovement { movement = movement };
+        public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
+            return new PieceMovement { movement = movement, movementType = movementType };
         }
     }
 
     public struct CellInfo {
         public Option<Piece> piece;
-        public PieceTrace? trace;
+        public Option<PieceTrace> trace;
     }
 
     public struct PieceTrace {
-        public Vector2Int tracePos;
-        public bool isCanTake;
-        public bool isCheckUnderAttack;
+        public Vector2Int pos;
+        public PieceType whoLeft;
 
     }
 
@@ -148,15 +152,12 @@ namespace rules {
             } else if (movementType == MovementType.Attack) {
                 if (pieceOpt.piece.IsSome() && pieceOpt.piece.Peel().color != targetPiece.color) {
                     return maxLength;
-                } else {
+                } else if (pieceOpt.piece.IsNone() && board[lastPos.x, lastPos.y].trace.IsSome()) {
+                    if (board[lastPos.x, lastPos.y].trace.Peel().whoLeft == targetPiece.type) {
+                        return maxLength;
+                    }
+                } else if (pieceOpt.piece.IsNone()) {
                     return maxLength - 1;
-                }
-            } else if (movementType == MovementType.AttackTrace) {
-                var trace = board[lastPos.x, lastPos.y].trace;
-                if (pieceOpt.piece.IsNone() && trace.HasValue && trace.Value.isCanTake) {
-                    return maxLength;
-                } else {
-                    return 0;
                 }
             }
             return maxLength;
