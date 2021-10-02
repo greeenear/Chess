@@ -63,19 +63,19 @@ namespace rules {
     public static class Rules {
         public static List<Vector2Int> GetMoves(
             CellInfo[,] board,
-            PieceMovement movement,
+            PieceMovement pieceMovement,
             Vector2Int startPos
         ) {
-            if (movement.movement.linear.HasValue) {
-                var linear = movement.movement.linear.Value;
+            if (pieceMovement.movement.movement.linear.HasValue) {
+                var linear = pieceMovement.movement.movement.linear.Value;
                 var boardOpt = GetOptBoard(board);
 
                 int length = Board.GetLinearLength(startPos, linear, boardOpt, linear.length);
-                var movementType = movement.movement.movementType;
+                var movementType = pieceMovement.movementType;
                 length = GetFixedLength(board, linear, length, startPos, movementType);
                 return GetLinearMoves(linear, startPos, length);
-            } else if (movement.movement.circular.HasValue) {
-                var circular = movement.movement.circular.Value;
+            } else if (pieceMovement.movement.movement.circular.HasValue) {
+                var circular = pieceMovement.movement.movement.circular.Value;
                 return GetCirclularMoves(board, circular, startPos);
             }
 
@@ -157,6 +157,8 @@ namespace rules {
                         return maxLength;
                     }
                 } else if (pieceOpt.piece.IsNone()) {
+                    return maxLength - 1;
+                } else {
                     return maxLength - 1;
                 }
             }

@@ -56,9 +56,8 @@ namespace move {
             }
 
             List<FixedMovement> fixedMovements = new List<FixedMovement>();
-
             var moveInfos = new List<MoveInfo>();
-            foreach (var movement in movementList) { 
+            foreach (var movement in movementList) {
                 var possibleMoveCells = Rules.GetMoves(board, movement, pos);
                 foreach (var cell in possibleMoveCells) {
                     var moveInfo = new MoveInfo {
@@ -105,6 +104,9 @@ namespace move {
                 if (piece.type == PieceType.Pawn) {
                     var moveDir = movement.linear.Value.dir;
                     var newLinear = movement.linear.Value;
+                    if (piece.color == PieceColor.White) {
+                        newLinear.dir = -moveDir;
+                    }
                     if (moveDir == new Vector2Int(1, 0)) {
                         if (piece.moveCounter == 0) {
                             newLinear.length = 2;
@@ -124,7 +126,8 @@ namespace move {
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
                 } else if (movement.circular.HasValue) {
-                    fixedMovement = FixedMovement.Mk(Movement.Circular(movement.circular.Value), pos);
+                    var circularMovement = Movement.Circular(movement.circular.Value);
+                    fixedMovement = FixedMovement.Mk(circularMovement, pos);
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
                 }

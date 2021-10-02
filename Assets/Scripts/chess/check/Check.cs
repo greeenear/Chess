@@ -114,17 +114,18 @@ namespace check {
                 return movements;
             }
 
-            var attackMovement = new Movement();
+            var attackMovement = new PieceMovement();
             var attackingPiecePos = new Vector2Int(lastPos.x, lastPos.y);
             var pieceMovements = Move.GetPieceMovements(board, attackingPiecePos);
 
             bool isMovementContained = false;
             foreach (var pieceMovement in pieceMovements) {
-                if (!pieceMovement.movement.linear.HasValue) {
+                if (!pieceMovement.movement.movement.linear.HasValue) {
                     break;
                 }
-                if (-pieceMovement.movement.linear.Value.dir == linear.dir) {
-                    attackMovement = pieceMovement.movement;
+                if (-pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
+                    var fixedMovement = FixedMovement.Mk(pieceMovement.movement.movement, target);
+                    attackMovement = PieceMovement.Mk(fixedMovement, MovementType.Attack);
                     isMovementContained = true;
                     break;
                 }
@@ -132,10 +133,10 @@ namespace check {
             if (!isMovementContained) {
                 return movements;
             }
-            var attackDir = Movement.Linear(linear, MovementType.Attack);
+            var attackDir = Movement.Linear(linear);
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
-            var attackLength = Board.GetMaxLength(boardOpt, attackMovement.linear.Value.length);
+            var attackLength = Board.GetMaxLength(boardOpt, attackMovement.movement.movement.linear.Value.length);
             var attackMovementType = attackMovement.movementType;
             if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));

@@ -95,12 +95,10 @@ namespace chess {
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
-                var linearAttack = Linear.Mk(dir, linearMovement.Value.length);
-                var linearMove = Linear.Mk(dir, linearMovement.Value.length);
-                var attackMovement = Movement.Linear(linearAttack, MovementType.Attack);
-                var moveMovement = Movement.Linear(linearMove, MovementType.Move);
-                movementList.Add(new PieceMovement {movement = attackMovement});
-                movementList.Add(new PieceMovement {movement = moveMovement});
+                var linear = Linear.Mk(dir, linearMovement.Value.length);
+                var movement = Movement.Linear(linear);
+                movementList.Add(PieceMovement.Mk(FixedMovement.Mk(movement, target), MovementType.Attack));
+                movementList.Add(PieceMovement.Mk(FixedMovement.Mk(movement, target), MovementType.Move));
             }
 
             var possibleAttackPos = move.Move.GetMoveInfos(movementList, attakingPos, board);
@@ -154,10 +152,10 @@ namespace chess {
 
             var linear = checkInfo.attackInfo.movement.linear.Value;
             foreach (var pieceMovement in Move.GetPieceMovements(board, target)) {
-                if (pieceMovement.movement.linear.Value.dir == linear.dir) {
+                if (pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
                     movementList.Add(new PieceMovement{movement = pieceMovement.movement});
                 }
-                if (pieceMovement.movement.linear.Value.dir == -linear.dir) {
+                if (pieceMovement.movement.movement.linear.Value.dir == -linear.dir) {
                     movementList.Add(new PieceMovement{movement = pieceMovement.movement});
                 }
             }
