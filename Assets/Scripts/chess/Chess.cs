@@ -105,7 +105,18 @@ namespace chess {
             var defenseMovements = Move.GetPieceMovements(board, target);
             foreach (var defenseMovement in defenseMovements) {
                 if (defenseMovement.movement.movement.circular.HasValue) {
-
+                    var angle = 0f;
+                    var startAngle = StartAngle.Knight;
+                    var circular = defenseMovement.movement.movement.circular.Value;
+                    for (int i = 1; angle < Mathf.PI * 2; i += 2) {
+                        angle = startAngle * i * Mathf.PI / 180;
+                        var cell = Board.GetCircularMove<Piece>(target, circular, angle, boardOpt);
+                        if (cell.HasValue && IsPointOnSegment(attackPos, lastPos, cell.Value)) {
+                            var moveData = MoveData.Mk(target, cell.Value);
+                            var doubleMove = DoubleMove.MkSingleMove(moveData);
+                            movementList.Add(MoveInfo.Mk(doubleMove));
+                        }
+                    }
                 }
                 if (defenseMovement.movement.movement.linear.HasValue) {
                     var linear = defenseMovement.movement.movement.linear.Value;
@@ -114,12 +125,21 @@ namespace chess {
                     var point = GetSegmentsIntersection(attackPos, lastPos, target, lastDefPos);
                     if (point.HasValue) {
                         var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(target, point.Value));
+
                         if (defenseMovement.movementType == MovementType.Attack) {
-                            if (board[point.Value.x, point.Value.y].piece.IsSome()) {
+                            var pieceOpt = board[point.Value.x, point.Value.y].piece;
+                            if (pieceOpt.IsSome()) {
+                                var piece = pieceOpt.Peel();
+                                if (piece.color != board[target.x, target.y].piece.Peel().color) {
+                                    var moveInfo = MoveInfo.Mk(doubleMove);
+                                    moveInfo.sentenced = point;
+                                    movementList.Add(moveInfo);
+                                }
+                            }
+                        } else if (defenseMovement.movementType == MovementType.Move) {
+                            if (board[point.Value.x, point.Value.y].piece.IsNone()) {
                                 movementList.Add(MoveInfo.Mk(doubleMove));
                             }
-                        } else {
-                            movementList.Add(MoveInfo.Mk(doubleMove));
                         }
                     }
                 }
@@ -135,47 +155,53 @@ namespace chess {
         ) {
             int x = 0;
             int y = 0;
-            int A = 0;
-            int B = 0;
-            int C = 0;
-            int D = 0;
+            int a = 0;
+            int b = 0;
+            int c = 0;
+            int d = 0;
             if (end2.x - start2.x == 0 && end1.x - start1.x == 0) {
                 return null;
             } else if (end2.x - start2.x == 0) {
                 x = start2.x;
-                A = (end1.y - start1.y) / (end1.x - start1.x);
-                B = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
-                y = A * x + B;
+                a = (end1.y - start1.y) / (end1.x - start1.x);
+                b = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
+                y = a * x + b;
             } else if (end1.x - start1.x == 0) {
                 x = start1.x;
-                C = (end2.y - start2.y) / (end2.x - start2.x);
-                D = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
-                y = C * x + D;
+                c = (end2.y - start2.y) / (end2.x - start2.x);
+                d = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
+                y = c * x + d;
             } else {
-                A = (end1.y - start1.y) / (end1.x - start1.x);
-                B = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
-                C = (end2.y - start2.y) / (end2.x - start2.x);
-                D = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
-                if (A - C == 0) {
+                a = (end1.y - start1.y) / (end1.x - start1.x);
+                b = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
+                c = (end2.y - start2.y) / (end2.x - start2.x);
+                d = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
+                if (a - c == 0) {
                     return null;
                 }
-                x = (D - B) / (A - C);
-                if (x != 1.0*(D - B) / (A - C)) {
+                x = (d - b) / (a - c);
+                if (x != 1.0*(d - b) / (a - c)) {
                     return null;
                 }
-                y = A * x + B;
+                y = a * x + b;
             }
             var point = new Vector2Int(x, y);
-            if (isPointOnSegment(start2, end2, point) && isPointOnSegment(start1, end1, point)) {
+            if (IsPointOnSegment(start2, end2, point) && IsPointOnSegment(start1, end1, point)) {
                 return point;
             }
             return null;
         }
 
-        public static bool isPointOnSegment(Vector2Int start, Vector2Int end, Vector2Int point) {
+        public static bool IsPointOnSegment(Vector2Int start, Vector2Int end, Vector2Int point) {
             var x = point.x;
             var y = point.y;
 
+            double a = end.y - start.y;
+            double b = start.x - end.x;
+            double c = - a * start.x - b * start.y;
+            if (Math.Abs(a * point.x + b * point.y + c) > 0) {
+                return false;
+            }
             if ((x >= start.x && x <= end.x || x <= start.x && x >= end.x) 
                 && (y >= start.y && y <= end.y || y <= start.y && y >= end.y)) {
                 return true;

@@ -27,7 +27,6 @@ namespace rules {
     public struct Piece {
         public PieceType type;
         public PieceColor color;
-
         public int moveCounter;
 
         public static Piece Mk(PieceType type, PieceColor color, int moveCounter) {
@@ -38,6 +37,7 @@ namespace rules {
     public struct PieceMovement {
         public FixedMovement movement;
         public MovementType movementType;
+        public int traceIndex;
 
         public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
             return new PieceMovement { movement = movement, movementType = movementType };
@@ -52,7 +52,6 @@ namespace rules {
     public struct PieceTrace {
         public Vector2Int pos;
         public PieceType whoLeft;
-
     }
 
     public struct StartAngle {
@@ -124,8 +123,6 @@ namespace rules {
                     canMovePositions.Add(cell.Value);
                 }
             }
-
-
             return canMovePositions;
         }
 

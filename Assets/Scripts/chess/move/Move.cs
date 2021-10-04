@@ -47,7 +47,7 @@ namespace move {
         }
 
         public static List<MoveInfo> GetMoveInfos(
-            List<PieceMovement> movementList,
+            List<PieceMovement> pieceMovements,
             Vector2Int pos,
             CellInfo[,] board
         ) {
@@ -55,14 +55,22 @@ namespace move {
                 return null;
             }
 
-            List<FixedMovement> fixedMovements = new List<FixedMovement>();
             var moveInfos = new List<MoveInfo>();
-            foreach (var movement in movementList) {
-                var possibleMoveCells = Rules.GetMoves(board, movement, pos);
+            foreach (var pieceMovement in pieceMovements) {
+                var possibleMoveCells = Rules.GetMoves(board, pieceMovement, pos);
                 foreach (var cell in possibleMoveCells) {
                     var moveInfo = new MoveInfo {
                         doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
                     };
+                    if (pieceMovement.traceIndex != 0) {
+                        var dir = pieceMovement.movement.movement.linear.Value.dir;
+                        var startPos = pieceMovement.movement.startPos;
+                        var tracePos = startPos + dir * pieceMovement.traceIndex;
+                        if (tracePos != cell) {
+                            var pieceType = board[pos.x, pos.y].piece.Peel().type;
+                            moveInfo.trace = new PieceTrace {pos = tracePos, whoLeft = pieceType};
+                        }
+                    }
                     if (board[cell.x, cell.y].piece.IsSome()) {
                         moveInfo.sentenced = cell;
                     }
@@ -112,7 +120,12 @@ namespace move {
                             newLinear.length = 2;
                         }
                         fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
-                        movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
+                        var pieceMovement = new PieceMovement {
+                            movement = fixedMovement,
+                            movementType = MovementType.Move,
+                            traceIndex = 1 
+                        };
+                        movements.Add(pieceMovement);
                     } else {
                         fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
                         movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
@@ -134,33 +147,6 @@ namespace move {
             }
 
             return movements;
-
-            // if (piece.type == PieceType.Pawn) {
-            //     foreach (var movement in startMovements) {
-            //         var moveDir = movement.linear.Value.dir;
-            //         var newLinear = movement.linear.Value;
-            //         var movementType = movement.movementType;
-
-            //         if (piece.color == PieceColor.White) {
-            //             newLinear.dir = -moveDir;
-            //         }
-            //         if (piece.moveCounter == 0 && movementType == MovementType.Move) {
-            //             newLinear.length = 2;
-            //         }
-            //         var newMovement = Movement.Linear(newLinear, movementType);
-            //         var tracePosX = (pos.x + (pos.x + newLinear.dir.x * 2)) / 2;
-            //         var tracePos = new Vector2Int(tracePosX, pos.y);
-            //         var trace = new PieceTrace { pos = tracePos, whoLeft = PieceType.Pawn};
-            //         movements.Add(new PieceMovement { movement = newMovement, trace = trace });
-            //     }
-            //     return movements;
-            // }
-            // if (piece.type == PieceType.King) {
-            // }
-            // foreach (var movement in startMovements) {
-            //     movements.Add(new PieceMovement { movement = movement });
-            // }
-            // return movements;
         }
     }
 }

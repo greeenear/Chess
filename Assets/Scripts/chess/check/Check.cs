@@ -136,7 +136,8 @@ namespace check {
             var attackDir = Movement.Linear(linear);
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
-            var attackLength = Board.GetMaxLength(boardOpt, attackMovement.movement.movement.linear.Value.length);
+            var attackLength = attackMovement.movement.movement.linear.Value.length;
+            attackLength = Board.GetMaxLength(boardOpt, attackLength);
             var attackMovementType = attackMovement.movementType;
             if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
