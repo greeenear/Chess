@@ -54,10 +54,9 @@ namespace board {
         public static int GetLinearLength<T>(
             Vector2Int startPosition,
             Linear linear,
-            Option<T>[,] board,
-            int linearLength
+            Option<T>[,] board
         ) {
-            var maxLength = GetMaxLength(board, linearLength);
+            var maxLength = GetMaxLength(board, linear.length);
 
             int length = 0;
             for (int i = 1; i <= maxLength; i++) {

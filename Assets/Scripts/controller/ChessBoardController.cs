@@ -253,7 +253,6 @@ namespace controller {
 
                 if (board[cellPos.x, cellPos.y].piece.IsSome()) {
                     ObjectSpawner(resources.underAttackCell, cellPos, parentTransfrom);
-
                 }
                 ObjectSpawner(resources.canMoveCell, cellPos, parentTransfrom);
             }

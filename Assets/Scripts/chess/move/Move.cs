@@ -56,6 +56,7 @@ namespace move {
             }
 
             var moveInfos = new List<MoveInfo>();
+            var boardOpt = Rules.GetOptBoard(board);
             foreach (var pieceMovement in pieceMovements) {
                 var possibleMoveCells = Rules.GetMoves(board, pieceMovement, pos);
                 foreach (var cell in possibleMoveCells) {
@@ -68,7 +69,7 @@ namespace move {
                         var tracePos = startPos + dir * pieceMovement.traceIndex;
                         if (tracePos != cell) {
                             var pieceType = board[pos.x, pos.y].piece.Peel().type;
-                            moveInfo.trace = new PieceTrace {pos = tracePos, whoLeft = pieceType};
+                            moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
                         }
                     }
                     if (board[cell.x, cell.y].piece.IsSome()) {
@@ -81,7 +82,21 @@ namespace move {
                 }
             }
             var targetPiece = board[pos.x, pos.y].piece.Peel();
+            if (targetPiece.type == PieceType.King) {
+                var rightCell = GetLastCellOnLine(board, Linear.Mk(new Vector2Int(0, 1), -1), pos);
+                var leftCell = GetLastCellOnLine(board, Linear.Mk(new Vector2Int(0, -1), -1), pos);
 
+                if (boardOpt[rightCell.x, rightCell.y].IsSome()) {
+                    var piece = boardOpt[rightCell.x, rightCell.y].Peel();
+                    if (piece.type == PieceType.Rook && piece.moveCounter == 0) {
+                        var doubleMove = DoubleMove.MkDoubleMove(
+                            MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2)),
+                            MoveData.Mk(rightCell, new Vector2Int(pos.x, pos.y + 1))
+                        );
+                        moveInfos.Add(MoveInfo.Mk(doubleMove));
+                    }
+                }
+            }
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
@@ -145,8 +160,18 @@ namespace move {
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
                 }
             }
-
             return movements;
+        }
+
+        public static Vector2Int GetLastCellOnLine(
+            CellInfo[,] board,
+            Linear linear,
+            Vector2Int startPos
+        ) {
+            var boardOpt = Rules.GetOptBoard(board);
+            int length = Board.GetLinearLength(startPos, linear, boardOpt);
+            var lastPos = startPos + linear.dir * length;
+            return lastPos;
         }
     }
 }

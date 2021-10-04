@@ -98,7 +98,7 @@ namespace chess {
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
                 var linear = Linear.Mk(dir, linearMovement.Value.length);
-                var length = Board.GetLinearLength(attackPos, linear, boardOpt, linear.length);
+                var length = Board.GetLinearLength(attackPos, linear, boardOpt);
                 lastPos = attackPos + linear.dir * length;
             }
 
@@ -120,7 +120,7 @@ namespace chess {
                 }
                 if (defenseMovement.movement.movement.linear.HasValue) {
                     var linear = defenseMovement.movement.movement.linear.Value;
-                    var length = Board.GetLinearLength(target, linear, boardOpt, linear.length);
+                    var length = Board.GetLinearLength(target, linear, boardOpt);
                     var lastDefPos = target + linear.dir * length;
                     var point = GetSegmentsIntersection(attackPos, lastPos, target, lastDefPos);
                     if (point.HasValue) {

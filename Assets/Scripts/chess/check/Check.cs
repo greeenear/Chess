@@ -107,7 +107,7 @@ namespace check {
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
             var boardOpt = Rules.GetOptBoard(board);
-            var length = Board.GetLinearLength(target, linear, boardOpt, linear.length);
+            var length = Board.GetLinearLength(target, linear, boardOpt);
 
             var lastPos = target + linear.dir * length;
             if (board[lastPos.x, lastPos.y].piece.IsNone()) {

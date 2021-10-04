@@ -69,7 +69,7 @@ namespace rules {
                 var linear = pieceMovement.movement.movement.linear.Value;
                 var boardOpt = GetOptBoard(board);
 
-                int length = Board.GetLinearLength(startPos, linear, boardOpt, linear.length);
+                int length = Board.GetLinearLength(startPos, linear, boardOpt);
                 var movementType = pieceMovement.movementType;
                 length = GetFixedLength(board, linear, length, startPos, movementType);
                 return GetLinearMoves(linear, startPos, length);
@@ -86,7 +86,6 @@ namespace rules {
             Vector2Int piecePos,
             int length
         ) {
-
             var moves = new List<Vector2Int>();
             for (int i = 1; i <= length; i++) {
                 moves.Add(piecePos + linear.dir * i);
