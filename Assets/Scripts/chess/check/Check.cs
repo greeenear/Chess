@@ -5,7 +5,7 @@ using board;
 using option;
 using rules;
 using storage;
-using move;
+using movement;
 
 namespace check {
     public struct CheckInfo {
@@ -116,7 +116,7 @@ namespace check {
 
             var attackMovement = new PieceMovement();
             var attackingPiecePos = new Vector2Int(lastPos.x, lastPos.y);
-            var pieceMovements = Move.GetPieceMovements(board, attackingPiecePos);
+            var pieceMovements = MovementEngine.GetPieceMovements(board, attackingPiecePos);
 
             bool isMovementContained = false;
             foreach (var pieceMovement in pieceMovements) {

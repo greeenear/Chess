@@ -6,7 +6,7 @@ using check;
 using option;
 using rules;
 using json;
-using move;
+using movement;
 
 namespace controller {
     enum PlayerAction {

@@ -6,6 +6,7 @@ using board;
 using check;
 using System.Collections.Generic;
 using System;
+using movement;
 
 namespace chess {
     public enum GameStatus {
@@ -43,9 +44,9 @@ namespace chess {
                 }
             }
 
-            var movementList = Move.GetPieceMovements(board, targetPos);
+            var movementList = MovementEngine.GetPieceMovements(board, targetPos);
 
-            return move.Move.GetMoveInfos(movementList, targetPos, board);;
+            return Move.GetMoveInfos(movementList, targetPos, board);;
         }
 
         public static List<MoveInfo> GetKingPossibleMoves(
@@ -58,7 +59,7 @@ namespace chess {
                 return null;
             }
 
-            var movement = Move.GetPieceMovements(board, target);
+            var movement = MovementEngine.GetPieceMovements(board, target);
             var kingMoves = move.Move.GetMoveInfos(movement, target, board);
             foreach (var move in kingMoves) {
                 var king = board[target.x, target.y];
@@ -102,7 +103,7 @@ namespace chess {
                 lastPos = attackPos + linear.dir * length;
             }
 
-            var defenseMovements = Move.GetPieceMovements(board, target);
+            var defenseMovements = MovementEngine.GetPieceMovements(board, target);
             foreach (var defenseMovement in defenseMovements) {
                 if (defenseMovement.movement.movement.circular.HasValue) {
                     var angle = 0f;
@@ -243,7 +244,7 @@ namespace chess {
             }
 
             var linear = checkInfo.attackInfo.movement.linear.Value;
-            foreach (var pieceMovement in Move.GetPieceMovements(board, target)) {
+            foreach (var pieceMovement in MovementEngine.GetPieceMovements(board, target)) {
                 if (pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
                     movementList.Add(new PieceMovement{movement = pieceMovement.movement});
                 }
