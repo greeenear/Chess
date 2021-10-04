@@ -236,6 +236,7 @@ namespace check {
                     }
                 }
             }
+
             return board;
         }
     }

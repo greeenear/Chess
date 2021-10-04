@@ -68,15 +68,11 @@ namespace chess {
                 var checkCellInfos = Check.GetCheckInfo(board, color, moveTo);
 
                 board[target.x, target.y] = king;
+                if (check.Check.IsCheck(checkCellInfos)) {
+                    continue;
+                }
+                newKingMoves.Add(move);
 
-                if (checkCellInfos.Count == 0) {
-                    newKingMoves.Add(move);
-                }
-                foreach (var info in checkCellInfos) {
-                    if (info.coveringPiece != null) {
-                        newKingMoves.Add(move);
-                    }
-                }
             }
 
             return newKingMoves;

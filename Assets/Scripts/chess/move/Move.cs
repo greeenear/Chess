@@ -4,6 +4,7 @@ using board;
 using rules;
 using option;
 using movement;
+using check;
 
 namespace move {
     public static class Move {
@@ -26,6 +27,8 @@ namespace move {
 
             var moveInfos = new List<MoveInfo>();
             var boardOpt = Rules.GetOptBoard(board);
+            var targetPiece = board[pos.x, pos.y].piece.Peel();
+            var color = targetPiece.color;
             foreach (var pieceMovement in pieceMovements) {
                 var possibleMoveCells = Rules.GetMoves(board, pieceMovement, pos);
                 foreach (var cell in possibleMoveCells) {
@@ -37,7 +40,7 @@ namespace move {
                         var startPos = pieceMovement.movement.startPos;
                         var tracePos = startPos + dir * pieceMovement.traceIndex;
                         if (tracePos != cell) {
-                            var pieceType = board[pos.x, pos.y].piece.Peel().type;
+                            var pieceType = targetPiece.type;
                             moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
                         }
                     }
@@ -50,10 +53,8 @@ namespace move {
                     moveInfos.Add(moveInfo);
                 }
             }
-            var targetPiece = board[pos.x, pos.y].piece.Peel();
             if (targetPiece.type == PieceType.King) {
                 var rightCell = GetLastCellOnLine(board, Linear.Mk(new Vector2Int(0, 1), -1), pos);
-                var leftCell = GetLastCellOnLine(board, Linear.Mk(new Vector2Int(0, -1), -1), pos);
 
                 if (boardOpt[rightCell.x, rightCell.y].IsSome()) {
                     var piece = boardOpt[rightCell.x, rightCell.y].Peel();
@@ -62,7 +63,12 @@ namespace move {
                             MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2)),
                             MoveData.Mk(rightCell, new Vector2Int(pos.x, pos.y + 1))
                         );
-                        moveInfos.Add(MoveInfo.Mk(doubleMove));
+                        var checkInfos = Check.GetCheckInfo(board, color, doubleMove.first.to);
+                        var secondMove = doubleMove.second.Value.to;
+                        checkInfos.AddRange(Check.GetCheckInfo(board, color, secondMove));
+                        if (!Check.IsCheck(checkInfos)) {
+                            moveInfos.Add(MoveInfo.Mk(doubleMove));
+                        }
                     }
                 }
             }
