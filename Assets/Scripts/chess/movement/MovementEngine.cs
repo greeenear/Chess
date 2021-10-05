@@ -5,41 +5,10 @@ using board;
 using option;
 
 namespace movement {
-
-    public struct MoveData {
-        public Vector2Int from;
-        public Vector2Int to;
-
-        public static MoveData Mk(Vector2Int from, Vector2Int to) {
-            return new MoveData { from = from, to = to };
-        }
-    }
-
-    public struct DoubleMove {
-        public MoveData first;
-        public MoveData? second;
-
-        public static DoubleMove MkSingleMove(MoveData first) {
-            return new DoubleMove { first = first};
-        }
-        public static DoubleMove MkDoubleMove(MoveData first, MoveData? second) {
-            return new DoubleMove {first = first, second = second};
-        }
-    }
-
-    public struct MoveInfo {
-        public DoubleMove doubleMove;
-        public Vector2Int? sentenced;
-        public bool pawnPromotion;
-        public PieceTrace? trace;
-
-        public static MoveInfo Mk(DoubleMove doubleMove) {
-            return new MoveInfo { doubleMove = doubleMove };
-        }
-    }
     public static class MovementEngine {
         public static List<PieceMovement> GetPieceMovements(
             Option<Piece>[,] board,
+            PieceType pieceType,
             Vector2Int pos
         ) {
             var pieceOpt = board[pos.x, pos.y];
@@ -47,49 +16,79 @@ namespace movement {
                 return null;
             }
             var piece = pieceOpt.Peel();
+            var attack = MovementType.Attack;
+            var move = MovementType.Move;
             var movements = new List<PieceMovement>();
-            var startMovements = storage.Storage.movement[piece.type];
-            switch (piece.type) {
+            switch (pieceType) {
                 case PieceType.Pawn:
-                break;
-            }
-            foreach (var movement in startMovements) {
-                var fixedMovement = new FixedMovement();
-
-                if (piece.type == PieceType.Pawn) {
-                    var moveDir = movement.linear.Value.dir;
-                    var newLinear = movement.linear.Value;
                     if (piece.color == PieceColor.White) {
-                        newLinear.dir = -moveDir;
-                    }
-                    if (moveDir == new Vector2Int(1, 0)) {
+                        movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), 1)), pos), attack));
+                        movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), 1)), pos), attack));
                         if (piece.moveCounter == 0) {
-                            newLinear.length = 2;
+                            var movement = PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 2)), pos), move);
+                            movement.traceIndex = Option<int>.Some(1);
+                            movements.Add(movement);
+                        } else {
+                            movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 1)), pos), move));
                         }
-                        fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
-                        var pieceMovement = new PieceMovement {
-                            movement = fixedMovement,
-                            movementType = MovementType.Move,
-                            traceIndex = 1 
-                        };
-                        movements.Add(pieceMovement);
-                    } else {
-                        fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
-                        movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
+                    } else if (piece.color == PieceColor.Black) {
+                        movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 1)), pos), attack));
+                        movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 1)), pos), attack));
+                        if (piece.moveCounter == 0) {
+                            var movement = PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 2)), pos), move);
+                            movement.traceIndex = Option<int>.Some(1);
+                            movements.Add(movement);
+                        } else {
+                            movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 1)), pos), move));
+                        }
                     }
-                } else if (movement.linear.HasValue) {
-                    var newLinear = movement.linear.Value;
-
-                    newLinear.length = Board.GetMaxLength(board, newLinear.length);
-                    fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
-                    movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
-                    movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
-                } else if (movement.circular.HasValue) {
-                    var circularMovement = Movement.Circular(movement.circular.Value);
-                    fixedMovement = FixedMovement.Mk(circularMovement, pos);
-                    movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
-                    movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));
-                }
+                    break;
+                case PieceType.Bishop:
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 8)), pos), move));
+                    break;
+                case PieceType.Rook:
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, -1), 8)), pos), move));
+                    break;
+                case PieceType.Queen:
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, -1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, -1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, 1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, -1), 8)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(-1, 0), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(1, 0), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, 1), 8)), pos), move));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Linear(Linear.Mk(new Vector2Int(0, -1), 8)), pos), move));
+                    break;
+                case PieceType.Knight:
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Circular(Circular.Mk(2f)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Circular(Circular.Mk(2f)), pos), move));
+                    break;
+                case PieceType.King:
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Circular(Circular.Mk(1f)), pos), attack));
+                    movements.Add(PieceMovement.Mk(FixedMovement.Mk(Movement.Circular(Circular.Mk(1f)), pos), move));
+                    break;
             }
             return movements;
         }

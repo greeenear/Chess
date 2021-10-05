@@ -31,8 +31,8 @@ namespace chess {
             var checkInfos = Check.GetCheckInfo(boardOpt, color, Check.FindKing(boardOpt, color));
 
             bool isCheck = Check.IsCheck(checkInfos);
-
-            if (targetPiece.type == PieceType.King) {
+            var pieceType = targetPiece.type;
+            if (pieceType == PieceType.King) {
                 return GetKingPossibleMoves(board, targetPos, color);
             }
 
@@ -45,7 +45,7 @@ namespace chess {
                 }
             }
 
-            var movementList = MovementEngine.GetPieceMovements(boardOpt, targetPos);
+            var movementList = MovementEngine.GetPieceMovements(boardOpt, pieceType, targetPos);
 
             return Move.GetMoveInfos(movementList, targetPos, board);;
         }
@@ -59,8 +59,8 @@ namespace chess {
             if (board.board[target.x, target.y].IsNone()) {
                 return null;
             }
-
-            var movement = MovementEngine.GetPieceMovements(board.board, target);
+            var pieceType = board.board[target.x, target.y].Peel().type;
+            var movement = MovementEngine.GetPieceMovements(board.board, pieceType, target);
             var kingMoves = move.Move.GetMoveInfos(movement, target, board);
             foreach (var move in kingMoves) {
                 var king = board.board[target.x, target.y];
@@ -84,7 +84,8 @@ namespace chess {
             FullBoard board,
             CheckInfo checkInfo
         ) {
-            if (board.board[target.x, target.y].IsNone()) {
+            var boardOpt = board.board;
+            if (boardOpt[target.x, target.y].IsNone()) {
                 return null;
             }
             var linearMovement = checkInfo.attackInfo.movement.linear;
@@ -95,11 +96,11 @@ namespace chess {
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
                 var linear = Linear.Mk(dir, linearMovement.Value.length);
-                var length = Board.GetLinearLength(attackPos, linear, board.board);
+                var length = Board.GetLinearLength(attackPos, linear, boardOpt);
                 lastPos = attackPos + linear.dir * length;
             }
-
-            var defenseMovements = MovementEngine.GetPieceMovements(board.board, target);
+            var pieceType = boardOpt[target.x, target.y].Peel().type;
+            var defenseMovements = MovementEngine.GetPieceMovements(boardOpt, pieceType, target);
             foreach (var defenseMovement in defenseMovements) {
                 if (defenseMovement.movement.movement.circular.HasValue) {
                     var angle = 0f;
@@ -107,7 +108,7 @@ namespace chess {
                     var circular = defenseMovement.movement.movement.circular.Value;
                     for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                         angle = startAngle * i * Mathf.PI / 180;
-                        var cell = Board.GetCircularMove(target, circular, angle, board.board);
+                        var cell = Board.GetCircularMove(target, circular, angle, boardOpt);
                         if (cell.HasValue && IsPointOnSegment(attackPos, lastPos, cell.Value)) {
                             var moveData = MoveData.Mk(target, cell.Value);
                             var doubleMove = DoubleMove.MkSingleMove(moveData);
@@ -238,9 +239,10 @@ namespace chess {
             if (targetPiece.type == PieceType.Knight) {
                 return possibleMoves;
             }
-
+            var type = targetPiece.type;
             var linear = checkInfo.attackInfo.movement.linear.Value;
-            foreach (var pieceMovement in MovementEngine.GetPieceMovements(board.board, target)) {
+            var pieceMovements = MovementEngine.GetPieceMovements(board.board, type, target);
+            foreach (var pieceMovement in pieceMovements) {
                 if (pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
                     movementList.Add(new PieceMovement{movement = pieceMovement.movement});
                 }

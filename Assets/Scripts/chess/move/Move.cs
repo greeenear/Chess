@@ -7,6 +7,37 @@ using movement;
 using check;
 
 namespace move {
+    public struct MoveData {
+        public Vector2Int from;
+        public Vector2Int to;
+
+        public static MoveData Mk(Vector2Int from, Vector2Int to) {
+            return new MoveData { from = from, to = to };
+        }
+    }
+
+    public struct DoubleMove {
+        public MoveData first;
+        public MoveData? second;
+
+        public static DoubleMove MkSingleMove(MoveData first) {
+            return new DoubleMove { first = first};
+        }
+        public static DoubleMove MkDoubleMove(MoveData first, MoveData? second) {
+            return new DoubleMove {first = first, second = second};
+        }
+    }
+
+    public struct MoveInfo {
+        public DoubleMove doubleMove;
+        public Vector2Int? sentenced;
+        public bool pawnPromotion;
+        public PieceTrace? trace;
+
+        public static MoveInfo Mk(DoubleMove doubleMove) {
+            return new MoveInfo { doubleMove = doubleMove };
+        }
+    }
     public static class Move {
         public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
             board[end.x, end.y] = board[start.x, start.y];
@@ -34,10 +65,10 @@ namespace move {
                     var moveInfo = new MoveInfo {
                         doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
                     };
-                    if (pieceMovement.traceIndex != 0) {
+                    if (pieceMovement.traceIndex.IsSome()) {
                         var dir = pieceMovement.movement.movement.linear.Value.dir;
                         var startPos = pieceMovement.movement.startPos;
-                        var tracePos = startPos + dir * pieceMovement.traceIndex;
+                        var tracePos = startPos + dir * pieceMovement.traceIndex.Peel();
                         if (tracePos != cell) {
                             var pieceType = targetPiece.type;
                             moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};

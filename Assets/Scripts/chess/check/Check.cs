@@ -4,7 +4,6 @@ using UnityEngine;
 using board;
 using option;
 using rules;
-using storage;
 using movement;
 
 namespace check {
@@ -45,17 +44,16 @@ namespace check {
             Option<Piece>[,] board,
             Vector2Int target
         ) {
-            var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
-            movementType.AddRange(Storage.movement[PieceType.Knight]);
-            movementType.AddRange(Storage.movement[PieceType.King]);
+            var movementType = MovementEngine.GetPieceMovements(board, PieceType.Knight, target);
+            movementType.AddRange(MovementEngine.GetPieceMovements(board, PieceType.Queen, target));
 
             var movements = new List<FixedMovement>();
             foreach (var type in movementType) {
-                if (type.circular.HasValue) {
-                    var circular = type.circular.Value;
+                if (type.movement.movement.circular.HasValue) {
+                    var circular = type.movement.movement.circular.Value;
                     movements.AddRange(GetCircularMoves(board, target, circular));
-                } else if (type.linear.HasValue) {
-                    var linear = type.linear.Value;
+                } else if (type.movement.movement.linear.HasValue) {
+                    var linear = type.movement.movement.linear.Value;
                     movements.AddRange(GetLinearMoves(board, target, linear));
                 }
             }
@@ -83,13 +81,14 @@ namespace check {
                     continue;
                 }
                 var piece = cellOpt.Peel();
-                if (piece.color != board[target.x, target.y].Peel().color) {
-                    var attackMovements = storage.Storage.movement[piece.type];
+                var targetPiece = board[target.x, target.y].Peel();
+                var type = targetPiece.type;
+                if (piece.color != targetPiece.color) {
+                    var attackMovements = MovementEngine.GetPieceMovements(board, type, target);
                     foreach (var movement in attackMovements) {
                         var circle = Movement.Circular(Circular.Mk(radius));
-
-                        if (movement.circular.HasValue 
-                            && movement.circular.Value.radius == radius) {
+                        if (movement.movement.movement.circular.HasValue
+                            && movement.movement.movement.circular.Value.radius == radius) {
                             movements.Add(FixedMovement.Mk(circle, cell.Value));
                         }
                     }
@@ -114,7 +113,8 @@ namespace check {
 
             var attackMovement = new PieceMovement();
             var attackingPiecePos = new Vector2Int(lastPos.x, lastPos.y);
-            var pieceMovements = MovementEngine.GetPieceMovements(board, attackingPiecePos);
+            var type = board[lastPos.x, lastPos.y].Peel().type;
+            var pieceMovements = MovementEngine.GetPieceMovements(board, type, attackingPiecePos);
 
             bool isMovementContained = false;
             foreach (var pieceMovement in pieceMovements) {
@@ -195,8 +195,6 @@ namespace check {
             PieceColor color,
             Vector2Int cellPos
         ) {
-            var movement = storage.Storage.movement;
-
             var singleColorBoard = GetBoardWithOneColor(color, board);
             var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
             singleColorBoard[cellPos.x, cellPos.y] = king;

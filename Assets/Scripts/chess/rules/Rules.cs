@@ -37,11 +37,12 @@ namespace rules {
     public struct PieceMovement {
         public FixedMovement movement;
         public MovementType movementType;
-        public int traceIndex;
+        public Option<int> traceIndex;
 
         public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
             return new PieceMovement { movement = movement, movementType = movementType };
         }
+
     }
 
     public struct FullBoard {

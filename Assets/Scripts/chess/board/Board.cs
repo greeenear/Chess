@@ -40,6 +40,10 @@ namespace board {
         public static FixedMovement Mk(Movement movement, Vector2Int startPos) {
             return new FixedMovement { movement = movement, startPos = startPos };
         }
+        public static FixedMovement Linearr(Vector2Int movement, Vector2Int startPos, int length) {
+            var a = Movement.Linear(Linear.Mk(movement, length));
+            return new FixedMovement { movement = a, startPos = startPos };
+        }
     }
 
     public static class Board {
