@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using rules;
 using board;
+using option;
 
 namespace movement {
 
@@ -37,15 +38,21 @@ namespace movement {
         }
     }
     public static class MovementEngine {
-        public static List<PieceMovement> GetPieceMovements(CellInfo[,] board, Vector2Int pos) {
+        public static List<PieceMovement> GetPieceMovements(
+            Option<Piece>[,] board,
+            Vector2Int pos
+        ) {
             var pieceOpt = board[pos.x, pos.y];
-            if (pieceOpt.piece.IsNone()) {
+            if (pieceOpt.IsNone()) {
                 return null;
             }
-            var piece = pieceOpt.piece.Peel();
+            var piece = pieceOpt.Peel();
             var movements = new List<PieceMovement>();
             var startMovements = storage.Storage.movement[piece.type];
-
+            switch (piece.type) {
+                case PieceType.Pawn:
+                break;
+            }
             foreach (var movement in startMovements) {
                 var fixedMovement = new FixedMovement();
 
@@ -72,9 +79,8 @@ namespace movement {
                     }
                 } else if (movement.linear.HasValue) {
                     var newLinear = movement.linear.Value;
-                    var boardOpt = Rules.GetOptBoard(board);
 
-                    newLinear.length = Board.GetMaxLength(boardOpt, newLinear.length);
+                    newLinear.length = Board.GetMaxLength(board, newLinear.length);
                     fixedMovement = FixedMovement.Mk(Movement.Linear(newLinear), pos);
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Attack));
                     movements.Add(PieceMovement.Mk(fixedMovement, MovementType.Move));

@@ -21,15 +21,15 @@ namespace check {
     }
 
     public static class Check {
-        public static Vector2Int FindKing(CellInfo[,] board, PieceColor color) {
+        public static Vector2Int FindKing(Option<Piece>[,] board, PieceColor color) {
             Vector2Int kingPosition = new Vector2Int();
 
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    if (board[i, j].piece.IsNone()) {
+                    if (board[i, j].IsNone()) {
                         continue;
                     }
-                    var piece = board[i, j].piece.Peel();
+                    var piece = board[i, j].Peel();
                     if (piece.type == PieceType.King && piece.color == color) {
                         kingPosition.x = i;
                         kingPosition.y = j;
@@ -42,7 +42,7 @@ namespace check {
 
         public static List<FixedMovement> GetAttackMovements(
             PieceColor color,
-            CellInfo[,] board,
+            Option<Piece>[,] board,
             Vector2Int target
         ) {
             var movementType = new List<Movement>(Storage.movement[PieceType.Queen]);
@@ -64,27 +64,26 @@ namespace check {
         }
 
         public static List<FixedMovement> GetCircularMoves(
-            CellInfo[,] board,
+            Option<Piece>[,] board,
             Vector2Int target,
             Circular circular
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
             var radius = circular.radius;
             var angle = 0f;
-            var boardOpt = Rules.GetOptBoard(board);
 
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = StartAngle.Knight * i * Mathf.PI / 180;
-                var cell = Board.GetCircularMove<Piece>(target, circular, angle, boardOpt);
+                var cell = Board.GetCircularMove<Piece>(target, circular, angle, board);
                 if (!cell.HasValue) {
                     continue;
                 }
                 var cellOpt = board[cell.Value.x, cell.Value.y];
-                if (cellOpt.piece.IsNone()) {
+                if (cellOpt.IsNone()) {
                     continue;
                 }
-                var piece = cellOpt.piece.Peel();
-                if (piece.color != board[target.x, target.y].piece.Peel().color) {
+                var piece = cellOpt.Peel();
+                if (piece.color != board[target.x, target.y].Peel().color) {
                     var attackMovements = storage.Storage.movement[piece.type];
                     foreach (var movement in attackMovements) {
                         var circle = Movement.Circular(Circular.Mk(radius));
@@ -101,16 +100,15 @@ namespace check {
         }
 
         public static List<FixedMovement> GetLinearMoves(
-            CellInfo[,] board,
+            Option<Piece>[,] board,
             Vector2Int target,
             Linear linear
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
-            var boardOpt = Rules.GetOptBoard(board);
-            var length = Board.GetLinearLength(target, linear, boardOpt);
+            var length = Board.GetLinearLength(target, linear, board);
 
             var lastPos = target + linear.dir * length;
-            if (board[lastPos.x, lastPos.y].piece.IsNone()) {
+            if (board[lastPos.x, lastPos.y].IsNone()) {
                 return movements;
             }
 
@@ -137,7 +135,7 @@ namespace check {
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
             var attackLength = attackMovement.movement.movement.linear.Value.length;
-            attackLength = Board.GetMaxLength(boardOpt, attackLength);
+            attackLength = Board.GetMaxLength(board, attackLength);
             var attackMovementType = attackMovement.movementType;
             if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
@@ -148,7 +146,7 @@ namespace check {
 
         public static List<CheckInfo> AnalyzeAttackMovements(
             PieceColor color,
-            CellInfo[,] startBoard,
+            Option<Piece>[,] startBoard,
             List<FixedMovement> attackInfo,
             Vector2Int target
         ) {
@@ -171,10 +169,10 @@ namespace check {
                         break;
                     }
                     var nextCell = startBoard[next.x, next.y];
-                    if (nextCell.piece.IsNone()) {
+                    if (nextCell.IsNone()) {
                         continue;
                     }
-                    var pieceColor = nextCell.piece.Peel().color;
+                    var pieceColor = nextCell.Peel().color;
                     if (pieceColor == color) {
                         coveringPiecesCounter++;
                         coveringPos = nextPos;
@@ -193,7 +191,7 @@ namespace check {
         }
 
         public static List<CheckInfo> GetCheckInfo(
-            CellInfo[,] board,
+            Option<Piece>[,] board,
             PieceColor color,
             Vector2Int cellPos
         ) {
@@ -201,7 +199,7 @@ namespace check {
 
             var singleColorBoard = GetBoardWithOneColor(color, board);
             var king = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
-            singleColorBoard[cellPos.x, cellPos.y].piece = king;
+            singleColorBoard[cellPos.x, cellPos.y] = king;
 
             var attackInfo = Check.GetAttackMovements(color, singleColorBoard, cellPos);
             var checkInfo = Check.AnalyzeAttackMovements(color, board, attackInfo, cellPos);
@@ -219,20 +217,20 @@ namespace check {
             return false;
         }
 
-        public static CellInfo[,] GetBoardWithOneColor(
+        public static Option<Piece>[,] GetBoardWithOneColor(
             PieceColor color,
-            CellInfo[,] startBoard
+            Option<Piece>[,] startBoard
         ) {
-            CellInfo[,] board = (CellInfo[,])startBoard.Clone();
+            Option<Piece>[,] board = (Option<Piece>[,])startBoard.Clone();
 
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    if (board[i,j].piece.IsNone()) {
+                    if (board[i,j].IsNone()) {
                         continue;
                     }
-                    var piece = board[i,j].piece.Peel();
+                    var piece = board[i,j].Peel();
                     if (piece.color == color) {
-                        board[i, j].piece = Option<Piece>.None();
+                        board[i, j] = Option<Piece>.None();
                     }
                 }
             }

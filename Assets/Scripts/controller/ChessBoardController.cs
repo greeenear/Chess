@@ -17,7 +17,7 @@ namespace controller {
 
     public class ChessBoardController : MonoBehaviour {
         private Resource resources;
-        private CellInfo[,] board = new CellInfo[8, 8];
+        private FullBoard board;
         private GameObject[,] piecesMap = new GameObject[8, 8];
 
         private Vector2Int selectedPiece;
@@ -32,7 +32,9 @@ namespace controller {
         private PlayerAction playerAction;
 
         private void Awake() {
-           board = Chess.CreateBoard();
+            board.board = new Option<Piece>[8,8];
+            board.traceBoard = new Option<PieceTrace>[8,8];
+            board.board = Chess.CreateBoard();
         }
 
         private void Start() {
@@ -60,7 +62,7 @@ namespace controller {
             var currentMove = GetCurrentMove(selectedPos);
             var firstMove = currentMove.doubleMove.first;
 
-            var pieceOpt = board[selectedPos.x, selectedPos.y].piece;
+            var pieceOpt = board.board[selectedPos.x, selectedPos.y];
             if (pieceOpt.IsSome() && pieceOpt.Peel().color == whoseMove) {
                 playerAction = PlayerAction.Select;
             }
@@ -70,7 +72,7 @@ namespace controller {
                 case PlayerAction.Move:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     DestroyHighlightCell(resources.storageHighlightCheckCell.transform);
-                    TraceCleaner(board);
+                    TraceCleaner(board.traceBoard);
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
@@ -103,12 +105,12 @@ namespace controller {
             gameStats = GameStats.Mk(whoseMove);
             List<PieceInfo> pieceInfoList = new List<PieceInfo>();
 
-            for (int i = 0; i < board.GetLength(0); i++) {
-                for (int j = 0; j < board.GetLength(1); j++) {
-                    var board = this.board[i,j];
+            for (int i = 0; i < board.board.GetLength(0); i++) {
+                for (int j = 0; j < board.board.GetLength(1); j++) {
+                    var board = this.board.board[i,j];
 
-                    if (this.board[i,j].piece.IsSome()) {
-                        pieceInfoList.Add(PieceInfo.Mk(board.piece.Peel(), i, j));
+                    if (this.board.board[i,j].IsSome()) {
+                        pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
                     }
                 }
             }
@@ -117,12 +119,12 @@ namespace controller {
         }
 
         public void Load(string path) {
-            board = new CellInfo[8,8];
+            board.board = new Option<Piece>[8,8];
 
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {
-                board[pieceInfo.xPos, pieceInfo.yPos].piece = Option<Piece>.Some(pieceInfo.piece);
+                board.board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
             }
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
@@ -146,12 +148,12 @@ namespace controller {
             var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
             var x = pawnPos.x;
             var y = pawnPos.y;
-            Chess.ChangePiece(board, pawnPos, pieceType, whoseMove);
+            Chess.ChangePiece(board.board, pawnPos, pieceType, whoseMove);
             Destroy(piecesMap[x, y]);
-            if (board[x, y].piece.IsNone()) {
+            if (board.board[x, y].IsNone()) {
                 return;
             }
-            var piece = board[x, y].piece.Peel();
+            var piece = board.board[x, y].Peel();
 
             var Obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
             piecesMap[x, y] = ObjectSpawner(Obj, pawnPos, resources.boardObj.transform);
@@ -171,9 +173,9 @@ namespace controller {
             if (sentenced.HasValue) {
                 noTakeMoves = 0;
                 Destroy(piecesMap[sentenced.Value.x, sentenced.Value.y]);
-                board[sentenced.Value.x, sentenced.Value.y].piece = Option<Piece>.None();
+                board.board[sentenced.Value.x, sentenced.Value.y] = Option<Piece>.None();
             }
-            move.Move.MovePiece(start, end, board);
+            move.Move.MovePiece(start, end, board.board);
 
             piecesMap[start.x, start.y].transform.position = new Vector3(
                 end.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
@@ -194,13 +196,13 @@ namespace controller {
                 this.enabled = false;
             }
             if (currentMove.trace.HasValue) {
-                var tracePos = currentMove.trace.Value.pos;
-                board[tracePos.x, tracePos.y].trace = Option<PieceTrace>.Some(currentMove.trace.Value);
+                var trace = currentMove.trace.Value;
+                board.traceBoard[trace.pos.x, trace.pos.y] = Option<PieceTrace>.Some(trace);
             }
         }
 
         private void CheckGameStatus(
-            CellInfo[,] board,
+            FullBoard board,
             PieceColor whoseMove
         ) {
             var gameStatus = Chess.GetGameStatus(
@@ -220,7 +222,7 @@ namespace controller {
                 resources.gameMenu.SetActive(true);
                 this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
-                var kingPos = Check.FindKing(board, whoseMove);
+                var kingPos = Check.FindKing(board.board, whoseMove);
                 var checkCell = resources.checkCell;
                 ObjectSpawner(checkCell, kingPos, resources.storageHighlightCheckCell.transform);
             }
@@ -236,8 +238,8 @@ namespace controller {
 
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    var piece = board[i, j].piece.Peel();
-                    if (board[i, j].piece.IsSome()) {
+                    var piece = board.board[i, j].Peel();
+                    if (board.board[i, j].IsSome()) {
                         var obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
                         var pos = new Vector2Int(i, j);
                         piecesMap[i, j] = ObjectSpawner(obj, pos, resources.boardObj.transform);
@@ -251,7 +253,7 @@ namespace controller {
                 var cellPos = pos.doubleMove.first.to;
                 var parentTransfrom =resources.storageHighlightCells.transform;
 
-                if (board[cellPos.x, cellPos.y].piece.IsSome()) {
+                if (board.board[cellPos.x, cellPos.y].IsSome()) {
                     ObjectSpawner(resources.underAttackCell, cellPos, parentTransfrom);
                 }
                 ObjectSpawner(resources.canMoveCell, cellPos, parentTransfrom);
@@ -281,10 +283,10 @@ namespace controller {
             );
         }
 
-        public static void TraceCleaner(CellInfo[,] board) {
+        public static void TraceCleaner(Option<PieceTrace>[,] board) {
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
-                    board[i,j].trace = Option<PieceTrace>.None();
+                    board[i,j] = Option<PieceTrace>.None();
                 }
             }
         }

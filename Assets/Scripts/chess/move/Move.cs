@@ -8,26 +8,25 @@ using check;
 
 namespace move {
     public static class Move {
-        public static void MovePiece(Vector2Int start, Vector2Int end, CellInfo[,] board) {
+        public static void MovePiece(Vector2Int start, Vector2Int end, Option<Piece>[,] board) {
             board[end.x, end.y] = board[start.x, start.y];
-            board[start.x, start.y].piece = Option<Piece>.None();
-            var piece = board[end.x, end.y].piece.Peel();
+            board[start.x, start.y] = Option<Piece>.None();
+            var piece = board[end.x, end.y].Peel();
             piece.moveCounter++;
-            board[end.x, end.y].piece = Option<Piece>.Some(piece);
+            board[end.x, end.y] = Option<Piece>.Some(piece);
         }
 
         public static List<MoveInfo> GetMoveInfos(
             List<PieceMovement> pieceMovements,
             Vector2Int pos,
-            CellInfo[,] board
+            FullBoard board
         ) {
-            if (board[pos.x, pos.y].piece.IsNone()) {
+            var boardOpt = board.board;
+            if (boardOpt[pos.x, pos.y].IsNone()) {
                 return null;
             }
-
             var moveInfos = new List<MoveInfo>();
-            var boardOpt = Rules.GetOptBoard(board);
-            var targetPiece = board[pos.x, pos.y].piece.Peel();
+            var targetPiece = boardOpt[pos.x, pos.y].Peel();
             var color = targetPiece.color;
             foreach (var pieceMovement in pieceMovements) {
                 var possibleMoveCells = Rules.GetMoves(board, pieceMovement, pos);
@@ -44,17 +43,17 @@ namespace move {
                             moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
                         }
                     }
-                    if (board[cell.x, cell.y].piece.IsSome()) {
+                    if (boardOpt[cell.x, cell.y].IsSome()) {
                         moveInfo.sentenced = cell;
                     }
-                    if (board[cell.x, cell.y].trace.IsSome()){
+                    if (board.traceBoard[cell.x, cell.y].IsSome()){
                         moveInfo.sentenced = new Vector2Int(pos.x, cell.y);
                     }
                     moveInfos.Add(moveInfo);
                 }
             }
             if (targetPiece.type == PieceType.King) {
-                var rightCell = GetLastCellOnLine(board, Linear.Mk(new Vector2Int(0, 1), -1), pos);
+                var rightCell = GetLastCellOnLine(boardOpt, Linear.Mk(new Vector2Int(0, 1), -1), pos);
 
                 if (boardOpt[rightCell.x, rightCell.y].IsSome()) {
                     var piece = boardOpt[rightCell.x, rightCell.y].Peel();
@@ -63,9 +62,9 @@ namespace move {
                             MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2)),
                             MoveData.Mk(rightCell, new Vector2Int(pos.x, pos.y + 1))
                         );
-                        var checkInfos = Check.GetCheckInfo(board, color, doubleMove.first.to);
+                        var checkInfos = Check.GetCheckInfo(boardOpt, color, doubleMove.first.to);
                         var secondMove = doubleMove.second.Value.to;
-                        checkInfos.AddRange(Check.GetCheckInfo(board, color, secondMove));
+                        checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, secondMove));
                         if (!Check.IsCheck(checkInfos)) {
                             moveInfos.Add(MoveInfo.Mk(doubleMove));
                         }
@@ -75,7 +74,7 @@ namespace move {
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
-                    if (moveTo.x == 0 || moveTo.x == board.GetLength(1) - 1) {
+                    if (moveTo.x == 0 || moveTo.x == board.board.GetLength(1) - 1) {
                         var promotion = info;
                         promotion.pawnPromotion = true;
                         moveInfos.Remove(info);
@@ -88,12 +87,11 @@ namespace move {
         }
 
         public static Vector2Int GetLastCellOnLine(
-            CellInfo[,] board,
+            Option<Piece>[,] board,
             Linear linear,
             Vector2Int startPos
         ) {
-            var boardOpt = Rules.GetOptBoard(board);
-            int length = Board.GetLinearLength(startPos, linear, boardOpt);
+            int length = Board.GetLinearLength(startPos, linear, board);
             var lastPos = startPos + linear.dir * length;
             return lastPos;
         }
