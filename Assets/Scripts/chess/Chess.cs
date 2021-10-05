@@ -108,7 +108,7 @@ namespace chess {
                     var circular = defenseMovement.movement.movement.circular.Value;
                     for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                         angle = startAngle * i * Mathf.PI / 180;
-                        var cell = Board.GetCircularMove(target, circular, angle, boardOpt);
+                        var cell = Board.GetCircularPoint(target, circular, angle, boardOpt);
                         if (cell.HasValue && IsPointOnSegment(attackPos, lastPos, cell.Value)) {
                             var moveData = MoveData.Mk(target, cell.Value);
                             var doubleMove = DoubleMove.MkSingleMove(moveData);

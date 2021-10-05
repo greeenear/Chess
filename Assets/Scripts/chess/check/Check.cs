@@ -72,7 +72,7 @@ namespace check {
 
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = StartAngle.Knight * i * Mathf.PI / 180;
-                var cell = Board.GetCircularMove<Piece>(target, circular, angle, board);
+                var cell = Board.GetCircularPoint(target, circular, angle, board);
                 if (!cell.HasValue) {
                     continue;
                 }
@@ -82,8 +82,8 @@ namespace check {
                 }
                 var piece = cellOpt.Peel();
                 var targetPiece = board[target.x, target.y].Peel();
-                var type = targetPiece.type;
                 if (piece.color != targetPiece.color) {
+                    var type = piece.type;
                     var attackMovements = MovementEngine.GetPieceMovements(board, type, target);
                     foreach (var movement in attackMovements) {
                         var circle = Movement.Circular(Circular.Mk(radius));
@@ -123,7 +123,7 @@ namespace check {
                 }
                 if (-pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
                     var fixedMovement = FixedMovement.Mk(pieceMovement.movement.movement, target);
-                    attackMovement = PieceMovement.Mk(fixedMovement, MovementType.Attack);
+                    attackMovement = PieceMovement.Linear(fixedMovement, MovementType.Attack);
                     isMovementContained = true;
                     break;
                 }
@@ -135,7 +135,6 @@ namespace check {
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
             var attackLength = attackMovement.movement.movement.linear.Value.length;
-            attackLength = Board.GetMaxLength(board, attackLength);
             var attackMovementType = attackMovement.movementType;
             if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));

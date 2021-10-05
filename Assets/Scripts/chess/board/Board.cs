@@ -60,10 +60,9 @@ namespace board {
             Linear linear,
             Option<T>[,] board
         ) {
-            var maxLength = GetMaxLength(board, linear.length);
 
             int length = 0;
-            for (int i = 1; i <= maxLength; i++) {
+            for (int i = 1; i <= linear.length; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
 
                 if (!Board.OnBoard(pos,new Vector2Int(board.GetLength(0), board.GetLength(1)))) {
@@ -81,10 +80,10 @@ namespace board {
             return length;
         }
 
-        public static Vector2Int? GetCircularMove<T>(
+        public static Vector2Int? GetCircularPoint<T>(
             Vector2Int center,
             Circular circular,
-            float startAngle,
+            float angle,
             Option<T>[,] board
         ) {
             Vector2Int movePos = new Vector2Int();
@@ -92,8 +91,8 @@ namespace board {
             var offset = new Vector2(0.5f + center.x, 0.5f + center.y);
 
             var pos = new Vector2(
-                Mathf.Sin(startAngle) * circular.radius,
-                Mathf.Cos(startAngle) * circular.radius
+                Mathf.Sin(angle) * circular.radius,
+                Mathf.Cos(angle) * circular.radius
             );
             pos = pos + offset;
 
@@ -109,17 +108,6 @@ namespace board {
             }
 
             return null;
-        }
-
-        public static int GetMaxLength<T>(Option<T>[,] board, int length) {
-            int maxBoardSize = Mathf.Max(board.GetLength(1), board.GetLength(0));
-            if (length < 0) {
-                length = maxBoardSize;
-            } else if (length > maxBoardSize) {
-                length = maxBoardSize;
-            }
-
-            return length;
         }
     }
 }

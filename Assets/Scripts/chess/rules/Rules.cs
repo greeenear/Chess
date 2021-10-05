@@ -39,8 +39,25 @@ namespace rules {
         public MovementType movementType;
         public Option<int> traceIndex;
 
-        public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
+        public static PieceMovement Linear(FixedMovement movement, MovementType movementType) {
             return new PieceMovement { movement = movement, movementType = movementType };
+        }
+
+        public static PieceMovement Linear(
+            Vector2Int dir,
+            int length,
+            Vector2Int pos,
+            MovementType type
+        ) {
+            var linear = board.Linear.Mk(dir, length);
+            var fixedMovement = FixedMovement.Mk(Movement.Linear(linear), pos);
+            return new PieceMovement { movement = fixedMovement, movementType = type };
+        }
+
+        public static PieceMovement Circular(float radius, Vector2Int pos, MovementType type) {
+            var circular = board.Circular.Mk(radius);
+            var fixedMovement = FixedMovement.Mk(Movement.Circular(circular), pos);
+            return new PieceMovement { movement = fixedMovement, movementType = type };
         }
 
     }
@@ -110,7 +127,7 @@ namespace rules {
             float angle = 0;
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = startAngle * i * Mathf.PI / 180;
-                var cell = Board.GetCircularMove<Piece>(pos, circlular, angle, board);
+                var cell = Board.GetCircularPoint(pos, circlular, angle, board);
                 if (!cell.HasValue) {
                     continue;
                 }
