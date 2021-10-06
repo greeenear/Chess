@@ -120,7 +120,8 @@ namespace controller {
 
         public void Load(string path) {
             board.board = new Option<Piece>[8,8];
-
+            possibleMoves.Clear();
+            DestroyHighlightCell(resources.storageHighlightCells.transform);
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfo) {

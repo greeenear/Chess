@@ -7,6 +7,7 @@ using check;
 using System.Collections.Generic;
 using System;
 using movement;
+using math;
 
 namespace chess {
     public enum GameStatus {
@@ -91,13 +92,13 @@ namespace chess {
             var linearMovement = checkInfo.attackInfo.movement.linear;
             var movementList = new List<MoveInfo>();
             var attackPos = checkInfo.attackInfo.startPos;
-            var lastPos = new Vector2Int();
+            var lastAttackPos = new Vector2Int();
 
             if (linearMovement.HasValue) {
                 var dir = -linearMovement.Value.dir;
                 var linear = Linear.Mk(dir, linearMovement.Value.length);
                 var length = Board.GetLinearLength(attackPos, linear, boardOpt);
-                lastPos = attackPos + linear.dir * length;
+                lastAttackPos = attackPos + linear.dir * length;
             }
             var pieceType = boardOpt[target.x, target.y].Peel().type;
             var defenseMovements = MovementEngine.GetPieceMovements(boardOpt, pieceType, target);
@@ -109,7 +110,10 @@ namespace chess {
                     for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                         angle = startAngle * i * Mathf.PI / 180;
                         var cell = Board.GetCircularPoint(target, circular, angle, boardOpt);
-                        if (cell.HasValue && IsPointOnSegment(attackPos, lastPos, cell.Value)) {
+                        if (!cell.HasValue) {
+                            continue;
+                        }
+                        if (math.Math.IsPointOnSegment(attackPos, lastAttackPos, cell.Value)) {
                             var moveData = MoveData.Mk(target, cell.Value);
                             var doubleMove = DoubleMove.MkSingleMove(moveData);
                             movementList.Add(MoveInfo.Mk(doubleMove));
@@ -121,16 +125,24 @@ namespace chess {
                     var length = Board.GetLinearLength(target, linear, board.board);
                     var lastDefPos = target + linear.dir * length;
 
-                    var n1 = GetNormalVector(attackPos, lastPos);
-                    var n2 = GetNormalVector(target, lastDefPos);
+                    var n1 = math.Math.GetNormalVector(attackPos, lastAttackPos);
+                    var n2 = math.Math.GetNormalVector(target, lastDefPos);
                     if (!n1.HasValue || !n2.HasValue) {
                         continue;
                     }
-                    var point = GetSegmentsIntersection(n1.Value, n2.Value, attackPos, target);
+                    var point = math.Math.GetSegmentsIntersection(
+                        n1.Value,
+                        n2.Value,
+                        attackPos,
+                        target
+                    );
                     if (!point.HasValue) {
                         continue;
                     }
-                    if (!IsPointOnSegment(target, lastDefPos, point.Value)) {
+                    if (!math.Math.IsPointOnSegment(attackPos, lastAttackPos, point.Value)) {
+                        continue;
+                    }
+                    if (!math.Math.IsPointOnSegment(target, lastDefPos, point.Value)) {
                         continue;
                     }
                     if (point.HasValue) {
@@ -154,50 +166,6 @@ namespace chess {
                 }
             }
             return movementList;
-        }
-
-        public static Vector2Int? GetNormalVector(Vector2Int firstPoint, Vector2Int secondPoint) {
-            if (firstPoint == secondPoint) {
-                Debug.Log(firstPoint);
-                Debug.Log(secondPoint);
-                return null;
-            }
-            var a = secondPoint.y - firstPoint.y;
-            var b = secondPoint.x - firstPoint.x;
-            return new Vector2Int(a, b);
-        }
-
-        public static Vector2Int? GetSegmentsIntersection(
-            Vector2Int n1,
-            Vector2Int n2,
-            Vector2Int p1,
-            Vector2Int p2
-        ) {
-            if (n2.x * n1.y - n1.x * n2.y == 0) {
-                return null;
-            }
-            var y = (n1.x * n2.x * p2.x - n1.x * n2.y * p2.y -
-                n2.x * n1.x * p1.x + n2.x * n1.y * p1.y) / (n2.x * n1.y - n1.x * n2.y);
-            var x = (n1.x * p1.x + n1.y * y - n1.y * p1.y) / n1.x;
-            return new Vector2Int(x, y);
-        }
-
-        public static bool IsPointOnSegment(Vector2Int start, Vector2Int end, Vector2Int point) {
-            var x = point.x;
-            var y = point.y;
-
-            double a = end.y - start.y;
-            double b = start.x - end.x;
-            double c = - a * start.x - b * start.y;
-            if (Math.Abs(a * point.x + b * point.y + c) > 0) {
-                return false;
-            }
-            if ((x >= start.x && x <= end.x || x <= start.x && x >= end.x) 
-                && (y >= start.y && y <= end.y || y <= start.y && y >= end.y)) {
-                return true;
-            } else {
-                return false;
-            }
         }
 
         public static List<T> GetListsIntersection<T>(
