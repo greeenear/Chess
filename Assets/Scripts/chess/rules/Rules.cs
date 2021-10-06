@@ -39,7 +39,7 @@ namespace rules {
         public MovementType movementType;
         public Option<int> traceIndex;
 
-        public static PieceMovement Linear(FixedMovement movement, MovementType movementType) {
+        public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
             return new PieceMovement { movement = movement, movementType = movementType };
         }
 

@@ -123,7 +123,7 @@ namespace check {
                 }
                 if (-pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
                     var fixedMovement = FixedMovement.Mk(pieceMovement.movement.movement, target);
-                    attackMovement = PieceMovement.Linear(fixedMovement, MovementType.Attack);
+                    attackMovement = PieceMovement.Mk(fixedMovement, MovementType.Attack);
                     isMovementContained = true;
                     break;
                 }

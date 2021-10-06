@@ -120,10 +120,21 @@ namespace chess {
                     var linear = defenseMovement.movement.movement.linear.Value;
                     var length = Board.GetLinearLength(target, linear, board.board);
                     var lastDefPos = target + linear.dir * length;
-                    var point = GetSegmentsIntersection(attackPos, lastPos, target, lastDefPos);
+
+                    var n1 = GetNormalVector(attackPos, lastPos);
+                    var n2 = GetNormalVector(target, lastDefPos);
+                    if (!n1.HasValue || !n2.HasValue) {
+                        continue;
+                    }
+                    var point = GetSegmentsIntersection(n1.Value, n2.Value, attackPos, target);
+                    if (!point.HasValue) {
+                        continue;
+                    }
+                    if (!IsPointOnSegment(target, lastDefPos, point.Value)) {
+                        continue;
+                    }
                     if (point.HasValue) {
                         var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(target, point.Value));
-
                         if (defenseMovement.movementType == MovementType.Attack) {
                             var pieceOpt = board.board[point.Value.x, point.Value.y];
                             if (pieceOpt.IsSome()) {
@@ -145,49 +156,30 @@ namespace chess {
             return movementList;
         }
 
-        public static Vector2Int? GetSegmentsIntersection(
-            Vector2Int start1,
-            Vector2Int end1,
-            Vector2Int start2,
-            Vector2Int end2
-        ) {
-            int x = 0;
-            int y = 0;
-            int a = 0;
-            int b = 0;
-            int c = 0;
-            int d = 0;
-            if (end2.x - start2.x == 0 && end1.x - start1.x == 0) {
+        public static Vector2Int? GetNormalVector(Vector2Int firstPoint, Vector2Int secondPoint) {
+            if (firstPoint == secondPoint) {
+                Debug.Log(firstPoint);
+                Debug.Log(secondPoint);
                 return null;
-            } else if (end2.x - start2.x == 0) {
-                x = start2.x;
-                a = (end1.y - start1.y) / (end1.x - start1.x);
-                b = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
-                y = a * x + b;
-            } else if (end1.x - start1.x == 0) {
-                x = start1.x;
-                c = (end2.y - start2.y) / (end2.x - start2.x);
-                d = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
-                y = c * x + d;
-            } else {
-                a = (end1.y - start1.y) / (end1.x - start1.x);
-                b = start1.y - (end1.y - start1.y) / (end1.x - start1.x) * start1.x;
-                c = (end2.y - start2.y) / (end2.x - start2.x);
-                d = start2.y - (end2.y - start2.y) / (end2.x - start2.x) * start2.x;
-                if (a - c == 0) {
-                    return null;
-                }
-                x = (d - b) / (a - c);
-                if (x != 1.0*(d - b) / (a - c)) {
-                    return null;
-                }
-                y = a * x + b;
             }
-            var point = new Vector2Int(x, y);
-            if (IsPointOnSegment(start2, end2, point) && IsPointOnSegment(start1, end1, point)) {
-                return point;
+            var a = secondPoint.y - firstPoint.y;
+            var b = secondPoint.x - firstPoint.x;
+            return new Vector2Int(a, b);
+        }
+
+        public static Vector2Int? GetSegmentsIntersection(
+            Vector2Int n1,
+            Vector2Int n2,
+            Vector2Int p1,
+            Vector2Int p2
+        ) {
+            if (n2.x * n1.y - n1.x * n2.y == 0) {
+                return null;
             }
-            return null;
+            var y = (n1.x * n2.x * p2.x - n1.x * n2.y * p2.y -
+                n2.x * n1.x * p1.x + n2.x * n1.y * p1.y) / (n2.x * n1.y - n1.x * n2.y);
+            var x = (n1.x * p1.x + n1.y * y - n1.y * p1.y) / n1.x;
+            return new Vector2Int(x, y);
         }
 
         public static bool IsPointOnSegment(Vector2Int start, Vector2Int end, Vector2Int point) {
