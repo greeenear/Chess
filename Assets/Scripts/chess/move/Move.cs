@@ -82,18 +82,7 @@ namespace move {
                     moveInfos.Add(moveInfo);
                 }
             }
-            if (targetPiece.type == PieceType.King) {
-                var rightCell = GetLastCellOnLine(boardOpt, Linear.Mk(Direction.right, 5), pos);
-                var leftCell = GetLastCellOnLine(boardOpt, Linear.Mk(Direction.left, 5), pos);
-                var castlingMove = GetCastlingMove(boardOpt, rightCell, pos);
-                if (castlingMove.HasValue) {
-                    moveInfos.Add(castlingMove.Value);
-                }
-                castlingMove = GetCastlingMove(boardOpt, leftCell, pos);
-                if (castlingMove.HasValue) {
-                    moveInfos.Add(castlingMove.Value);
-                }
-            }
+
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
@@ -107,42 +96,6 @@ namespace move {
             }
 
             return moveInfos;
-        }
-
-        public static MoveInfo? GetCastlingMove(
-            Option<Piece>[,] board,
-            Vector2Int lastCellPos,
-            Vector2Int pos
-        ) {
-            if (board[lastCellPos.x, lastCellPos.y].IsSome()) {
-                var piece = board[lastCellPos.x, lastCellPos.y].Peel();
-                var color = piece.color;
-                if (piece.type == PieceType.Rook && piece.moveCounter == 0) {
-                    var dir = (lastCellPos.y - pos.y) / Mathf.Abs(lastCellPos.y - pos.y);
-                    var doubleMove = DoubleMove.MkDoubleMove(
-                        MoveData.Mk(pos, new Vector2Int(pos.x, pos.y + 2 * dir)),
-                        MoveData.Mk(lastCellPos, new Vector2Int(pos.x, pos.y + 1 * dir))
-                    );
-                    var checkInfos = Check.GetCheckInfo(board, color, doubleMove.first.to);
-                    var secondMove = doubleMove.second.Value.to;
-                    checkInfos.AddRange(Check.GetCheckInfo(board, color, secondMove));
-                    checkInfos.AddRange(Check.GetCheckInfo(board, color, doubleMove.first.from));
-                    if (!Check.IsCheck(checkInfos)) {
-                        return MoveInfo.Mk(doubleMove);
-                    }
-                }
-            }
-            return null;
-        }
-
-        public static Vector2Int GetLastCellOnLine(
-            Option<Piece>[,] board,
-            Linear linear,
-            Vector2Int startPos
-        ) {
-            int length = Board.GetLinearLength(startPos, linear, board);
-            var lastPos = startPos + linear.dir * length;
-            return lastPos;
         }
     }
 }
