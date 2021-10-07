@@ -38,6 +38,7 @@ namespace rules {
         public FixedMovement movement;
         public MovementType movementType;
         public Option<int> traceIndex;
+        public bool isFragile;
 
         public static PieceMovement Mk(FixedMovement movement, MovementType movementType) {
             return new PieceMovement { movement = movement, movementType = movementType };
@@ -176,6 +177,16 @@ namespace rules {
                 }
             }
             return maxLength;
+        }
+
+        public static Vector2Int GetLastCellOnLine(
+            Option<Piece>[,] board,
+            Linear linear,
+            Vector2Int startPos
+        ) {
+            int length = Board.GetLinearLength(startPos, linear, board);
+            var lastPos = startPos + linear.dir * length;
+            return lastPos;
         }
     }
 }

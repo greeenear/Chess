@@ -3,7 +3,6 @@ using UnityEngine;
 using board;
 using rules;
 using option;
-using movement;
 using check;
 
 namespace move {
@@ -71,6 +70,13 @@ namespace move {
                         if (tracePos != cell) {
                             var pieceType = targetPiece.type;
                             moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
+                        }
+                        if (pieceMovement.isFragile) {
+                            var doubleMove = DoubleMove.MkDoubleMove(
+                                MoveData.Mk(pos, new Vector2Int(pos.x, tracePos.y)),
+                                MoveData.Mk(new Vector2Int(7,7), new Vector2Int(pos.x, 5))
+                            );
+                            moveInfo = MoveInfo.Mk(doubleMove);
                         }
                     }
                     if (boardOpt[cell.x, cell.y].IsSome()) {

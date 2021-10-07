@@ -5,9 +5,7 @@ using move;
 using board;
 using check;
 using System.Collections.Generic;
-using System;
 using movement;
-using math;
 
 namespace chess {
     public enum GameStatus {
@@ -38,10 +36,10 @@ namespace chess {
             }
 
             foreach (var checkInfo in checkInfos) {
-                if (checkInfo.coveringPiece == null) {
+                if (!checkInfo.coveringPos.HasValue) {
                     return GetСoveringMoves(targetPos, board, checkInfo);
                 }
-                if (checkInfo.coveringPiece == targetPos && !isCheck) {
+                if (checkInfo.coveringPos == targetPos && !isCheck) {
                     return GetNotOpeningMoves(targetPos, board, checkInfo);
                 }
             }
@@ -168,23 +166,6 @@ namespace chess {
                 }
             }
             return movementList;
-        }
-
-        public static List<T> GetListsIntersection<T>(
-            List<T> firstList,
-            List<T> secondList,
-            Func<T, T, bool> comparator
-        ) {
-            var newList = new List<T>();
-            foreach (var first in firstList) {
-                foreach (var second in secondList) {
-                    if (comparator(first, second)) {
-                        newList.Add(first);
-                    }
-                }
-            }
-
-            return newList;
         }
 
         public static List<MoveInfo> GetNotOpeningMoves(

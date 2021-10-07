@@ -9,13 +9,10 @@ using movement;
 namespace check {
     public struct CheckInfo {
         public FixedMovement attackInfo;
-        public Vector2Int? coveringPiece;
+        public Vector2Int? coveringPos;
 
         public static CheckInfo Mk(FixedMovement attackInfo) {
             return new CheckInfo { attackInfo = attackInfo };
-        }
-        public static CheckInfo Mk(FixedMovement attackInfo, Vector2Int coveringPiece) {
-            return new CheckInfo { attackInfo = attackInfo, coveringPiece = coveringPiece };
         }
     }
 
@@ -182,7 +179,7 @@ namespace check {
                     }
                 }
                 if (coveringPiecesCounter == 1) {
-                    checkInfo.Add(CheckInfo.Mk(info, coveringPos));
+                    checkInfo.Add(new CheckInfo { attackInfo = info, coveringPos = coveringPos });
                 }
             }
 
@@ -206,7 +203,7 @@ namespace check {
 
         public static bool IsCheck(List<CheckInfo> checkInfos) {
             foreach (var info in checkInfos) {
-                if (info.coveringPiece == null) {
+                if (!info.coveringPos.HasValue) {
                     return true;
                 }
             }

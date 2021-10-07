@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using option;
 
@@ -40,10 +39,6 @@ namespace board {
         public static FixedMovement Mk(Movement movement, Vector2Int startPos) {
             return new FixedMovement { movement = movement, startPos = startPos };
         }
-        public static FixedMovement Linearr(Vector2Int movement, Vector2Int startPos, int length) {
-            var a = Movement.Linear(Linear.Mk(movement, length));
-            return new FixedMovement { movement = a, startPos = startPos };
-        }
     }
 
     public static class Board {
@@ -51,7 +46,6 @@ namespace board {
             if (pos.x < 0 || pos.x > boardSize.x - 1 || pos.y < 0 || pos.y > boardSize.y - 1) {
                 return false;
             }
-
             return true;
         }
 
@@ -64,7 +58,6 @@ namespace board {
             int length = 0;
             for (int i = 1; i <= linear.length; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
-
                 if (!Board.OnBoard(pos,new Vector2Int(board.GetLength(0), board.GetLength(1)))) {
                     break;
                 }
@@ -76,7 +69,6 @@ namespace board {
                     length++;
                 }
             }
-
             return length;
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using rules;
@@ -30,29 +31,26 @@ namespace movement {
             var attack = MovementType.Attack;
             var move = MovementType.Move;
             var movements = new List<PieceMovement>();
-            int max = Mathf.Max(board.GetLength(1), board.GetLength(0));
+            int maxLength = Mathf.Max(board.GetLength(1), board.GetLength(0));
             switch (pieceType) {
                 case PieceType.Pawn:
+                    var moveMovement = new PieceMovement();
                     if (piece.color == PieceColor.White) {
                         movements.Add(PieceMovement.Linear(Direction.downRight, 1, pos, attack));
                         movements.Add(PieceMovement.Linear(Direction.downLeft, 1, pos, attack));
-                        if (piece.moveCounter == 0) {
-                            var movement = PieceMovement.Linear(Direction.down, 2, pos, move);
-                            movement.traceIndex = Option<int>.Some(1);
-                            movements.Add(movement);
-                        } else {
-                            movements.Add(PieceMovement.Linear(Direction.down, 1, pos, move));
-                        }
+                        moveMovement = PieceMovement.Linear(Direction.down, 1, pos, move);
                     } else if (piece.color == PieceColor.Black) {
                         movements.Add(PieceMovement.Linear(Direction.upRight, 1, pos, attack));
                         movements.Add(PieceMovement.Linear(Direction.upLeft, 1, pos, attack));
-                        if (piece.moveCounter == 0) {
-                            var movement = PieceMovement.Linear(Direction.up, 2, pos, move);
-                            movement.traceIndex = Option<int>.Some(1);
-                            movements.Add(movement);
-                        } else {
-                            movements.Add(PieceMovement.Linear(Direction.up, 1, pos, move));
-                        }
+                        moveMovement = PieceMovement.Linear(Direction.up, 1, pos, move);
+                    }
+                    if (piece.moveCounter == 0) {
+                        var dir = moveMovement.movement.movement.linear.Value.dir;
+                        moveMovement = PieceMovement.Linear(dir, 2, pos, move);
+                        moveMovement.traceIndex = Option<int>.Some(1);
+                        movements.Add(moveMovement);
+                    } else {
+                        movements.Add(moveMovement);
                     }
                     break;
                 case PieceType.Bishop:
@@ -72,24 +70,23 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, attack));
                     movements.Add(PieceMovement.Circular(1f, pos, move));
                     if (piece.moveCounter == 0) {
-                        var rightCell = Rules.GetLastCellOnLine(board, Linear.Mk(Direction.right, maxLength), pos);
+                        var rightCell = Rules.GetLastCellOnLine(
+                            board,
+                            Linear.Mk(Direction.right, maxLength),
+                            pos
+                        );
                         if (board[rightCell.x, rightCell.y].IsSome()) {
                             var lastPiece = board[rightCell.x, rightCell.y].Peel();
                             if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
-                                var rightMovement = PieceMovement.Linear(Direction.right, 2, pos, move);
-                                rightMovement.isFragile = true;
-                                rightMovement.traceIndex = Option<int>.Some(2);
-                                movements.Add(rightMovement);
+                                var movement = PieceMovement.Linear(Direction.right, 2, pos, move);
+                                movement.isFragile = true;
+                                movement.traceIndex = Option<int>.Some(2);
+                                movements.Add(movement);
                             }
                         }
-                        //var leftCell = GetLastCellOnLine(boardOpt, Linear.Mk(Direction.left, max), pos);
-                        //var rightMovement = PieceMovement.Linear(Direction.right, 2, pos, move);
                         var leftMovement = PieceMovement.Linear(Direction.left, 2, pos, move);
-                       // rightMovement.traceIndex = Option<int>.Some(2);
                         leftMovement.traceIndex = Option<int>.Some(2);
-                        //rightMovement.isFragile = true;
                         leftMovement.isFragile = true;
-                        //movements.Add(rightMovement);
                         movements.Add(leftMovement);
                     }
                     break;
