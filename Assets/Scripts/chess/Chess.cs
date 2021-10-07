@@ -113,7 +113,8 @@ namespace chess {
                         if (!cell.HasValue) {
                             continue;
                         }
-                        if (math.Math.IsPointOnSegment(attackPos, lastAttackPos, cell.Value)) {
+                        var segment = math.Math.Segment.Mk(attackPos, lastAttackPos);
+                        if (math.Math.IsPointOnSegment(segment, cell.Value)) {
                             var moveData = MoveData.Mk(target, cell.Value);
                             var doubleMove = DoubleMove.MkSingleMove(moveData);
                             movementList.Add(MoveInfo.Mk(doubleMove));
@@ -124,25 +125,26 @@ namespace chess {
                     var linear = defenseMovement.movement.movement.linear.Value;
                     var length = Board.GetLinearLength(target, linear, board.board);
                     var lastDefPos = target + linear.dir * length;
-
-                    var n1 = math.Math.GetNormalVector(attackPos, lastAttackPos);
-                    var n2 = math.Math.GetNormalVector(target, lastDefPos);
+                    var firstSegment = math.Math.Segment.Mk(attackPos, lastAttackPos);
+                    var secondSegment = math.Math.Segment.Mk(target, lastDefPos);
+                    var n1 = math.Math.GetNormalVector(firstSegment);
+                    var n2 = math.Math.GetNormalVector(secondSegment);
                     if (!n1.HasValue || !n2.HasValue) {
                         continue;
                     }
+                    var firstLineCoefficients = math.Math.GetLineCoefficients(n1.Value, attackPos);
+                    var secondLineCoefficients = math.Math.GetLineCoefficients(n2.Value, target);
                     var point = math.Math.GetSegmentsIntersection(
-                        n1.Value,
-                        n2.Value,
-                        attackPos,
-                        target
+                        firstLineCoefficients,
+                        secondLineCoefficients
                     );
                     if (!point.HasValue) {
                         continue;
                     }
-                    if (!math.Math.IsPointOnSegment(attackPos, lastAttackPos, point.Value)) {
+                    if (!math.Math.IsPointOnSegment(firstSegment, point.Value)) {
                         continue;
                     }
-                    if (!math.Math.IsPointOnSegment(target, lastDefPos, point.Value)) {
+                    if (!math.Math.IsPointOnSegment(secondSegment, point.Value)) {
                         continue;
                     }
                     if (point.HasValue) {
