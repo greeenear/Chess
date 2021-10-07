@@ -56,42 +56,13 @@ namespace movement {
                     }
                     break;
                 case PieceType.Bishop:
-                    movements.Add(PieceMovement.Linear(Direction.downRight, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.downLeft, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.upRight, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.upLeft, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.downRight, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.downLeft, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.upRight, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.upLeft, max, pos, move));
+                    InsertMovements(movements, maxLength, pos, (i, j) => i == 0 || j == 0);
                     break;
                 case PieceType.Rook:
-                    movements.Add(PieceMovement.Linear(Direction.down, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.up, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.right, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.left, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.down, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.up, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.right, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.left, max, pos, move));
+                    InsertMovements(movements, maxLength, pos, (i, j) => i != 0 && j != 0);
                     break;
                 case PieceType.Queen:
-                    movements.Add(PieceMovement.Linear(Direction.downRight, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.downLeft, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.upRight, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.upLeft, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.downRight, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.downLeft, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.upRight, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.upLeft, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.down, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.up, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.right, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.left, max, pos, attack));
-                    movements.Add(PieceMovement.Linear(Direction.down, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.up, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.right, max, pos, move));
-                    movements.Add(PieceMovement.Linear(Direction.left, max, pos, move));
+                    InsertMovements(movements, maxLength, pos, (i, j) => false);
                     break;
                 case PieceType.Knight:
                     movements.Add(PieceMovement.Circular(2f, pos, attack));
@@ -100,9 +71,48 @@ namespace movement {
                 case PieceType.King:
                     movements.Add(PieceMovement.Circular(1f, pos, attack));
                     movements.Add(PieceMovement.Circular(1f, pos, move));
+                    if (piece.moveCounter == 0) {
+                        var rightCell = Rules.GetLastCellOnLine(board, Linear.Mk(Direction.right, maxLength), pos);
+                        if (board[rightCell.x, rightCell.y].IsSome()) {
+                            var lastPiece = board[rightCell.x, rightCell.y].Peel();
+                            if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
+                                var rightMovement = PieceMovement.Linear(Direction.right, 2, pos, move);
+                                rightMovement.isFragile = true;
+                                rightMovement.traceIndex = Option<int>.Some(2);
+                                movements.Add(rightMovement);
+                            }
+                        }
+                        //var leftCell = GetLastCellOnLine(boardOpt, Linear.Mk(Direction.left, max), pos);
+                        //var rightMovement = PieceMovement.Linear(Direction.right, 2, pos, move);
+                        var leftMovement = PieceMovement.Linear(Direction.left, 2, pos, move);
+                       // rightMovement.traceIndex = Option<int>.Some(2);
+                        leftMovement.traceIndex = Option<int>.Some(2);
+                        //rightMovement.isFragile = true;
+                        leftMovement.isFragile = true;
+                        //movements.Add(rightMovement);
+                        movements.Add(leftMovement);
+                    }
                     break;
             }
             return movements;
+        }
+
+        public static void InsertMovements(
+            List<PieceMovement> movements,
+            int maxLength,
+            Vector2Int pos,
+            Func<int, int, bool> comparator
+        ) {
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    if (i == 0 && j == 0 || comparator(i, j)) {
+                        continue;
+                    }
+                    var dir = new Vector2Int(i,j);
+                    movements.Add(PieceMovement.Linear(dir, maxLength, pos, MovementType.Attack));
+                    movements.Add(PieceMovement.Linear(dir, maxLength, pos, MovementType.Move));
+                }
+            }
         }
     }
 }
