@@ -70,11 +70,10 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, attack));
                     movements.Add(PieceMovement.Circular(1f, pos, move));
                     if (piece.moveCounter == 0) {
-                        var rightCell = Rules.GetLastCellOnLine(
-                            board,
-                            Linear.Mk(Direction.right, maxLength),
-                            pos
-                        );
+                        var rightLinear = Linear.Mk(Direction.right, maxLength);
+                        var rightCell = Rules.GetLastCellOnLine(board, rightLinear, pos);
+                        var LeftLinear = Linear.Mk(Direction.left, maxLength);
+                        var leftCell = Rules.GetLastCellOnLine(board, LeftLinear, pos);
                         if (board[rightCell.x, rightCell.y].IsSome()) {
                             var lastPiece = board[rightCell.x, rightCell.y].Peel();
                             if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
@@ -84,10 +83,15 @@ namespace movement {
                                 movements.Add(movement);
                             }
                         }
-                        var leftMovement = PieceMovement.Linear(Direction.left, 2, pos, move);
-                        leftMovement.traceIndex = Option<int>.Some(2);
-                        leftMovement.isFragile = true;
-                        movements.Add(leftMovement);
+                        if (board[leftCell.x, leftCell.y].IsSome()) {
+                            var lastPiece = board[leftCell.x, leftCell.y].Peel();
+                            if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
+                                var movement = PieceMovement.Linear(Direction.left, 2, pos, move);
+                                movement.isFragile = true;
+                                movement.traceIndex = Option<int>.Some(2);
+                                movements.Add(movement);
+                            }
+                        }
                     }
                     break;
             }
