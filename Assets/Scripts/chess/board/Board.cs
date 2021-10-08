@@ -1,5 +1,6 @@
 using UnityEngine;
 using option;
+using System;
 
 namespace board {
     public struct Circular {
@@ -54,7 +55,6 @@ namespace board {
             Linear linear,
             Option<T>[,] board
         ) {
-
             int length = 0;
             for (int i = 1; i <= linear.length; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
@@ -87,18 +87,10 @@ namespace board {
                 Mathf.Cos(angle) * circular.radius
             );
             pos = pos + offset;
-
-            if (pos.x < 0) {
-                pos.x--;
-            }
-            if (pos.y < 0) {
-                pos.y--;
-            }
-            movePos = new Vector2Int((int)pos.x, (int)pos.y);
+            movePos = new Vector2Int((int)Math.Floor(pos.x), (int)Math.Floor(pos.y));
             if (Board.OnBoard(movePos, boardSize)) {
                 return movePos;
             }
-
             return null;
         }
     }

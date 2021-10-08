@@ -133,11 +133,10 @@ namespace rules {
                     continue;
                 }
                 var cellOpt = board[cell.Value.x, cell.Value.y];
-                if (cellOpt.IsNone()) {
-                    canMovePositions.Add(cell.Value);
-                } else if (cellOpt.Peel().color != board[pos.x, pos.y].Peel().color) {
-                    canMovePositions.Add(cell.Value);
+                if (cellOpt.IsSome() && cellOpt.Peel().color == board[pos.x, pos.y].Peel().color) {
+                    continue;
                 }
+                canMovePositions.Add(cell.Value);
             }
             return canMovePositions;
         }
@@ -170,13 +169,9 @@ namespace rules {
                     if (lastPiece.whoLeft == targetPiece.type) {
                         return maxLength;
                     }
-                } else if (pieceOpt.IsNone()) {
-                    return maxLength - 1;
-                } else {
-                    return maxLength - 1;
                 }
             }
-            return maxLength;
+            return maxLength - 1;
         }
 
         public static Vector2Int GetLastCellOnLine(

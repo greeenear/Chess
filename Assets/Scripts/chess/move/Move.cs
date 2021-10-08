@@ -66,21 +66,20 @@ namespace move {
                     };
                     if (pieceMovement.traceIndex.IsSome()) {
                         var dir = pieceMovement.movement.movement.linear.Value.dir;
-                        var startPos = pieceMovement.movement.startPos;
-                        var tracePos = startPos + dir * pieceMovement.traceIndex.Peel();
+                        var tracePos = pos + dir * pieceMovement.traceIndex.Peel();
                         if (tracePos != cell) {
                             var pieceType = targetPiece.type;
                             moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
                         }
                         if (pieceMovement.isFragile) {
                             var fragileCell = (pos + tracePos) / 2;
-                            var checkInfos = Check.GetCheckInfo(boardOpt, color, pos);
-                            Vector2Int lastPos;
+                            var lastPos = new Vector2Int();
                             if (tracePos.y - pos.y > 0) {
                                 lastPos = new Vector2Int(pos.x, boardOpt.GetLength(0) - 1);
                             } else {
                                 lastPos = new Vector2Int(pos.x, 0);
                             }
+                            var checkInfos = Check.GetCheckInfo(boardOpt, color, pos);
                             checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos));
                             checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell));
                             if(Check.IsCheck(checkInfos)) {

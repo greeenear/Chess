@@ -19,7 +19,6 @@ namespace check {
     public static class Check {
         public static Vector2Int FindKing(Option<Piece>[,] board, PieceColor color) {
             Vector2Int kingPosition = new Vector2Int();
-
             for (int i = 0; i < board.GetLength(0); i++) {
                 for (int j = 0; j < board.GetLength(1); j++) {
                     if (board[i, j].IsNone()) {
@@ -32,7 +31,6 @@ namespace check {
                     }
                 }
             }
-
             return kingPosition;
         }
 
@@ -54,7 +52,6 @@ namespace check {
                     movements.AddRange(GetLinearMoves(board, target, linear));
                 }
             }
-
             return movements;
         }
 
@@ -64,7 +61,6 @@ namespace check {
             Circular circular
         ) {
             List<FixedMovement> movements = new List<FixedMovement>();
-            var radius = circular.radius;
             var angle = 0f;
 
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
@@ -83,6 +79,7 @@ namespace check {
                     var type = piece.type;
                     var attackMovements = MovementEngine.GetPieceMovements(board, type, target);
                     foreach (var movement in attackMovements) {
+                        var radius = circular.radius;
                         var circle = Movement.Circular(Circular.Mk(radius));
                         if (movement.movement.movement.circular.HasValue
                             && movement.movement.movement.circular.Value.radius == radius) {
@@ -91,7 +88,6 @@ namespace check {
                     }
                 }
             }
-
             return movements;
         }
 
@@ -108,18 +104,19 @@ namespace check {
                 return movements;
             }
 
-            var attackMovement = new PieceMovement();
             var attackingPiecePos = new Vector2Int(lastPos.x, lastPos.y);
             var type = board[lastPos.x, lastPos.y].Peel().type;
-            var pieceMovements = MovementEngine.GetPieceMovements(board, type, attackingPiecePos);
+            var attackMovements = MovementEngine.GetPieceMovements(board, type, attackingPiecePos);
 
             bool isMovementContained = false;
-            foreach (var pieceMovement in pieceMovements) {
-                if (!pieceMovement.movement.movement.linear.HasValue) {
-                    break;
+
+            var attackMovement = new PieceMovement();
+            foreach (var movement in attackMovements) {
+                if (!movement.movement.movement.linear.HasValue) {
+                    return movements;
                 }
-                if (-pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
-                    var fixedMovement = FixedMovement.Mk(pieceMovement.movement.movement, target);
+                if (-movement.movement.movement.linear.Value.dir == linear.dir) {
+                    var fixedMovement = FixedMovement.Mk(movement.movement.movement, target);
                     attackMovement = PieceMovement.Mk(fixedMovement, MovementType.Attack);
                     isMovementContained = true;
                     break;
@@ -128,12 +125,11 @@ namespace check {
             if (!isMovementContained) {
                 return movements;
             }
-            var attackDir = Movement.Linear(linear);
 
             var lineLength = Math.Abs(attackingPiecePos.x - target.x);
             var attackLength = attackMovement.movement.movement.linear.Value.length;
-            var attackMovementType = attackMovement.movementType;
-            if (attackLength >= lineLength && attackMovementType == MovementType.Attack) {
+            var attackDir = Movement.Linear(linear);
+            if (attackLength >= lineLength && attackMovement.movementType == MovementType.Attack) {
                 movements.Add(FixedMovement.Mk(attackDir, attackingPiecePos));
             }
 
@@ -150,17 +146,16 @@ namespace check {
             var boardSize = new Vector2Int(startBoard.GetLength(0), startBoard.GetLength(1));
 
             foreach (var info in attackInfo) {
-                var coveringPiecesCounter = 0;
                 Vector2Int coveringPos = new Vector2Int();
                 if (info.movement.circular.HasValue) {
                     checkInfo.Add(CheckInfo.Mk(info));
                     continue;
                 }
 
+                var coveringPiecesCounter = 0;
                 for (int i = 1; i < boardSize.x; i++) {
                     var next = target + info.movement.linear.Value.dir * i;
-                    var nextPos = new Vector2Int(next.x, next.y);
-                    var isOnBoard = Board.OnBoard(nextPos, boardSize);
+                    var isOnBoard = Board.OnBoard(new Vector2Int(next.x, next.y), boardSize);
                     if (!isOnBoard) {
                         break;
                     }
@@ -171,7 +166,7 @@ namespace check {
                     var pieceColor = nextCell.Peel().color;
                     if (pieceColor == color) {
                         coveringPiecesCounter++;
-                        coveringPos = nextPos;
+                        coveringPos = new Vector2Int(next.x, next.y);
                     }
                     if (pieceColor != color && coveringPiecesCounter == 0) {
                         checkInfo.Add(CheckInfo.Mk(info));
@@ -182,7 +177,6 @@ namespace check {
                     checkInfo.Add(new CheckInfo { attackInfo = info, coveringPos = coveringPos });
                 }
             }
-
             return checkInfo;
         }
 
@@ -207,7 +201,6 @@ namespace check {
                     return true;
                 }
             }
-
             return false;
         }
 

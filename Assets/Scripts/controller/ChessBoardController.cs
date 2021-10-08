@@ -148,17 +148,15 @@ namespace controller {
             PieceType pieceType = (PieceType)type;
 
             var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
-            var x = pawnPos.x;
-            var y = pawnPos.y;
             Chess.ChangePiece(board.board, pawnPos, pieceType, whoseMove);
-            Destroy(piecesMap[x, y]);
-            if (board.board[x, y].IsNone()) {
+            Destroy(piecesMap[pawnPos.x, pawnPos.y]);
+            if (board.board[pawnPos.x, pawnPos.y].IsNone()) {
                 return;
             }
-            var piece = board.board[x, y].Peel();
-
+            var piece = board.board[pawnPos.x, pawnPos.y].Peel();
+            var boardTransform = resources.boardObj.transform;
             var Obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
-            piecesMap[x, y] = ObjectSpawner(Obj, pawnPos, resources.boardObj.transform);
+            piecesMap[pawnPos.x, pawnPos.y] = ObjectSpawner(Obj, pawnPos, boardTransform);
             this.enabled = true;
             resources.changePawn.SetActive(false);
             var lastMove = movesHistory[movesHistory.Count - 1];
@@ -216,7 +214,6 @@ namespace controller {
             if (gameStatus == GameStatus.None) {
                 return;
             }
-
             if (gameStatus == GameStatus.CheckMate) {
                 resources.gameMenu.SetActive(true);
                 this.enabled = false;
@@ -276,13 +273,7 @@ namespace controller {
                 boardPos.y + halfCellSize,
                 spawnPos.y + boardPos.z - halfBoardSize + halfCellSize
             );
-
-            return Instantiate(
-                gameObject,
-                spawnWorldPos,
-                Quaternion.identity,
-                parentTransform
-            );
+            return Instantiate(gameObject, spawnWorldPos, Quaternion.identity, parentTransform);
         }
 
         public static void TraceCleaner(Option<PieceTrace>[,] board) {
@@ -313,7 +304,6 @@ namespace controller {
                     return move;
                 }
             }
-
             return new MoveInfo();
         }
     }

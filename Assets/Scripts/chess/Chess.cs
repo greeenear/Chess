@@ -43,7 +43,6 @@ namespace chess {
                     return GetNotOpeningMoves(targetPos, board, checkInfo);
                 }
             }
-
             var movementList = MovementEngine.GetPieceMovements(boardOpt, pieceType, targetPos);
 
             return Move.GetMoveInfos(movementList, targetPos, board);;
@@ -55,26 +54,25 @@ namespace chess {
             PieceColor color
         ) {
             List<MoveInfo> newKingMoves = new List<MoveInfo>();
-            if (board.board[target.x, target.y].IsNone()) {
+            var pieceOpt = board.board[target.x, target.y];
+            if (pieceOpt.IsNone()) {
                 return null;
             }
-            var pieceType = board.board[target.x, target.y].Peel().type;
-            var movement = MovementEngine.GetPieceMovements(board.board, pieceType, target);
+            var piece = pieceOpt.Peel();
+            var movement = MovementEngine.GetPieceMovements(board.board, piece.type, target);
             var kingMoves = move.Move.GetMoveInfos(movement, target, board);
             foreach (var move in kingMoves) {
-                var king = board.board[target.x, target.y];
-                board.board[target.x, target.y] = Option<Piece>.None();
+                var king = pieceOpt;
+                pieceOpt = Option<Piece>.None();
                 var moveTo = move.doubleMove.first.to;
                 var checkCellInfos = Check.GetCheckInfo(board.board, color, moveTo);
 
-                board.board[target.x, target.y] = king;
+                pieceOpt = king;
                 if (check.Check.IsCheck(checkCellInfos)) {
                     continue;
                 }
                 newKingMoves.Add(move);
-
             }
-
             return newKingMoves;
         }
 
@@ -193,7 +191,6 @@ namespace chess {
                     movementList.Add(new PieceMovement{movement = pieceMovement.movement});
                 }
             }
-
             return move.Move.GetMoveInfos(movementList, target, board);
         }
 
@@ -219,7 +216,6 @@ namespace chess {
             if (noTakeMoves == 50) {
                 return true;
             }
-
             return false;
         }
 

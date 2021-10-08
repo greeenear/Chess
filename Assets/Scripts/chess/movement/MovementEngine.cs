@@ -34,23 +34,21 @@ namespace movement {
             int maxLength = Mathf.Max(board.GetLength(1), board.GetLength(0));
             switch (pieceType) {
                 case PieceType.Pawn:
-                    var moveMovement = new PieceMovement();
+                    int dirX = 1;
                     if (piece.color == PieceColor.White) {
-                        movements.Add(PieceMovement.Linear(Direction.downRight, 1, pos, attack));
-                        movements.Add(PieceMovement.Linear(Direction.downLeft, 1, pos, attack));
-                        moveMovement = PieceMovement.Linear(Direction.down, 1, pos, move);
-                    } else if (piece.color == PieceColor.Black) {
-                        movements.Add(PieceMovement.Linear(Direction.upRight, 1, pos, attack));
-                        movements.Add(PieceMovement.Linear(Direction.upLeft, 1, pos, attack));
-                        moveMovement = PieceMovement.Linear(Direction.up, 1, pos, move);
+                        dirX = -1;
                     }
-                    if (piece.moveCounter == 0) {
-                        var dir = moveMovement.movement.movement.linear.Value.dir;
-                        moveMovement = PieceMovement.Linear(dir, 2, pos, move);
-                        moveMovement.traceIndex = Option<int>.Some(1);
-                        movements.Add(moveMovement);
-                    } else {
-                        movements.Add(moveMovement);
+                    for (int i = -1; i <= 1; i++) {
+                        var dir = new Vector2Int(dirX, i);
+                        if (i == 0 && piece.moveCounter == 0) {
+                            var movement = PieceMovement.Linear(dir, 2, pos, move);
+                            movement.traceIndex = Option<int>.Some(1);
+                            movements.Add(movement);
+                        } else if (i == 0) {
+                            movements.Add(PieceMovement.Linear(dir, 1, pos, move));
+                        } else {
+                            movements.Add(PieceMovement.Linear(dir, 1, pos, attack));
+                        }
                     }
                     break;
                 case PieceType.Bishop:
