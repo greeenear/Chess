@@ -173,15 +173,5 @@ namespace rules {
             }
             return maxLength - 1;
         }
-
-        public static Vector2Int GetLastCellOnLine(
-            Option<Piece>[,] board,
-            Linear linear,
-            Vector2Int startPos
-        ) {
-            int length = Board.GetLinearLength(startPos, linear, board);
-            var lastPos = startPos + linear.dir * length;
-            return lastPos;
-        }
     }
 }

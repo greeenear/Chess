@@ -69,9 +69,11 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, move));
                     if (piece.moveCounter == 0) {
                         var rightLinear = Linear.Mk(Direction.right, maxLength);
-                        var rightCell = Rules.GetLastCellOnLine(board, rightLinear, pos);
-                        var LeftLinear = Linear.Mk(Direction.left, maxLength);
-                        var leftCell = Rules.GetLastCellOnLine(board, LeftLinear, pos);
+                        var rightLength = Board.GetLinearLength(pos, rightLinear, board);
+                        var rightCell = pos + rightLinear.dir * rightLength;
+                        var leftLinear = Linear.Mk(Direction.left, maxLength);
+                        var leftLength = Board.GetLinearLength(pos, leftLinear, board);
+                        var leftCell = pos + leftLinear.dir * leftLength;
                         if (board[rightCell.x, rightCell.y].IsSome()) {
                             var lastPiece = board[rightCell.x, rightCell.y].Peel();
                             if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
