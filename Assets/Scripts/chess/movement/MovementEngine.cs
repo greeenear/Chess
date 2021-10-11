@@ -68,29 +68,13 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, attack));
                     movements.Add(PieceMovement.Circular(1f, pos, move));
                     if (piece.moveCounter == 0) {
-                        var rightLinear = Linear.Mk(Direction.right, maxLength);
-                        var rightLength = Board.GetLinearLength(pos, rightLinear, board);
-                        var rightCell = pos + rightLinear.dir * rightLength;
-                        var leftLinear = Linear.Mk(Direction.left, maxLength);
-                        var leftLength = Board.GetLinearLength(pos, leftLinear, board);
-                        var leftCell = pos + leftLinear.dir * leftLength;
-                        if (board[rightCell.x, rightCell.y].IsSome()) {
-                            var lastPiece = board[rightCell.x, rightCell.y].Peel();
-                            if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
-                                var movement = PieceMovement.Linear(Direction.right, 2, pos, move);
-                                movement.isFragile = true;
-                                movement.traceIndex = Option<int>.Some(2);
-                                movements.Add(movement);
-                            }
+                        var movement = GetFragileMovement(board, pos, Direction.right);
+                        if (movement.HasValue) {
+                            movements.Add(movement.Value);
                         }
-                        if (board[leftCell.x, leftCell.y].IsSome()) {
-                            var lastPiece = board[leftCell.x, leftCell.y].Peel();
-                            if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
-                                var movement = PieceMovement.Linear(Direction.left, 2, pos, move);
-                                movement.isFragile = true;
-                                movement.traceIndex = Option<int>.Some(2);
-                                movements.Add(movement);
-                            }
+                        movement = GetFragileMovement(board, pos, Direction.left);
+                        if (movement.HasValue) {
+                            movements.Add(movement.Value);
                         }
                     }
                     break;
@@ -98,12 +82,33 @@ namespace movement {
             return movements;
         }
 
-        public static void InsertMovements(
-            List<PieceMovement> movements,
+        public static PieceMovement? GetFragileMovement(
+            Option<Piece>[,] board,
+            Vector2Int pos,
+            Vector2Int dir
+        ) {
+            int maxLength = Mathf.Max(board.GetLength(1), board.GetLength(0));
+            var linear = Linear.Mk(dir, maxLength);
+            var length = Board.GetLinearLength(pos, linear, board);
+            var cell = pos + linear.dir * length;
+            if (board[cell.x, cell.y].IsSome()) {
+                var lastPiece = board[cell.x, cell.y].Peel();
+                if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
+                    var movement = PieceMovement.Linear(dir, 2, pos, MovementType.Move);
+                    movement.isFragile = true;
+                    movement.traceIndex = Option<int>.Some(2);
+                    return movement;
+                }
+            }
+            return null;
+        }
+
+        public static List<PieceMovement> GetMovements(
             int maxLength,
             Vector2Int pos,
             Func<int, int, bool> comparator
         ) {
+            var movements = new List<PieceMovement>();
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     if (i == 0 && j == 0 || comparator(i, j)) {
