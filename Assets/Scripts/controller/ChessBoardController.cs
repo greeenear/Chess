@@ -105,17 +105,21 @@ namespace controller {
             var whoseMove = this.whoseMove;
             gameStats = GameStats.Mk(whoseMove);
             List<PieceInfo> pieceInfoList = new List<PieceInfo>();
+            List<TraceInfo> traceInfoList = new List<TraceInfo>();
 
             for (int i = 0; i < board.board.GetLength(0); i++) {
                 for (int j = 0; j < board.board.GetLength(1); j++) {
                     var board = this.board.board[i,j];
-
-                    if (this.board.board[i,j].IsSome()) {
+                    var trace = this.board.traceBoard[i,j];
+                    if (board.IsSome()) {
                         pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
+                    }
+                    if (trace.IsSome()) {
+                        traceInfoList.Add(TraceInfo.Mk(trace.Peel(), i, j));
                     }
                 }
             }
-            jsonObject = JsonObject.Mk(pieceInfoList, gameStats);
+            jsonObject = JsonObject.Mk(pieceInfoList, traceInfoList, gameStats);
             SaveLoad.WriteJson(SaveLoad.GetJsonType<JsonObject>(jsonObject), "json.json");
         }
 
@@ -125,8 +129,12 @@ namespace controller {
             DestroyHighlightCell(resources.storageHighlightCells.transform);
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
-            foreach (var pieceInfo in gameInfo.pieceInfo) {
+            foreach (var pieceInfo in gameInfo.pieceInfos) {
                 board.board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
+            }
+            foreach (var pieceInfo in gameInfo.traceInfos) {
+                var trace = Option<PieceTrace>.Some(pieceInfo.trace);
+                board.traceBoard[pieceInfo.xPos, pieceInfo.yPos] = trace;
             }
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
