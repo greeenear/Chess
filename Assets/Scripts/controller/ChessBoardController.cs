@@ -1,5 +1,3 @@
-
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -8,6 +6,7 @@ using option;
 using rules;
 using json;
 using move;
+using board;
 
 namespace controller {
     enum PlayerAction {
@@ -91,8 +90,8 @@ namespace controller {
                 case PlayerAction.Select:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
-
-                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board);
+                    var newPossibleMoves = Chess.GetPossibleMoves(selectedPos, board);
+                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board).Item1;
 
                     playerAction = PlayerAction.Move;
                     HighlightCells(possibleMoves);
@@ -230,8 +229,11 @@ namespace controller {
                 this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
                 var kingPos = Check.FindKing(board.board, whoseMove);
-                var checkCell = resources.checkCell;
-                ObjectSpawner(checkCell, kingPos, resources.storageHighlightCheckCell.transform);
+                if (kingPos.Item2 != Errors.None) {
+                    Debug.Log(kingPos.Item2);
+                }
+                var highlightCheckCell = resources.storageHighlightCheckCell.transform;
+                ObjectSpawner(resources.checkCell, kingPos.Item1, highlightCheckCell);
             }
 
             if (gameStatus == GameStatus.Draw) {

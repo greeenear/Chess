@@ -3,6 +3,15 @@ using option;
 using System;
 
 namespace board {
+    public enum Errors {
+        None,
+        BoardIsNull,
+        PieceIsNone,
+        ImpossibleMovement,
+        ListIsNull
+
+    }
+
     public struct Circular {
         public float radius;
 
@@ -50,11 +59,14 @@ namespace board {
             return true;
         }
 
-        public static int GetLinearLength<T>(
+        public static (int, Errors) GetLinearLength<T>(
             Vector2Int startPosition,
             Linear linear,
             Option<T>[,] board
         ) {
+            if (board == null) {
+                return (0, Errors.BoardIsNull);
+            }
             int length = 0;
             for (int i = 1; i <= linear.length; i++) {
                 Vector2Int pos = startPosition + linear.dir * i;
@@ -69,15 +81,18 @@ namespace board {
                     length++;
                 }
             }
-            return length;
+            return (length, Errors.None);
         }
 
-        public static Vector2Int? GetCircularPoint<T>(
+        public static (Vector2Int?, Errors) GetCircularPoint<T>(
             Vector2Int center,
             Circular circular,
             float angle,
             Option<T>[,] board
         ) {
+            if (board == null) {
+                return (null, Errors.BoardIsNull);
+            }
             Vector2Int movePos = new Vector2Int();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var offset = new Vector2(0.5f + center.x, 0.5f + center.y);
@@ -89,9 +104,9 @@ namespace board {
             pos = pos + offset;
             movePos = new Vector2Int((int)Math.Floor(pos.x), (int)Math.Floor(pos.y));
             if (Board.OnBoard(movePos, boardSize)) {
-                return movePos;
+                return (movePos, Errors.None);
             }
-            return null;
+            return (null, Errors.None);
         }
     }
 }
