@@ -86,14 +86,7 @@ namespace move {
                             } else {
                                 lastPos = new Vector2Int(pos.x, 0);
                             }
-                            var checkInfos = Check.GetCheckInfo(boardOpt, color, pos);
-                            if (checkInfos.Item2 != Errors.None) {
-                                Debug.Log(checkInfos.Item2);
-                            }
-                            var check = checkInfos.Item1;
-                            check.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
-                            check.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
-                            if(Check.IsCheck(check).Item1) {
+                            if(!CheckFragileMovement(pos, tracePos, boardOpt, targetPiece.color)) {
                                 continue;
                             }
                             var doubleMove = DoubleMove.MkDoubleMove(
@@ -126,6 +119,26 @@ namespace move {
             }
 
             return (moveInfos, Errors.None);
+        }
+        private static bool CheckFragileMovement(
+            Vector2Int pos,
+            Vector2Int tracePos,
+            Option<Piece>[,] boardOpt,
+            PieceColor color
+        ) {
+            var fragileCell = (pos + tracePos) / 2;
+            var checkInfos = Check.GetCheckInfo(boardOpt, color, pos);
+            if (checkInfos.Item2 != Errors.None) {
+                Debug.Log(checkInfos.Item2);
+            }
+            var check = checkInfos.Item1;
+            check.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
+            check.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
+            if(Check.IsCheck(check).Item1) {
+                return false;
+            } else {
+                return true;
+            }
         }
     }
 }

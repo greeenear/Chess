@@ -59,7 +59,7 @@ namespace chess {
                     return (coveringMoves.Item1, Errors.None);
                 }
                 if (checkInfo.coveringPos == targetPos && !isCheck) {
-                    var notOpenning = GetNotOpeningMoves(targetPos, board, checkInfo);
+                    var notOpenning = GetNotOpeningMoves2(targetPos, board, checkInfo);
                     if (notOpenning.Item2 != Errors.None) {
                         Debug.Log(notOpenning.Item2);
                     }
@@ -118,7 +118,7 @@ namespace chess {
             return (newKingMoves, Errors.None);
         }
 
-        public static (List<MoveInfo>, Errors) GetСoveringMoves(
+         public static (List<MoveInfo>, Errors) GetСoveringMoves(
             Vector2Int target,
             FullBoard board,
             CheckInfo checkInfo
@@ -130,100 +130,84 @@ namespace chess {
             if (boardOpt[target.x, target.y].IsNone()) {
                 return (null, Errors.PieceIsNone);
             }
-            var linearMovement = checkInfo.attackInfo.movement.linear;
-            var movementList = new List<MoveInfo>();
-            var attackPos = checkInfo.attackInfo.startPos;
-            var lastAttackPos = new Vector2Int();
-
-            if (linearMovement.HasValue) {
-                var dir = -linearMovement.Value.dir;
-                var linear = Linear.Mk(dir, linearMovement.Value.length);
-                var length = Board.GetLinearLength(attackPos, linear, boardOpt);
+            var piece = boardOpt[target.x, target.y].Peel();
+            var movements = MovementEngine.GetPieceMovements(boardOpt, piece.type, target);
+            var startAttackPos = checkInfo.attackInfo.startPos;
+            var endAttackPos = new Vector2Int();
+            var linearAttack = checkInfo.attackInfo.movement.linear;
+            if (linearAttack.HasValue) {
+                var dir = -linearAttack.Value.dir;
+                var linear = Linear.Mk(dir, linearAttack.Value.length);
+                var length = Board.GetLinearLength(startAttackPos, linear, boardOpt);
                 if (length.Item2 != Errors.None) {
-                        Debug.Log(length.Item2);
-                    }
-                lastAttackPos = attackPos + linear.dir * length.Item1;
+                    Debug.Log(length.Item2);
+                }
+                endAttackPos = startAttackPos + dir * length.Item1;
             }
-            var pieceType = boardOpt[target.x, target.y].Peel().type;
-            var defenseMovements = MovementEngine.GetPieceMovements(boardOpt, pieceType, target);
-            if (defenseMovements.Item2 != Errors.None) {
-                Debug.Log(defenseMovements.Item2);
+            var attackSegment = math.Math.Segment.Mk(startAttackPos, endAttackPos);
+            if (movements.Item2 != Errors.None) {
+                Debug.Log(movements.Item2);
+                return (null, movements.Item2);
             }
-            foreach (var defenseMovement in defenseMovements.Item1) {
-                if (defenseMovement.movement.movement.circular.HasValue) {
+            var moveInfos = new List<MoveInfo>();
+            foreach (var movement in movements.Item1) {
+                if (movement.movement.movement.circular.HasValue) {
+                    var circular = movement.movement.movement.circular.Value;
                     var angle = 0f;
-                    var startAngle = StartAngle.Knight;
-                    var circular = defenseMovement.movement.movement.circular.Value;
                     for (int i = 1; angle < Mathf.PI * 2; i += 2) {
-                        angle = startAngle * i * Mathf.PI / 180;
+                        angle = StartAngle.Knight * i * Mathf.PI / 180;
                         var cell = Board.GetCircularPoint(target, circular, angle, boardOpt);
                         if (cell.Item2 != Errors.None) {
                             Debug.Log(cell.Item2);
+                            return (null, cell.Item2);
                         }
                         if (!cell.Item1.HasValue) {
                             continue;
                         }
-                        var segment = math.Math.Segment.Mk(attackPos, lastAttackPos);
-                        if (math.Math.IsPointOnSegment(segment, cell.Item1.Value)) {
+                        if (math.Math.IsPointOnSegment(attackSegment, cell.Item1.Value)) {
                             var moveData = MoveData.Mk(target, cell.Item1.Value);
                             var doubleMove = DoubleMove.MkSingleMove(moveData);
-                            movementList.Add(MoveInfo.Mk(doubleMove));
+                            moveInfos.Add(MoveInfo.Mk(doubleMove));
                         }
                     }
                 }
-                if (defenseMovement.movement.movement.linear.HasValue) {
-                    var linear = defenseMovement.movement.movement.linear.Value;
-                    var length = Board.GetLinearLength(target, linear, board.board);
-                    if (length.Item2 != Errors.None) {
-                        Debug.Log(length.Item2);
-                    }
-                    var lastDefPos = target + linear.dir * length.Item1;
-                    var firstSegment = math.Math.Segment.Mk(attackPos, lastAttackPos);
-                    var secondSegment = math.Math.Segment.Mk(target, lastDefPos);
-                    var n1 = math.Math.GetNormalVector(firstSegment);
-                    var n2 = math.Math.GetNormalVector(secondSegment);
+                if (movement.movement.movement.linear.HasValue) {
+                    var linear = movement.movement.movement.linear;
+                    var startDef = movement.movement.startPos;
+                    var endDef = startDef + linear.Value.dir * linear.Value.length;
+                    var defSegment = math.Math.Segment.Mk(startDef, endDef);
+
+                    var n1 = math.Math.GetNormalVector(attackSegment);
+                    var n2 = math.Math.GetNormalVector(defSegment);
                     if (!n1.HasValue || !n2.HasValue) {
                         continue;
                     }
-                    var firstLineCoefficients = math.Math.GetLineCoefficients(n1.Value, attackPos);
-                    var secondLineCoefficients = math.Math.GetLineCoefficients(n2.Value, target);
-                    var point = math.Math.GetSegmentsIntersection(
-                        firstLineCoefficients,
-                        secondLineCoefficients
-                    );
+                    var firstLine = math.Math.GetLineCoefficients(n1.Value, startAttackPos);
+                    var secondLine = math.Math.GetLineCoefficients(n2.Value, target);
+                    var point = math.Math.GetSegmentsIntersection(firstLine, secondLine);
                     if (!point.HasValue) {
                         continue;
                     }
-                    if (!math.Math.IsPointOnSegment(firstSegment, point.Value)) {
+                    if (!math.Math.IsPointOnSegment(defSegment, point.Value)
+                        || !math.Math.IsPointOnSegment(attackSegment, point.Value)) {
                         continue;
                     }
-                    if (!math.Math.IsPointOnSegment(secondSegment, point.Value)) {
-                        continue;
-                    }
-                    if (point.HasValue) {
-                        var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(target, point.Value));
-                        if (defenseMovement.movementType == MovementType.Attack) {
-                            var pieceOpt = board.board[point.Value.x, point.Value.y];
-                            if (pieceOpt.IsSome()) {
-                                var piece = pieceOpt.Peel();
-                                if (piece.color != board.board[target.x, target.y].Peel().color) {
-                                    var moveInfo = MoveInfo.Mk(doubleMove);
-                                    moveInfo.sentenced = point;
-                                    movementList.Add(moveInfo);
-                                }
-                            }
-                        } else if (defenseMovement.movementType == MovementType.Move) {
-                            if (board.board[point.Value.x, point.Value.y].IsNone()) {
-                                movementList.Add(MoveInfo.Mk(doubleMove));
-                            }
-                        }
+                    var doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(target, point.Value));
+                    var cellOpt = board.board[point.Value.x, point.Value.y];
+                    if (movement.movementType == MovementType.Attack && cellOpt.IsSome()) {
+                        var pieceOnPoint = cellOpt.Peel();
+                        var moveInfo = MoveInfo.Mk(doubleMove);
+                        moveInfo.sentenced = point;
+                        moveInfos.Add(moveInfo);
+                    } else if (movement.movementType == MovementType.Move && cellOpt.IsNone()) {
+                        moveInfos.Add(MoveInfo.Mk(doubleMove));
                     }
                 }
             }
-            return (movementList, Errors.None);
+            return (moveInfos, Errors.None);
         }
 
-        public static (List<MoveInfo>, Errors) GetNotOpeningMoves(
+        public static (List<MoveInfo>, Errors) GetNotOpeningMoves2(
             Vector2Int target,
             FullBoard board,
             CheckInfo checkInfo
@@ -234,24 +218,25 @@ namespace chess {
             if (board.board[target.x, target.y].IsNone()) {
                 return (null, Errors.PieceIsNone);
             }
-            var possibleMoves = new List<MoveInfo>();
-            var movementList = new List<PieceMovement>();
-            var targetPiece = board.board[target.x, target.y].Peel();
-            if (targetPiece.type == PieceType.Knight) {
-                return (possibleMoves, Errors.None);
-            }
-            var type = targetPiece.type;
-            var linear = checkInfo.attackInfo.movement.linear.Value;
-            var pieceMovements = MovementEngine.GetPieceMovements(board.board, type, target);
+            var piece = board.board[target.x, target.y].Peel();
+            var pieceMovements = MovementEngine.GetPieceMovements(board.board, piece.type, target);
             if (pieceMovements.Item2 != Errors.None) {
                 Debug.Log(pieceMovements.Item2);
+                return (null, pieceMovements.Item2);
             }
+            var linear = checkInfo.attackInfo.movement.linear.Value;
+            var movementList = new List<PieceMovement>();
             foreach (var pieceMovement in pieceMovements.Item1) {
-                if (pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
-                    movementList.Add(new PieceMovement{movement = pieceMovement.movement});
+                if (pieceMovement.movement.movement.circular.HasValue) {
+                    continue;
                 }
-                if (pieceMovement.movement.movement.linear.Value.dir == -linear.dir) {
-                    movementList.Add(new PieceMovement{movement = pieceMovement.movement});
+                if (pieceMovement.movement.movement.linear.HasValue) {
+                    if (pieceMovement.movement.movement.linear.Value.dir == linear.dir) {
+                        movementList.Add(new PieceMovement{movement = pieceMovement.movement});
+                    }
+                    if (pieceMovement.movement.movement.linear.Value.dir == -linear.dir) {
+                        movementList.Add(new PieceMovement{movement = pieceMovement.movement});
+                    }
                 }
             }
             var moveInfos = move.Move.GetMoveInfos(movementList, target, board);
@@ -260,6 +245,7 @@ namespace chess {
             }
             return (moveInfos.Item1, Errors.None);
         }
+
 
         public static PieceColor ChangeMove(PieceColor whoseMove) {
             return (PieceColor)(((int)(whoseMove + 1) % (int)PieceColor.Count));
