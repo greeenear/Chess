@@ -212,12 +212,15 @@ namespace controller {
             FullBoard board,
             PieceColor whoseMove
         ) {
-            var gameStatus = Chess.GetGameStatus(
+            var (gameStatus, err) = Chess.GetGameStatus(
                 board,
                 whoseMove,
                 movesHistory,
                 noTakeMoves
             );
+            if (err != ChessErrors.None) {
+                Debug.Log("gameStatusError");
+            }
             if (gameStatus == GameStatus.None) {
                 return;
             }
@@ -228,12 +231,12 @@ namespace controller {
                 resources.gameMenu.SetActive(true);
                 this.enabled = false;
             } else if (gameStatus == GameStatus.Check) {
-                var kingPos = Check.FindKing(board.board, whoseMove);
-                if (kingPos.Item2 != Errors.None) {
-                    Debug.Log(kingPos.Item2);
+                var (kingPos, err2) = Check.FindKing(board.board, whoseMove);
+                if (err2 != CheckErrors.None) {
+                    Debug.Log("FindKingError");
                 }
                 var highlightCheckCell = resources.storageHighlightCheckCell.transform;
-                ObjectSpawner(resources.checkCell, kingPos.Item1, highlightCheckCell);
+                ObjectSpawner(resources.checkCell, kingPos, highlightCheckCell);
             }
 
             if (gameStatus == GameStatus.Draw) {

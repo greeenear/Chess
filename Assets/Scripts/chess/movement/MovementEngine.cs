@@ -6,6 +6,12 @@ using board;
 using option;
 
 namespace movement {
+    public enum MovementErrors {
+        None,
+        PieceIsNone,
+        BoardIsNull,
+        CantGetLinearLength
+    }
     public struct Direction {
         public static readonly Vector2Int up = new Vector2Int(1, 0);
         public static readonly Vector2Int down = new Vector2Int(-1, 0);
@@ -18,17 +24,17 @@ namespace movement {
     }
 
     public static class MovementEngine {
-        public static (List<PieceMovement>, Errors) GetPieceMovements(
+        public static (List<PieceMovement>, MovementErrors) GetPieceMovements(
             Option<Piece>[,] board,
             PieceType pieceType,
             Vector2Int pos
         ) {
             if (board == null) {
-                return (null, Errors.BoardIsNull);
+                return (null, MovementErrors.BoardIsNull);
             }
             var pieceOpt = board[pos.x, pos.y];
             if (pieceOpt.IsNone()) {
-                return (null, Errors.PieceIsNone);
+                return (null, MovementErrors.PieceIsNone);
             }
             var piece = pieceOpt.Peel();
             var attack = MovementType.Attack;
@@ -71,42 +77,45 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, attack));
                     movements.Add(PieceMovement.Circular(1f, pos, move));
                     if (piece.moveCounter == 0) {
-                        var movement = GetFragileMovement(board, pos, Direction.right);
+                        var (movement, err) = GetFragileMovement(board, pos, Direction.right);
                         if (movement.HasValue) {
                             movements.Add(movement.Value);
                         }
-                        movement = GetFragileMovement(board, pos, Direction.left);
+                        (movement, err) = GetFragileMovement(board, pos, Direction.left);
                         if (movement.HasValue) {
                             movements.Add(movement.Value);
                         }
                     }
                     break;
             }
-            return (movements, Errors.None);
+            return (movements, MovementErrors.None);
         }
 
-        public static PieceMovement? GetFragileMovement(
+        public static (PieceMovement?, MovementErrors) GetFragileMovement(
             Option<Piece>[,] board,
             Vector2Int pos,
             Vector2Int dir
         ) {
+            if (board == null) {
+                return (null, MovementErrors.BoardIsNull);
+            }
             int maxLength = Mathf.Max(board.GetLength(1), board.GetLength(0));
             var linear = Linear.Mk(dir, maxLength);
-            var length = Board.GetLinearLength(pos, linear, board);
-            if (length.Item2 != Errors.None) {
-                Debug.Log(length.Item2);
+            var (length, err) = Board.GetLinearLength(pos, linear, board);
+            if (err != BoardErrors.None) {
+                return (null, MovementErrors.CantGetLinearLength);
             }
-            var cell = pos + linear.dir * length.Item1;
+            var cell = pos + linear.dir * length;
             if (board[cell.x, cell.y].IsSome()) {
                 var lastPiece = board[cell.x, cell.y].Peel();
                 if (lastPiece.moveCounter == 0 && lastPiece.type == PieceType.Rook) {
                     var movement = PieceMovement.Linear(dir, 2, pos, MovementType.Move);
                     movement.isFragile = true;
                     movement.traceIndex = Option<int>.Some(2);
-                    return movement;
+                    return (movement, MovementErrors.None);
                 }
             }
-            return null;
+            return (null, MovementErrors.None);
         }
 
         public static List<PieceMovement> GetMovements(

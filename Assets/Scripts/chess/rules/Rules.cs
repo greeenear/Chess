@@ -4,6 +4,14 @@ using option;
 using board;
 
 namespace rules {
+    public enum RulesErrors {
+        None,
+        BoardIsNull,
+        ImpossibleMovement,
+        PieceIsNone,
+        CantGetLinearLength
+
+    }
     public enum PieceType {
         Bishop,
         King,
@@ -79,7 +87,7 @@ namespace rules {
     }
 
     public static class Rules {
-        public static (List<Vector2Int>, Errors) GetMoves(
+        public static (List<Vector2Int>, RulesErrors) GetMoves(
             FullBoard board,
             PieceMovement pieceMovement,
             Vector2Int startPos
@@ -87,24 +95,23 @@ namespace rules {
             if (pieceMovement.movement.movement.linear.HasValue) {
                 var linear = pieceMovement.movement.movement.linear.Value;
 
-                var length = Board.GetLinearLength(startPos, linear, board.board);
-                if (length.Item2 != Errors.None) {
-                    Debug.Log(length.Item2);
-                    return (null, length.Item2);
+                var (length, err) = Board.GetLinearLength(startPos, linear, board.board);
+                if (err != BoardErrors.None) {
+                    return (null, RulesErrors.CantGetLinearLength);
                 }
                 var movementType = pieceMovement.movementType;
-                length = GetFixedLength(board, linear, length.Item1, startPos, movementType);
-                return (GetLinearMoves(linear, startPos, length.Item1), Errors.None);
+                var fixedLength = GetFixedLength(board, linear, length, startPos, movementType);
+                return (GetLinearMoves(linear, startPos, fixedLength.Item1), RulesErrors.None);
             } else if (pieceMovement.movement.movement.circular.HasValue) {
                 var circular = pieceMovement.movement.movement.circular.Value;
-                var circularMoves = GetCirclularMoves(board.board, circular, startPos);
-                if (circularMoves.Item2 != Errors.None) {
-                    Debug.Log(circularMoves.Item1);
+                var (circularMoves, err) = GetCirclularMoves(board.board, circular, startPos);
+                if (err != RulesErrors.None) {
+                    return (null, err);
                 }
-                return (GetCirclularMoves(board.board, circular, startPos).Item1, Errors.None);
+                return (GetCirclularMoves(board.board, circular, startPos).Item1, RulesErrors.None);
             }
 
-            return (null, Errors.ImpossibleMovement);
+            return (null, RulesErrors.ImpossibleMovement);
         }
 
         public static List<Vector2Int> GetLinearMoves(
@@ -120,16 +127,16 @@ namespace rules {
             return moves;
         }
 
-        public static (List<Vector2Int>, Errors) GetCirclularMoves(
+        public static (List<Vector2Int>, RulesErrors) GetCirclularMoves(
             Option<Piece>[,] board,
             Circular circlular,
             Vector2Int pos
         ) {
             if (board == null) {
-                return (null, Errors.BoardIsNull);
+                return (null, RulesErrors.BoardIsNull);
             }
             if (board[pos.x, pos.y].IsNone()) {
-                return (null, Errors.PieceIsNone);
+                return (null, RulesErrors.PieceIsNone);
             }
             float startAngle;
             if (circlular.radius == 1) {
@@ -143,7 +150,7 @@ namespace rules {
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = startAngle * i * Mathf.PI / 180;
                 var cell = Board.GetCircularPoint(pos, circlular, angle, board);
-                if (cell.Item2 != Errors.None) {
+                if (cell.Item2 != BoardErrors.None) {
                     Debug.Log(cell.Item2);
                 }
                 if (!cell.Item1.HasValue) {
@@ -155,10 +162,10 @@ namespace rules {
                 }
                 canMovePositions.Add(cell.Item1.Value);
             }
-            return (canMovePositions, Errors.None);
+            return (canMovePositions, RulesErrors.None);
         }
 
-        private static (int, Errors) GetFixedLength(
+        private static (int, RulesErrors) GetFixedLength(
             FullBoard board,
             Linear linearMovement,
             int maxLength,
@@ -166,32 +173,32 @@ namespace rules {
             MovementType movementType
         ) {
             if (board.board == null) {
-                return (0, Errors.BoardIsNull);
+                return (0, RulesErrors.BoardIsNull);
             }
             var targetPieceOpt = board.board[startPos.x, startPos.y];
             if (targetPieceOpt.IsNone()) {
-                return (0, Errors.PieceIsNone);
+                return (0, RulesErrors.PieceIsNone);
             }
             var targetPiece = targetPieceOpt.Peel();
             var lastPos = startPos + linearMovement.dir * maxLength;
             var pieceOpt = board.board[lastPos.x, lastPos.y];
             if (movementType == MovementType.Move) {
                 if (pieceOpt.IsSome()) {
-                    return (maxLength - 1, Errors.None);
+                    return (maxLength - 1, RulesErrors.None);
                 } else {
-                    return (maxLength, Errors.None);
+                    return (maxLength, RulesErrors.None);
                 }
             } else if (movementType == MovementType.Attack) {
                 if (pieceOpt.IsSome() && pieceOpt.Peel().color != targetPiece.color) {
-                    return (maxLength, Errors.None);
+                    return (maxLength, RulesErrors.None);
                 } else if (pieceOpt.IsNone() && board.traceBoard[lastPos.x, lastPos.y].IsSome()) {
                     var lastPiece = board.traceBoard[lastPos.x, lastPos.y].Peel();
                     if (lastPiece.whoLeft == targetPiece.type) {
-                        return (maxLength, Errors.None);
+                        return (maxLength, RulesErrors.None);
                     }
                 }
             }
-            return (maxLength - 1, Errors.None);
+            return (maxLength - 1, RulesErrors.None);
         }
     }
 }

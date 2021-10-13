@@ -3,13 +3,9 @@ using option;
 using System;
 
 namespace board {
-    public enum Errors {
+    public enum BoardErrors {
         None,
-        BoardIsNull,
-        PieceIsNone,
-        ImpossibleMovement,
-        ListIsNull
-
+        BoardIsNull
     }
 
     public struct Circular {
@@ -59,13 +55,13 @@ namespace board {
             return true;
         }
 
-        public static (int, Errors) GetLinearLength<T>(
+        public static (int, BoardErrors) GetLinearLength<T>(
             Vector2Int startPosition,
             Linear linear,
             Option<T>[,] board
         ) {
             if (board == null) {
-                return (0, Errors.BoardIsNull);
+                return (0, BoardErrors.BoardIsNull);
             }
             int length = 0;
             for (int i = 1; i <= linear.length; i++) {
@@ -81,17 +77,17 @@ namespace board {
                     length++;
                 }
             }
-            return (length, Errors.None);
+            return (length, BoardErrors.None);
         }
 
-        public static (Vector2Int?, Errors) GetCircularPoint<T>(
+        public static (Vector2Int?, BoardErrors) GetCircularPoint<T>(
             Vector2Int center,
             Circular circular,
             float angle,
             Option<T>[,] board
         ) {
             if (board == null) {
-                return (null, Errors.BoardIsNull);
+                return (null, BoardErrors.BoardIsNull);
             }
             Vector2Int movePos = new Vector2Int();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
@@ -104,9 +100,9 @@ namespace board {
             pos = pos + offset;
             movePos = new Vector2Int((int)Math.Floor(pos.x), (int)Math.Floor(pos.y));
             if (Board.OnBoard(movePos, boardSize)) {
-                return (movePos, Errors.None);
+                return (movePos, BoardErrors.None);
             }
-            return (null, Errors.None);
+            return (null, BoardErrors.None);
         }
     }
 }

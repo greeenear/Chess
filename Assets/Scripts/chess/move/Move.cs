@@ -6,6 +6,11 @@ using option;
 using check;
 
 namespace move {
+    public enum MoveErrors {
+        None,
+        BoardIsNull,
+        PieceIsNone
+    }
     public struct MoveData {
         public Vector2Int from;
         public Vector2Int to;
@@ -46,28 +51,27 @@ namespace move {
             board[end.x, end.y] = Option<Piece>.Some(piece);
         }
 
-        public static (List<MoveInfo>, Errors) GetMoveInfos(
+        public static (List<MoveInfo>, MoveErrors) GetMoveInfos(
             List<PieceMovement> pieceMovements,
             Vector2Int pos,
             FullBoard board
         ) {
             var boardOpt = board.board;
             if (boardOpt == null) {
-                return (null, Errors.BoardIsNull);
+                return (null, MoveErrors.BoardIsNull);
             }
             if (boardOpt[pos.x, pos.y].IsNone()) {
-                return (null, Errors.PieceIsNone);
+                return (null, MoveErrors.PieceIsNone);
             }
             var moveInfos = new List<MoveInfo>();
             var targetPiece = boardOpt[pos.x, pos.y].Peel();
             var color = targetPiece.color;
             foreach (var pieceMovement in pieceMovements) {
-                var possibleMoveCells = Rules.GetMoves(board, pieceMovement, pos);
-                if (possibleMoveCells.Item2 != Errors.None) {
-                    Debug.Log(possibleMoveCells.Item1);
+                var (possibleMoveCells, err) = Rules.GetMoves(board, pieceMovement, pos);
+                if (err != RulesErrors.None) {
                     continue;
                 }
-                foreach (var cell in possibleMoveCells.Item1) {
+                foreach (var cell in possibleMoveCells) {
                     var moveInfo = new MoveInfo {
                         doubleMove = DoubleMove.MkSingleMove(MoveData.Mk(pos, cell))
                     };
@@ -118,7 +122,7 @@ namespace move {
                 }
             }
 
-            return (moveInfos, Errors.None);
+            return (moveInfos, MoveErrors.None);
         }
         private static bool CheckFragileMovement(
             Vector2Int pos,
@@ -127,11 +131,11 @@ namespace move {
             PieceColor color
         ) {
             var fragileCell = (pos + tracePos) / 2;
-            var checkInfos = Check.GetCheckInfo(boardOpt, color, pos);
-            if (checkInfos.Item2 != Errors.None) {
-                Debug.Log(checkInfos.Item2);
+            var (checkInfos, err) = Check.GetCheckInfo(boardOpt, color, pos);
+            if (err != CheckErrors.None) {
+                return false;
             }
-            var check = checkInfos.Item1;
+            var check = checkInfos;
             check.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
             check.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
             if(Check.IsCheck(check).Item1) {
