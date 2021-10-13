@@ -151,9 +151,10 @@ namespace check {
                     }
                     if (-move.movement.movement.linear.Value.dir == linear.dir) {
                         var lineLength = Math.Abs(cell.x - target.x);
+                        var line = Linear.Mk(move.movement.movement.linear.Value.dir, lineLength);
                         var attackLen = move.movement.movement.linear.Value.length;
                         if (attackLen >= lineLength && move.movementType == MovementType.Attack) {
-                            var fixedMovement = FixedMovement.Mk(Movement.Linear(linear), cell);
+                            var fixedMovement = FixedMovement.Mk(Movement.Linear(line), cell);
                             return (fixedMovement, CheckErrors.None);
                         }
                         break;
@@ -179,7 +180,8 @@ namespace check {
                     continue;
                 }
                 if (info.movement.linear.HasValue) {
-                    var linear = info.movement.linear.Value;
+                    var linearInfo = info.movement.linear.Value;
+                    var linear = Linear.Mk(-linearInfo.dir, linearInfo.length);
                     var (length, err) = Board.GetLinearLength(target, linear, board);
                     if (err != BoardErrors.None) {
                         return (null, CheckErrors.CantGetLinearLength);

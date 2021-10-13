@@ -153,20 +153,18 @@ namespace controller {
         public void ChangePawn(int type) {
             whoseMove = Chess.ChangeMove(whoseMove);
             PieceType pieceType = (PieceType)type;
-
-            var pawnPos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
-            Chess.ChangePiece(board.board, pawnPos, pieceType, whoseMove);
-            Destroy(piecesMap[pawnPos.x, pawnPos.y]);
-            if (board.board[pawnPos.x, pawnPos.y].IsNone()) {
+            var pos = movesHistory[movesHistory.Count - 1].doubleMove.first.to;
+            board.board[pos.x, pos.y] = Option<Piece>.Some(Piece.Mk(pieceType, whoseMove, 0));
+            Destroy(piecesMap[pos.x, pos.y]);
+            if (board.board[pos.x, pos.y].IsNone()) {
                 return;
             }
-            var piece = board.board[pawnPos.x, pawnPos.y].Peel();
+            var piece = board.board[pos.x, pos.y].Peel();
             var boardTransform = resources.boardObj.transform;
             var Obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
-            piecesMap[pawnPos.x, pawnPos.y] = ObjectSpawner(Obj, pawnPos, boardTransform);
+            piecesMap[pos.x, pos.y] = ObjectSpawner(Obj, pos, boardTransform);
             this.enabled = true;
             resources.changePawn.SetActive(false);
-            var lastMove = movesHistory[movesHistory.Count - 1];
 
             whoseMove = Chess.ChangeMove(whoseMove);
             CheckGameStatus(board, whoseMove);
@@ -212,46 +210,32 @@ namespace controller {
             FullBoard board,
             PieceColor whoseMove
         ) {
-            var (gameStatus, err) = Chess.GetGameStatus(
-                board,
-                whoseMove,
-                movesHistory,
-                noTakeMoves
-            );
+            var (status, err) = Chess.GetGameStatus(board, whoseMove, movesHistory, noTakeMoves);
             if (err != ChessErrors.None) {
                 Debug.Log("gameStatusError");
             }
-            if (gameStatus == GameStatus.None) {
+            if (status == GameStatus.None) {
                 return;
             }
-            if (gameStatus == GameStatus.CheckMate) {
-                resources.gameMenu.SetActive(true);
-                this.enabled = false;
-            } else if (gameStatus == GameStatus.StaleMate) {
-                resources.gameMenu.SetActive(true);
-                this.enabled = false;
-            } else if (gameStatus == GameStatus.Check) {
+            if (status == GameStatus.Check) {
                 var (kingPos, err2) = Check.FindKing(board.board, whoseMove);
                 if (err2 != CheckErrors.None) {
                     Debug.Log("FindKingError");
                 }
                 var highlightCheckCell = resources.storageHighlightCheckCell.transform;
                 ObjectSpawner(resources.checkCell, kingPos, highlightCheckCell);
-            }
-
-            if (gameStatus == GameStatus.Draw) {
-                this.enabled = false;
+            } else {
                 resources.gameMenu.SetActive(true);
+                this.enabled = false;
             }
         }
 
         public void AddPiecesOnBoard() {
-            DestroyPieces(piecesMap);
-
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 8; j++) {
-                    var piece = board.board[i, j].Peel();
+                    GameObject.Destroy(piecesMap[i,j]);
                     if (board.board[i, j].IsSome()) {
+                        var piece = board.board[i, j].Peel();
                         var obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
                         var pos = new Vector2Int(i, j);
                         piecesMap[i, j] = ObjectSpawner(obj, pos, resources.boardObj.transform);
@@ -278,13 +262,11 @@ namespace controller {
             Transform parentTransform
         ) {
             var boardPos = resources.boardObj.transform.position;
-            var halfBoardSize = resources.halfBoardSize.x;
-            var halfCellSize = resources.halfCellSize.x;
 
             var spawnWorldPos = new Vector3(
-                spawnPos.x + boardPos.x - halfBoardSize + halfCellSize,
-                boardPos.y + halfCellSize,
-                spawnPos.y + boardPos.z - halfBoardSize + halfCellSize
+                spawnPos.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
+                boardPos.y + resources.halfCellSize.x,
+                spawnPos.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
             );
             return Instantiate(gameObject, spawnWorldPos, Quaternion.identity, parentTransform);
         }
@@ -297,17 +279,9 @@ namespace controller {
             }
         }
 
-        private void DestroyHighlightCell(Transform storageHighlightCells) {
-            foreach (Transform child in storageHighlightCells) {
+        private void DestroyHighlightCell(Transform highlightCells) {
+            foreach (Transform child in highlightCells) {
                 Destroy(child.gameObject);
-            }
-        }
-
-        private void DestroyPieces(GameObject[,] piecesMap) {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    GameObject.Destroy(piecesMap[i,j]);
-                }
             }
         }
 

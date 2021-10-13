@@ -22,8 +22,8 @@ namespace rules {
     }
 
     public enum PieceColor {
-        White,
         Black,
+        White,
         Count
     }
 
@@ -108,7 +108,7 @@ namespace rules {
                 if (err != RulesErrors.None) {
                     return (null, err);
                 }
-                return (GetCirclularMoves(board.board, circular, startPos).Item1, RulesErrors.None);
+                return (circularMoves, RulesErrors.None);
             }
 
             return (null, RulesErrors.ImpossibleMovement);

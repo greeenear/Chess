@@ -109,7 +109,6 @@ namespace move {
                     moveInfos.Add(moveInfo);
                 }
             }
-
             if (targetPiece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
@@ -121,7 +120,6 @@ namespace move {
                     }
                 }
             }
-
             return (moveInfos, MoveErrors.None);
         }
         private static bool CheckFragileMovement(
@@ -135,10 +133,9 @@ namespace move {
             if (err != CheckErrors.None) {
                 return false;
             }
-            var check = checkInfos;
-            check.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
-            check.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
-            if(Check.IsCheck(check).Item1) {
+            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
+            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
+            if(Check.IsCheck(checkInfos).Item1) {
                 return false;
             } else {
                 return true;

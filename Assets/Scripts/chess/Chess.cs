@@ -21,6 +21,8 @@ namespace chess {
         CantGetPieceMovements,
         CantGetLinearLength,
         CantGetCircularPoint,
+        CantGetPossibleMoves,
+        CantCheckDraw,
         ListIsNull
 
     }
@@ -144,16 +146,10 @@ namespace chess {
             var piece = boardOpt[pos.x, pos.y].Peel();
             var movements = MovementEngine.GetPieceMovements(boardOpt, piece.type, pos);
             var startAttackPos = checkInfo.attackInfo.startPos;
-            var endAttackPos = new Vector2Int();
+            var endAttackPos = startAttackPos;
             var linearAttack = checkInfo.attackInfo.movement.linear;
             if (linearAttack.HasValue) {
-                var dir = -linearAttack.Value.dir;
-                var linear = Linear.Mk(dir, linearAttack.Value.length);
-                var (length, err) = Board.GetLinearLength(startAttackPos, linear, boardOpt);
-                if (err != BoardErrors.None) {
-                    return (null, ChessErrors.CantGetLinearLength);
-                }
-                endAttackPos = startAttackPos + dir * length;
+                endAttackPos = startAttackPos + linearAttack.Value.dir * linearAttack.Value.length;
             }
             var attackSegment = math.Math.Segment.Mk(startAttackPos, endAttackPos);
             var moveInfos = new List<MoveInfo>();
@@ -185,12 +181,14 @@ namespace chess {
 
                     var n1 = math.Math.GetNormalVector(attackSegment);
                     var n2 = math.Math.GetNormalVector(defSegment);
+                    Vector2Int? point = new Vector2Int();
                     if (!n1.HasValue || !n2.HasValue) {
-                        continue;
+                        point = startAttackPos;
+                    } else {
+                        var firstLine = math.Math.GetLineCoefficients(n1.Value, startAttackPos);
+                        var secondLine = math.Math.GetLineCoefficients(n2.Value, pos);
+                        point = math.Math.GetSegmentsIntersection(firstLine, secondLine);
                     }
-                    var firstLine = math.Math.GetLineCoefficients(n1.Value, startAttackPos);
-                    var secondLine = math.Math.GetLineCoefficients(n2.Value, pos);
-                    var point = math.Math.GetSegmentsIntersection(firstLine, secondLine);
                     if (!point.HasValue) {
                         continue;
                     }
@@ -256,17 +254,17 @@ namespace chess {
             return (PieceColor)(((int)(whoseMove + 1) % (int)PieceColor.Count));
         }
 
-        public static (bool, ChessErrors) CheckDraw(List<MoveInfo> completedMoves, int noTakeMoves) {
-            if (completedMoves == null) {
+        public static (bool, ChessErrors) CheckDraw(List<MoveInfo> moveHistory, int noTakeMoves) {
+            if (moveHistory == null) {
                 return (false, ChessErrors.ListIsNull);
             }
             int moveCounter = 0;
-            if (completedMoves.Count > 9) {
-                var lastMove = completedMoves[completedMoves.Count - 1].doubleMove.first;
+            if (moveHistory.Count > 9) {
+                var lastMove = moveHistory[moveHistory.Count - 1].doubleMove.first;
 
-                for (int i = completedMoves.Count - 1; i > completedMoves.Count - 10; i = i - 2) {
-                    if (completedMoves[i].doubleMove.first.to == lastMove.to 
-                        && completedMoves[i].doubleMove.first.from == lastMove.from) {
+                for (int i = moveHistory.Count - 1; i > moveHistory.Count - 10; i = i - 2) {
+                    if (moveHistory[i].doubleMove.first.to == lastMove.to 
+                        && moveHistory[i].doubleMove.first.from == lastMove.from) {
                         moveCounter++;
                     }
                 }
@@ -286,40 +284,33 @@ namespace chess {
             List<MoveInfo> movesHistory,
             int noTakeMoves
         ) {
-            var possibleMoves = new List<MoveInfo>();
-            var gameStatus = new GameStatus();
             bool noCheckMate = false;
-            gameStatus = GameStatus.None;
+            var gameStatus = GameStatus.None;
 
             for (int i = 0; i < board.board.GetLength(0); i++) {
-                if (noCheckMate) {
-                    break;
-                }
                 for (int j = 0; j < board.board.GetLength(1); j++) {
                     if (board.board[i, j].IsNone()) {
                         continue;
                     }
-
-                    var piece = board.board[i, j].Peel();
-                    if (piece.color == color) {
+                    if (board.board[i, j].Peel().color == color) {
                         var piecePos = new Vector2Int(i, j);
-                        var moves = GetPossibleMoves(piecePos, board);
-                        if (moves.Item2 != ChessErrors.None) {
-                            Debug.Log(moves.Item2);
+                        var (moves, err) = GetPossibleMoves(piecePos, board);
+                        if (err != ChessErrors.None) {
+                            return (gameStatus, ChessErrors.CantGetPieceMovements);
                         }
-                        if (moves.Item1.Count != 0) {
+                        if (moves.Count != 0) {
                             noCheckMate = true;
                             break;
                         }
                     }
                 }
             }
-            var (kingPos, err) = Check.FindKing(board.board, color);
-            if (err != CheckErrors.None) {
+            var (kingPos, err2) = Check.FindKing(board.board, color);
+            if (err2 != CheckErrors.None) {
                 return (gameStatus, ChessErrors.CantFindKing);
             }
-            var (checkInfo, err2) = Check.GetCheckInfo(board.board, color, kingPos);
-            if (err2 != CheckErrors.None) {
+            var (checkInfo, err3) = Check.GetCheckInfo(board.board, color, kingPos);
+            if (err3 != CheckErrors.None) {
                 return (gameStatus, ChessErrors.CantGetCheckInfo);
             }
             if (Check.IsCheck(checkInfo).Item1) {
@@ -334,58 +325,35 @@ namespace chess {
                 }
                 return (gameStatus, ChessErrors.None);
             }
-            var checkDraw = CheckDraw(movesHistory, noTakeMoves);
-            if (checkDraw.Item2 != ChessErrors.None) {
-                Debug.Log(checkDraw.Item2);
+            var (checkDraw, err4) = CheckDraw(movesHistory, noTakeMoves);
+            if (err4 != ChessErrors.None) {
+                return (gameStatus, ChessErrors.CantCheckDraw);
             }
-            if (checkDraw.Item1) {
+            if (checkDraw) {
                 gameStatus = GameStatus.Draw;
             }
-
             return (gameStatus, ChessErrors.None);
         }
 
-        public static void ChangePiece(
-            Option<Piece>[,] board,
-            Vector2Int pos,
-            PieceType type,
-            PieceColor color
-        ) {
-            board[pos.x, pos.y] = Option<Piece>.None();
-            board[pos.x, pos.y] = Option<Piece>.Some(Piece.Mk(type, color, 0));
+        public static void InsertPieceWithOneColor (Option<Piece>[,] board, PieceColor color) {
+            board[(int)color * 7, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, color, 0));
+            board[(int)color * 7, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, color, 0));
+            board[(int)color * 7, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, color, 0));
+            board[(int)color * 7, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, color, 0));
+            board[(int)color * 7, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, color, 0));
+            board[(int)color * 7, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, color, 0));
+            board[(int)color * 7, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, color, 0));
+            board[(int)color * 7, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, color, 0));
+            
+            var pawnPosX = Mathf.Abs((int)color * 7 - 1);
+            for (int i = 0; i < 8; i++) {
+                board[pawnPosX, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, color, 0));
+            }
         }
-
         public static Option<Piece>[,] CreateBoard() {
-            Option<Piece>[,] board = new Option<Piece>[8,8];
-            var blackColor = PieceColor.Black;
-            var whiteColor = PieceColor.White;
-            board[0, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, blackColor, 0));
-            board[0, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, blackColor, 0));
-            board[0, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, blackColor, 0));
-            board[0, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, blackColor, 0));
-            board[0, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, blackColor, 0));
-            board[0, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, blackColor, 0));
-            board[0, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, blackColor, 0));
-            board[0, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, blackColor, 0));
-
-            for (int i = 0; i < 8; i++) {
-
-                board[1, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, blackColor, 0));
-            }
-
-            board[7, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, whiteColor, 0));
-            board[7, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, whiteColor, 0));
-            board[7, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, whiteColor, 0));
-            board [7, 4] = Option<Piece>.Some(Piece.Mk(PieceType.King, whiteColor, 0));
-            board[7, 3] = Option<Piece>.Some(Piece.Mk(PieceType.Queen, whiteColor, 0));
-            board[7, 5] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, whiteColor, 0));
-            board[7, 6] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, whiteColor, 0));
-            board[7, 7] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, whiteColor, 0));
-
-            for (int i = 0; i < 8; i++) {
-                board[6, i] = Option<Piece>.Some(Piece.Mk(PieceType.Pawn, whiteColor, 0));
-            }
-
+            Option<Piece>[,] board = new Option<Piece>[8, 8];
+            InsertPieceWithOneColor(board, PieceColor.White);
+            InsertPieceWithOneColor(board, PieceColor.Black);
             return board;
         }
     }
