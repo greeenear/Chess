@@ -51,23 +51,22 @@ namespace check {
         public static (List<FixedMovement>, CheckErrors) GetAttackMovements(
             PieceColor color,
             Option<Piece>[,] board,
-            Vector2Int target
+            Vector2Int pos
         ) {
             if (board == null) {
                 return (null, CheckErrors.BoardIsNull);
             }
-            var (movement, err) = MovementEngine.GetPieceMovements(board, PieceType.Knight, target);
+            var (movement, err) = MovementEngine.GetPieceMovements(board, PieceType.Knight, pos);
             if (err != MovementErrors.None) {
                 return (null, CheckErrors.CantGetPieceMovements);
             }
-            var move = movement;
-            move.AddRange(MovementEngine.GetPieceMovements(board, PieceType.Queen, target).Item1);
+            movement.AddRange(MovementEngine.GetPieceMovements(board, PieceType.Queen, pos).Item1);
 
             var fixedMovements = new List<FixedMovement>();
-            foreach (var type in move) {
+            foreach (var type in movement) {
                 if (type.movement.movement.circular.HasValue) {
-                    var circular = type.movement.movement.circular.Value;
-                    var (circularMovement, error) = GetCircilarAttackMovement(board, target, circular);
+                    var circle = type.movement.movement.circular.Value;
+                    var (circularMovement, error) = GetCircilarAttackMovement(board, pos, circle);
                     if (error != CheckErrors.None) {
                         return (null, CheckErrors.CantGetCircularMoves);
                     }
@@ -76,15 +75,13 @@ namespace check {
                     }
                 } else if (type.movement.movement.linear.HasValue) {
                     var linear = type.movement.movement.linear.Value;
-                    var (linearMovement, error) = GetLinearAttackMovement(board, target, linear);
+                    var (linearMovement, error) = GetLinearAttackMovement(board, pos, linear);
                     if (error != CheckErrors.None) {
                         return (null, CheckErrors.CantGetLinearMoves);
                     }
                     if (linearMovement.HasValue) {
                         fixedMovements.Add(linearMovement.Value);
                     }
-                } else {
-                    return (fixedMovements, CheckErrors.None);
                 }
             }
             return (fixedMovements, CheckErrors.None);
@@ -102,19 +99,18 @@ namespace check {
                 return (null, CheckErrors.PieceIsNone);
             }
             var angle = 0f;
-            List<FixedMovement> movements = new List<FixedMovement>();
             for (int i = 1; angle < Mathf.PI * 2; i += 2) {
                 angle = StartAngle.Knight * i * Mathf.PI / 180;
-                var possibleCell = Board.GetCircularPoint(target, circular, angle, board);
-                if (!possibleCell.Item1.HasValue) {
+                var (possibleCell, err) = Board.GetCircularPoint(target, circular, angle, board);
+                if (!possibleCell.HasValue) {
                     continue;
                 }
                 var radius = circular.radius;
-                var cell = possibleCell.Item1.Value;
+                var cell = possibleCell.Value;
                 if (board[cell.x, cell.y].IsSome()) {
                     var type = board[cell.x, cell.y].Peel().type;
-                    var (movement, err) = MovementEngine.GetPieceMovements(board, type, cell);
-                    if (err != MovementErrors.None) {
+                    var (movement, err2) = MovementEngine.GetPieceMovements(board, type, cell);
+                    if (err2 != MovementErrors.None) {
                         return (null, CheckErrors.CantGetPieceMovements);
                     }
                     var pieceMovement = PieceMovement.Circular(radius, cell, MovementType.Attack);
@@ -123,6 +119,7 @@ namespace check {
                     }
                 }
             }
+
             return (null, CheckErrors.None);
         }
 
@@ -145,12 +142,13 @@ namespace check {
                 if (err2 != MovementErrors.None) {
                     return (null, CheckErrors.CantGetPieceMovements);
                 }
+
                 foreach (var move in movement) {
                     if (!move.movement.movement.linear.HasValue) {
                         continue;
                     }
                     if (-move.movement.movement.linear.Value.dir == linear.dir) {
-                        var lineLength = Math.Abs(cell.x - target.x);
+                        int lineLength = (int)(cell - target).magnitude;
                         var line = Linear.Mk(move.movement.movement.linear.Value.dir, lineLength);
                         var attackLen = move.movement.movement.linear.Value.length;
                         if (attackLen >= lineLength && move.movementType == MovementType.Attack) {
@@ -161,6 +159,7 @@ namespace check {
                     }
                 }
             }
+
             return (null, CheckErrors.None);
         }
 
@@ -203,9 +202,9 @@ namespace check {
                             checkInfo.Add(new CheckInfo { attackInfo = info, coveringPos = cell });
                         }
                     }
-                    
                 }
             }
+
             return (checkInfo, CheckErrors.None);
         }
 
@@ -242,6 +241,7 @@ namespace check {
                     return (true, CheckErrors.None);
                 }
             }
+
             return (false, CheckErrors.None);
         }
 

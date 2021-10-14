@@ -74,10 +74,10 @@ namespace rules {
 
     public struct FullBoard {
         public Option<Piece>[,] board;
-        public Option<PieceTrace>[,] traceBoard;
+        public Option<Trace>[,] traceBoard;
     }
 
-    public struct PieceTrace {
+    public struct Trace {
         public Vector2Int pos;
         public PieceType whoLeft;
     }

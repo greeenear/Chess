@@ -12,16 +12,6 @@ namespace movement {
         BoardIsNull,
         CantGetLinearLength
     }
-    public struct Direction {
-        public static readonly Vector2Int up = new Vector2Int(1, 0);
-        public static readonly Vector2Int down = new Vector2Int(-1, 0);
-        public static readonly Vector2Int right = new Vector2Int(0, 1);
-        public static readonly Vector2Int left = new Vector2Int(0, -1);
-        public static readonly Vector2Int upLeft = new Vector2Int(1, -1);
-        public static readonly Vector2Int upRight = new Vector2Int(1, 1);
-        public static readonly Vector2Int downLeft = new Vector2Int(-1, -1);
-        public static readonly Vector2Int downRight = new Vector2Int(-1, 1);
-    }
 
     public static class MovementEngine {
         public static (List<PieceMovement>, MovementErrors) GetPieceMovements(
@@ -75,11 +65,11 @@ namespace movement {
                     movements.Add(PieceMovement.Circular(1f, pos, MovementType.Attack));
                     movements.Add(PieceMovement.Circular(1f, pos, MovementType.Move));
                     if (piece.moveCounter == 0) {
-                        var (movement, err) = GetFragileMovement(board, pos, Direction.right);
+                        var (movement, err) = GetFragileMovement(board, pos, new Vector2Int(0, 1));
                         if (movement.HasValue) {
                             movements.Add(movement.Value);
                         }
-                        (movement, err) = GetFragileMovement(board, pos, Direction.left);
+                        (movement, err) = GetFragileMovement(board, pos, new Vector2Int(0, -1));
                         if (movement.HasValue) {
                             movements.Add(movement.Value);
                         }

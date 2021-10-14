@@ -4,21 +4,21 @@ using rules;
 namespace json {
     public struct PieceInfo {
         public Piece piece;
-        public int xPos;
-        public int yPos;
+        public int x;
+        public int y;
 
         public static PieceInfo Mk(Piece piece, int xPos, int yPos) {
-            return new PieceInfo {piece = piece, xPos = xPos, yPos = yPos};
+            return new PieceInfo {piece = piece, x = xPos, y = yPos};
         }
     }
 
     public struct TraceInfo {
-        public PieceTrace trace;
-        public int xPos;
-        public int yPos;
+        public Trace trace;
+        public int x;
+        public int y;
 
-        public static TraceInfo Mk(PieceTrace trace, int xPos, int yPos) {
-            return new TraceInfo {trace = trace, xPos = xPos, yPos = yPos};
+        public static TraceInfo Mk(Trace trace, int xPos, int yPos) {
+            return new TraceInfo {trace = trace, x = xPos, y = yPos};
         }
     }
 

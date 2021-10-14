@@ -36,7 +36,7 @@ namespace move {
         public DoubleMove doubleMove;
         public Vector2Int? sentenced;
         public bool pawnPromotion;
-        public PieceTrace? trace;
+        public Trace? trace;
 
         public static MoveInfo Mk(DoubleMove doubleMove) {
             return new MoveInfo { doubleMove = doubleMove };
@@ -63,9 +63,9 @@ namespace move {
             if (boardOpt[pos.x, pos.y].IsNone()) {
                 return (null, MoveErrors.PieceIsNone);
             }
+            var piece = boardOpt[pos.x, pos.y].Peel();
             var moveInfos = new List<MoveInfo>();
-            var targetPiece = boardOpt[pos.x, pos.y].Peel();
-            var color = targetPiece.color;
+            var color = piece.color;
             foreach (var pieceMovement in pieceMovements) {
                 var (possibleMoveCells, err) = Rules.GetMoves(board, pieceMovement, pos);
                 if (err != RulesErrors.None) {
@@ -78,24 +78,18 @@ namespace move {
                     if (pieceMovement.traceIndex.IsSome()) {
                         var dir = pieceMovement.movement.movement.linear.Value.dir;
                         var tracePos = pos + dir * pieceMovement.traceIndex.Peel();
-                        if (tracePos != cell) {
-                            var pieceType = targetPiece.type;
-                            moveInfo.trace = new PieceTrace { pos = tracePos, whoLeft = pieceType};
-                        }
+                        moveInfo.trace = new Trace { pos = tracePos, whoLeft = piece.type };
                         if (pieceMovement.isFragile) {
-                            var fragileCell = (pos + tracePos) / 2;
-                            var lastPos = new Vector2Int();
+                            if(!CheckFragileMovement(pos, tracePos, boardOpt, piece.color)) {
+                                continue;
+                            }
+                            var lastPos = new Vector2Int(pos.x, 0);
                             if (tracePos.y - pos.y > 0) {
                                 lastPos = new Vector2Int(pos.x, boardOpt.GetLength(0) - 1);
-                            } else {
-                                lastPos = new Vector2Int(pos.x, 0);
-                            }
-                            if(!CheckFragileMovement(pos, tracePos, boardOpt, targetPiece.color)) {
-                                continue;
                             }
                             var doubleMove = DoubleMove.MkDoubleMove(
                                 MoveData.Mk(pos, new Vector2Int(pos.x, tracePos.y)),
-                                MoveData.Mk(lastPos, fragileCell)
+                                MoveData.Mk(lastPos, (pos + tracePos) / 2)
                             );
                             moveInfo = MoveInfo.Mk(doubleMove);
                         }
@@ -109,7 +103,7 @@ namespace move {
                     moveInfos.Add(moveInfo);
                 }
             }
-            if (targetPiece.type == PieceType.Pawn) {
+            if (piece.type == PieceType.Pawn) {
                 foreach (var info in new List<MoveInfo>(moveInfos)) {
                     var moveTo = info.doubleMove.first.to;
                     if (moveTo.x == 0 || moveTo.x == board.board.GetLength(1) - 1) {
@@ -128,13 +122,12 @@ namespace move {
             Option<Piece>[,] boardOpt,
             PieceColor color
         ) {
-            var fragileCell = (pos + tracePos) / 2;
             var (checkInfos, err) = Check.GetCheckInfo(boardOpt, color, pos);
             if (err != CheckErrors.None) {
                 return false;
             }
             checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
-            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, fragileCell).Item1);
+            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, (pos + tracePos) / 2).Item1);
             if(Check.IsCheck(checkInfos).Item1) {
                 return false;
             } else {
