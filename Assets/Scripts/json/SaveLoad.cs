@@ -10,8 +10,7 @@ namespace json {
         }
 
         public static void WriteJson(JSONType jsonType, string path) {
-            string output;
-            output = Jonson.Generate(jsonType);
+            string output = Jonson.Generate(jsonType);
             File.WriteAllText(path, output);
         }
 

@@ -35,8 +35,8 @@ namespace json {
         public List<TraceInfo> traceInfos;
         public GameStats gameStats;
 
-        public static JsonObject Mk(List<PieceInfo> pieceInfo, List<TraceInfo> traceInfos, GameStats gameStats) {
-            return new JsonObject { pieceInfos = pieceInfo, traceInfos = traceInfos, gameStats = gameStats};
+        public static JsonObject Mk(List<PieceInfo> info, List<TraceInfo> trace, GameStats stats) {
+            return new JsonObject { pieceInfos = info, traceInfos = trace, gameStats = stats};
         }
     }
     

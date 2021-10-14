@@ -23,7 +23,8 @@ namespace chess {
         CantGetCircularPoint,
         CantGetPossibleMoves,
         CantCheckDraw,
-        ListIsNull
+        ListIsNull,
+        CantGetNotOpeningMoves
 
     }
     public enum GameStatus {
@@ -36,31 +37,33 @@ namespace chess {
 
     public static class Chess {
         public static (List<MoveInfo>, ChessErrors) GetPossibleMoves(
-            Vector2Int targetPos,
+            Vector2Int pos,
             FullBoard board
         ) {
             var boardOpt = board.board;
             if (boardOpt == null) {
                 return (null, ChessErrors.BoardIsNull);
             }
-            if (boardOpt[targetPos.x, targetPos.y].IsNone()) {
+            if (boardOpt[pos.x, pos.y].IsNone()) {
                 return (null, ChessErrors.PieceIsNone);
             }
-            var targetPiece = boardOpt[targetPos.x, targetPos.y].Peel();
-            var color = targetPiece.color;
-            var (kingPos, err1) = Check.FindKing(boardOpt, color);
+            var targetPiece = boardOpt[pos.x, pos.y].Peel();
+
+            var (kingPos, err1) = Check.FindKing(boardOpt, targetPiece.color);
             if (err1 != CheckErrors.None) {
                 return (null, ChessErrors.CantFindKing);
             }
-            var (checkInfos, err2) = Check.GetCheckInfo(boardOpt, color, kingPos);
+            var (checkInfos, err2) = Check.GetCheckInfo(boardOpt, targetPiece.color, kingPos);
             if (err2 != CheckErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
-            bool isCheck = Check.IsCheck(checkInfos).Item1;
-            var pieceType = targetPiece.type;
-            if (pieceType == PieceType.King) {
-                var (kingPossibleMoves, err3) = GetKingPossibleMoves(board, targetPos, color);
-                if (err3 != ChessErrors.None) {
+            var (isCheck, err3) = Check.IsCheck(checkInfos);
+            if (err3 != CheckErrors.None) {
+                return (null, ChessErrors.CantGetCheckInfo);
+            }
+            if (targetPiece.type == PieceType.King) {
+                var (kingPossibleMoves, err) = GetKingPossibleMoves(board, pos, targetPiece.color);
+                if (err != ChessErrors.None) {
                     return (null, ChessErrors.CantGetKingPossibleMoves);
                 }
                 return (kingPossibleMoves, ChessErrors.None);
@@ -68,23 +71,23 @@ namespace chess {
 
             foreach (var checkInfo in checkInfos) {
                 if (!checkInfo.coveringPos.HasValue) {
-                    var coveringMoves = GetСoveringMoves(targetPos, board, checkInfo);
+                    var coveringMoves = GetСoveringMoves(pos, board, checkInfo);
                     if (coveringMoves.Item2 != ChessErrors.None) {
                         Debug.Log(coveringMoves.Item2);
                     }
                     return (coveringMoves.Item1, ChessErrors.None);
                 }
-                if (checkInfo.coveringPos == targetPos && !isCheck) {
-                    var notOpenning = GetNotOpeningMoves(targetPos, board, checkInfo);
-                    if (notOpenning.Item2 != ChessErrors.None) {
-                        Debug.Log(notOpenning.Item2);
+                if (checkInfo.coveringPos == pos && !isCheck) {
+                    var (notOpenning, err5) = GetNotOpeningMoves(pos, board, checkInfo);
+                    if (err5 != ChessErrors.None) {
+                        return (null, ChessErrors.CantGetNotOpeningMoves);
                     }
-                    return (notOpenning.Item1, ChessErrors.None);
+                    return (notOpenning, ChessErrors.None);
                 }
             }
-            var movementList = MovementEngine.GetPieceMovements(boardOpt, pieceType, targetPos);
-            var (moveInfos, err4) = Move.GetMoveInfos(movementList.Item1, targetPos, board);
-            if (err4 != MoveErrors.None) {
+            var movementList = MovementEngine.GetPieceMovements(boardOpt, targetPiece.type, pos);
+            var (moveInfos, err6) = Move.GetMoveInfos(movementList.Item1, pos, board);
+            if (err6 != MoveErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
             return (moveInfos, ChessErrors.None);

@@ -12,6 +12,7 @@ namespace rules {
         CantGetLinearLength
 
     }
+
     public enum PieceType {
         Bishop,
         King,
@@ -94,13 +95,8 @@ namespace rules {
         ) {
             if (pieceMovement.movement.movement.linear.HasValue) {
                 var linear = pieceMovement.movement.movement.linear.Value;
-
-                var (length, err) = Board.GetLinearLength(startPos, linear, board.board);
-                if (err != BoardErrors.None) {
-                    return (null, RulesErrors.CantGetLinearLength);
-                }
                 var movementType = pieceMovement.movementType;
-                var fixedLength = GetFixedLength(board, linear, length, startPos, movementType);
+                var fixedLength = GetFixedLength(board, linear, startPos, movementType);
                 return (GetLinearMoves(linear, startPos, fixedLength.Item1), RulesErrors.None);
             } else if (pieceMovement.movement.movement.circular.HasValue) {
                 var circular = pieceMovement.movement.movement.circular.Value;
@@ -168,10 +164,13 @@ namespace rules {
         private static (int, RulesErrors) GetFixedLength(
             FullBoard board,
             Linear linearMovement,
-            int maxLength,
             Vector2Int startPos,
             MovementType movementType
         ) {
+            var (maxLength, err) = Board.GetLinearLength(startPos, linearMovement, board.board);
+            if (err != BoardErrors.None) {
+                return (0, RulesErrors.CantGetLinearLength);
+            }
             if (board.board == null) {
                 return (0, RulesErrors.BoardIsNull);
             }

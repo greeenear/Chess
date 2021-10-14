@@ -37,8 +37,6 @@ namespace movement {
                 return (null, MovementErrors.PieceIsNone);
             }
             var piece = pieceOpt.Peel();
-            var attack = MovementType.Attack;
-            var move = MovementType.Move;
             var movements = new List<PieceMovement>();
             int maxLength = Mathf.Max(board.GetLength(1), board.GetLength(0));
             switch (pieceType) {
@@ -50,13 +48,13 @@ namespace movement {
                     for (int i = -1; i <= 1; i++) {
                         var dir = new Vector2Int(dirX, i);
                         if (i == 0 && piece.moveCounter == 0) {
-                            var movement = PieceMovement.Linear(dir, 2, pos, move);
+                            var movement = PieceMovement.Linear(dir, 2, pos, MovementType.Move);
                             movement.traceIndex = Option<int>.Some(1);
                             movements.Add(movement);
                         } else if (i == 0) {
-                            movements.Add(PieceMovement.Linear(dir, 1, pos, move));
+                            movements.Add(PieceMovement.Linear(dir, 1, pos, MovementType.Move));
                         } else {
-                            movements.Add(PieceMovement.Linear(dir, 1, pos, attack));
+                            movements.Add(PieceMovement.Linear(dir, 1, pos, MovementType.Attack));
                         }
                     }
                     break;
@@ -70,12 +68,12 @@ namespace movement {
                     movements.AddRange(GetMovements(maxLength, pos, (i, j) => false));
                     break;
                 case PieceType.Knight:
-                    movements.Add(PieceMovement.Circular(2f, pos, attack));
-                    movements.Add(PieceMovement.Circular(2f, pos, move));
+                    movements.Add(PieceMovement.Circular(2f, pos, MovementType.Attack));
+                    movements.Add(PieceMovement.Circular(2f, pos, MovementType.Move));
                     break;
                 case PieceType.King:
-                    movements.Add(PieceMovement.Circular(1f, pos, attack));
-                    movements.Add(PieceMovement.Circular(1f, pos, move));
+                    movements.Add(PieceMovement.Circular(1f, pos, MovementType.Attack));
+                    movements.Add(PieceMovement.Circular(1f, pos, MovementType.Move));
                     if (piece.moveCounter == 0) {
                         var (movement, err) = GetFragileMovement(board, pos, Direction.right);
                         if (movement.HasValue) {
