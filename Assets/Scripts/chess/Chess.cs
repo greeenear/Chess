@@ -22,10 +22,10 @@ namespace chess {
         CantGetLinearLength,
         CantGetCircularPoint,
         CantGetPossibleMoves,
+        CantGetNotOpeningMoves,
+        CantGetСoveringMoves,
         CantCheckDraw,
         ListIsNull,
-        CantGetNotOpeningMoves
-
     }
     public enum GameStatus {
         None,
@@ -47,13 +47,13 @@ namespace chess {
             if (boardOpt[pos.x, pos.y].IsNone()) {
                 return (null, ChessErrors.PieceIsNone);
             }
-            var targetPiece = boardOpt[pos.x, pos.y].Peel();
+            var piece = boardOpt[pos.x, pos.y].Peel();
 
-            var (kingPos, err1) = Check.FindKing(boardOpt, targetPiece.color);
+            var (kingPos, err1) = Check.FindKing(boardOpt, piece.color);
             if (err1 != CheckErrors.None) {
                 return (null, ChessErrors.CantFindKing);
             }
-            var (checkInfos, err2) = Check.GetCheckInfo(boardOpt, targetPiece.color, kingPos);
+            var (checkInfos, err2) = Check.GetCheckInfo(boardOpt, piece.color, kingPos);
             if (err2 != CheckErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
@@ -61,21 +61,38 @@ namespace chess {
             if (err3 != CheckErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
-            if (targetPiece.type == PieceType.King) {
-                var (kingPossibleMoves, err) = GetKingPossibleMoves(board, pos, targetPiece.color);
-                if (err != ChessErrors.None) {
-                    return (null, ChessErrors.CantGetKingPossibleMoves);
+            var movementList = MovementEngine.GetPieceMovements(boardOpt, piece.type, pos);
+            
+            if (piece.type == PieceType.King) {
+                var (kingMoves, a) = move.Move.GetMoveInfos(movementList.Item1, pos, board);
+                if (a != MoveErrors.None) {
+                    return (null, ChessErrors.CantGetMoveInfos);
                 }
-                return (kingPossibleMoves, ChessErrors.None);
+                var pieceOpt = board.board[pos.x, pos.y];
+                foreach (var move in new List<MoveInfo>(kingMoves)) {
+                    var king = board.board[pos.x, pos.y];
+                    board.board[pos.x, pos.y] = Option<Piece>.None();
+                    var moveTo = move.doubleMove.first.to;
+                    var (checkCellInfos, err4) = Check.GetCheckInfo(boardOpt, piece.color, moveTo);
+                    if (err4 != CheckErrors.None) {
+                        return (null, ChessErrors.CantGetCheckInfo);
+                    }
+                    board.board[pos.x, pos.y] = king;
+                    if (check.Check.IsCheck(checkCellInfos).Item1) {
+                        kingMoves.Remove(move);
+                        continue;
+                    }
+                }
+                return (kingMoves, ChessErrors.None);
             }
 
             foreach (var checkInfo in checkInfos) {
                 if (!checkInfo.coveringPos.HasValue) {
-                    var coveringMoves = GetСoveringMoves(pos, board, checkInfo);
-                    if (coveringMoves.Item2 != ChessErrors.None) {
-                        Debug.Log(coveringMoves.Item2);
+                    var (coveringMoves, err4) = GetСoveringMoves(pos, board, checkInfo);
+                    if (err4 != ChessErrors.None) {
+                        return (null, ChessErrors.CantGetСoveringMoves);
                     }
-                    return (coveringMoves.Item1, ChessErrors.None);
+                    return (coveringMoves, ChessErrors.None);
                 }
                 if (checkInfo.coveringPos == pos && !isCheck) {
                     var (notOpenning, err5) = GetNotOpeningMoves(pos, board, checkInfo);
@@ -85,53 +102,11 @@ namespace chess {
                     return (notOpenning, ChessErrors.None);
                 }
             }
-            var movementList = MovementEngine.GetPieceMovements(boardOpt, targetPiece.type, pos);
             var (moveInfos, err6) = Move.GetMoveInfos(movementList.Item1, pos, board);
             if (err6 != MoveErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
             return (moveInfos, ChessErrors.None);
-        }
-
-        public static (List<MoveInfo>, ChessErrors) GetKingPossibleMoves(
-            FullBoard board,
-            Vector2Int target,
-            PieceColor color
-        ) {
-            List<MoveInfo> newKingMoves = new List<MoveInfo>();
-            if (board.board == null) {
-                return (null, ChessErrors.BoardIsNull);
-            }
-            var boardOpt = board.board;
-            var pieceOpt = board.board[target.x, target.y];
-            if (pieceOpt.IsNone()) {
-                return (null, ChessErrors.PieceIsNone);
-            }
-            var piece = pieceOpt.Peel();
-            var (movement, err) = MovementEngine.GetPieceMovements(boardOpt, piece.type, target);
-            if (err != MovementErrors.None) {
-                return (null, ChessErrors.CantGetPieceMovements);
-            }
-            var (kingMoves, err2) = move.Move.GetMoveInfos(movement, target, board);
-            if (err2 != MoveErrors.None) {
-                return (null, ChessErrors.CantGetMoveInfos);
-            }
-            foreach (var move in kingMoves) {
-                var king = pieceOpt;
-                pieceOpt = Option<Piece>.None();
-                var moveTo = move.doubleMove.first.to;
-                var (checkCellInfos, err3) = Check.GetCheckInfo(board.board, color, moveTo);
-                if (err3 != CheckErrors.None) {
-                    return (null, ChessErrors.CantGetCheckInfo);
-                }
-
-                pieceOpt = king;
-                if (check.Check.IsCheck(checkCellInfos).Item1) {
-                    continue;
-                }
-                newKingMoves.Add(move);
-            }
-            return (newKingMoves, ChessErrors.None);
         }
 
          public static (List<MoveInfo>, ChessErrors) GetСoveringMoves(
@@ -147,7 +122,7 @@ namespace chess {
                 return (null, ChessErrors.PieceIsNone);
             }
             var piece = boardOpt[pos.x, pos.y].Peel();
-            var movements = MovementEngine.GetPieceMovements(boardOpt, piece.type, pos);
+            var (movements, err) = MovementEngine.GetPieceMovements(boardOpt, piece.type, pos);
             var startAttackPos = checkInfo.attackInfo.startPos;
             var endAttackPos = startAttackPos;
             var linearAttack = checkInfo.attackInfo.movement.linear;
@@ -156,7 +131,7 @@ namespace chess {
             }
             var attackSegment = math.Math.Segment.Mk(startAttackPos, endAttackPos);
             var moveInfos = new List<MoveInfo>();
-            foreach (var movement in movements.Item1) {
+            foreach (var movement in movements) {
                 if (movement.movement.movement.circular.HasValue) {
                     var circular = movement.movement.movement.circular.Value;
                     var angle = 0f;
