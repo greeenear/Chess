@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using chess;
@@ -32,12 +33,8 @@ namespace controller {
         private PlayerAction playerAction;
 
         private void Awake() {
-            board.board = new Option<Piece>[8,8];
-            board.traceBoard = new Option<PieceTrace>[8,8];
+            board.traceBoard = new Option<Trace>[8,8];
             board.board = Chess.CreateBoard();
-        }
-
-        private void Start() {
             resources = gameObject.GetComponent<Resource>();
             movesHistory.Add(new MoveInfo());
             AddPiecesOnBoard();
@@ -72,7 +69,7 @@ namespace controller {
                 case PlayerAction.Move:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     DestroyHighlightCell(resources.storageHighlightCheckCell.transform);
-                    TraceCleaner(board.traceBoard);
+                    Array.Clear(board.traceBoard, 0 , board.traceBoard.Length);
                     if (!Physics.Raycast(ray, out hit, 100f, resources.highlightMask)) {
                         return;
                     }
@@ -100,40 +97,34 @@ namespace controller {
         }
 
         public void Save() {
-            GameStats gameStats;
-            var whoseMove = this.whoseMove;
-            gameStats = GameStats.Mk(whoseMove);
-            List<PieceInfo> pieceInfoList = new List<PieceInfo>();
-            List<TraceInfo> traceInfoList = new List<TraceInfo>();
-
+            var gameStats = GameStats.Mk(whoseMove);
+            jsonObject = JsonObject.Mk(new List<PieceInfo>(), new List<TraceInfo>(), gameStats);
             for (int i = 0; i < board.board.GetLength(0); i++) {
                 for (int j = 0; j < board.board.GetLength(1); j++) {
                     var board = this.board.board[i,j];
                     var trace = this.board.traceBoard[i,j];
                     if (board.IsSome()) {
-                        pieceInfoList.Add(PieceInfo.Mk(board.Peel(), i, j));
+                        jsonObject.pieceInfos.Add(PieceInfo.Mk(board.Peel(), i, j));
                     }
                     if (trace.IsSome()) {
-                        traceInfoList.Add(TraceInfo.Mk(trace.Peel(), i, j));
+                        jsonObject.traceInfos.Add(TraceInfo.Mk(trace.Peel(), i, j));
                     }
                 }
             }
-            jsonObject = JsonObject.Mk(pieceInfoList, traceInfoList, gameStats);
             SaveLoad.WriteJson(SaveLoad.GetJsonType<JsonObject>(jsonObject), "json.json");
         }
 
         public void Load(string path) {
             board.board = new Option<Piece>[8,8];
-            possibleMoves.Clear();
             DestroyHighlightCell(resources.storageHighlightCells.transform);
             var gameInfo = SaveLoad.ReadJson(path, jsonObject);
             whoseMove = gameInfo.gameStats.whoseMove; 
             foreach (var pieceInfo in gameInfo.pieceInfos) {
-                board.board[pieceInfo.xPos, pieceInfo.yPos] = Option<Piece>.Some(pieceInfo.piece);
+                board.board[pieceInfo.x, pieceInfo.y] = Option<Piece>.Some(pieceInfo.piece);
             }
             foreach (var pieceInfo in gameInfo.traceInfos) {
-                var trace = Option<PieceTrace>.Some(pieceInfo.trace);
-                board.traceBoard[pieceInfo.xPos, pieceInfo.yPos] = trace;
+                var trace = Option<Trace>.Some(pieceInfo.trace);
+                board.traceBoard[pieceInfo.x, pieceInfo.y] = Option<Trace>.Some(pieceInfo.trace);
             }
             AddPiecesOnBoard();
             resources.gameMenu.SetActive(false);
@@ -160,9 +151,8 @@ namespace controller {
                 return;
             }
             var piece = board.board[pos.x, pos.y].Peel();
-            var boardTransform = resources.boardObj.transform;
             var Obj = resources.pieceList[(int)piece.type * 2 + (int)piece.color];
-            piecesMap[pos.x, pos.y] = ObjectSpawner(Obj, pos, boardTransform);
+            piecesMap[pos.x, pos.y] = ObjectSpawner(Obj, pos, resources.boardObj.transform);
             this.enabled = true;
             resources.changePawn.SetActive(false);
 
@@ -171,23 +161,20 @@ namespace controller {
         }
 
         private void Move(MoveData moveData, Vector2Int? sentenced) {
-            var start = moveData.from;
-            var end = moveData.to;
-
             var boardPos = resources.boardObj.transform.position;
             if (sentenced.HasValue) {
                 noTakeMoves = 0;
                 Destroy(piecesMap[sentenced.Value.x, sentenced.Value.y]);
                 board.board[sentenced.Value.x, sentenced.Value.y] = Option<Piece>.None();
             }
-            move.Move.MovePiece(start, end, board.board);
+            move.Move.MovePiece(moveData.from, moveData.to, board.board);
 
-            piecesMap[start.x, start.y].transform.position = new Vector3(
-                end.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
+            piecesMap[moveData.from.x, moveData.from.y].transform.position = new Vector3(
+                moveData.to.x + boardPos.x - resources.halfBoardSize.x + resources.halfCellSize.x,
                 boardPos.y + resources.halfCellSize.x,
-                end.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
+                moveData.to.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
             );
-            piecesMap[end.x, end.y] = piecesMap[start.x, start.y];
+            piecesMap[moveData.to.x, moveData.to.y] = piecesMap[moveData.from.x, moveData.from.y];
         }
 
         private void CheckMoveInfo(MoveInfo currentMove) {
@@ -202,7 +189,7 @@ namespace controller {
             }
             if (currentMove.trace.HasValue) {
                 var trace = currentMove.trace.Value;
-                board.traceBoard[trace.pos.x, trace.pos.y] = Option<PieceTrace>.Some(trace);
+                board.traceBoard[trace.pos.x, trace.pos.y] = Option<Trace>.Some(trace);
             }
         }
 
@@ -269,14 +256,6 @@ namespace controller {
                 spawnPos.y + boardPos.z - resources.halfBoardSize.x + resources.halfCellSize.x
             );
             return Instantiate(gameObject, spawnWorldPos, Quaternion.identity, parentTransform);
-        }
-
-        public static void TraceCleaner(Option<PieceTrace>[,] board) {
-            for (int i = 0; i < board.GetLength(0); i++) {
-                for (int j = 0; j < board.GetLength(1); j++) {
-                    board[i,j] = Option<PieceTrace>.None();
-                }
-            }
         }
 
         private void DestroyHighlightCell(Transform highlightCells) {
