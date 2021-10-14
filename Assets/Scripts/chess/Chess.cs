@@ -264,6 +264,17 @@ namespace chess {
         ) {
             bool noCheckMate = false;
             var gameStatus = GameStatus.None;
+            var (kingPos, err) = Check.FindKing(board.board, color);
+            if (err != CheckErrors.None) {
+                return (gameStatus, ChessErrors.CantFindKing);
+            }
+            var (checkInfo, err2) = Check.GetCheckInfo(board.board, color, kingPos);
+            if (err2 != CheckErrors.None) {
+                return (gameStatus, ChessErrors.CantGetCheckInfo);
+            }
+            if (Check.IsCheck(checkInfo).Item1) {
+                gameStatus = GameStatus.Check;
+            }
 
             for (int i = 0; i < board.board.GetLength(0); i++) {
                 for (int j = 0; j < board.board.GetLength(1); j++) {
@@ -272,8 +283,8 @@ namespace chess {
                     }
                     if (board.board[i, j].Peel().color == color) {
                         var piecePos = new Vector2Int(i, j);
-                        var (moves, err) = GetPossibleMoves(piecePos, board);
-                        if (err != ChessErrors.None) {
+                        var (moves, err3) = GetPossibleMoves(piecePos, board);
+                        if (err3 != ChessErrors.None) {
                             return (gameStatus, ChessErrors.CantGetPieceMovements);
                         }
                         if (moves.Count != 0) {
@@ -283,25 +294,9 @@ namespace chess {
                     }
                 }
             }
-            var (kingPos, err2) = Check.FindKing(board.board, color);
-            if (err2 != CheckErrors.None) {
-                return (gameStatus, ChessErrors.CantFindKing);
-            }
-            var (checkInfo, err3) = Check.GetCheckInfo(board.board, color, kingPos);
-            if (err3 != CheckErrors.None) {
-                return (gameStatus, ChessErrors.CantGetCheckInfo);
-            }
-            if (Check.IsCheck(checkInfo).Item1) {
-                gameStatus = GameStatus.Check;
-            }
 
             if (!noCheckMate) {
-                if (gameStatus == GameStatus.Check) {
-                    gameStatus = GameStatus.CheckMate;
-                } else {
-                    gameStatus = GameStatus.StaleMate;
-                }
-                return (gameStatus, ChessErrors.None);
+                gameStatus = GameStatus.CheckMate;
             }
             var (checkDraw, err4) = CheckDraw(movesHistory, noTakeMoves);
             if (err4 != ChessErrors.None) {
