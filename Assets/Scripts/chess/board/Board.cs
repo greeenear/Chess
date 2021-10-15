@@ -69,12 +69,9 @@ namespace board {
                 if (!Board.OnBoard(pos,new Vector2Int(board.GetLength(0), board.GetLength(1)))) {
                     break;
                 }
+                length++;
                 if (board[pos.x, pos.y].IsSome()) {
-                    length++;
                     break;
-                }
-                if (board[pos.x, pos.y].IsNone()) {
-                    length++;
                 }
             }
             return (length, BoardErrors.None);
@@ -92,11 +89,8 @@ namespace board {
             Vector2Int movePos = new Vector2Int();
             var boardSize = new Vector2Int(board.GetLength(0), board.GetLength(1));
             var offset = new Vector2(0.5f + center.x, 0.5f + center.y);
-
-            var pos = new Vector2(
-                Mathf.Sin(angle) * circular.radius,
-                Mathf.Cos(angle) * circular.radius
-            );
+            var radius = circular.radius;
+            var pos = new Vector2(Mathf.Sin(angle) * radius, Mathf.Cos(angle) * radius);
             pos = pos + offset;
             movePos = new Vector2Int((int)Math.Floor(pos.x), (int)Math.Floor(pos.y));
             if (Board.OnBoard(movePos, boardSize)) {

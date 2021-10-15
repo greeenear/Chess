@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.IO;
 using UnityEngine;
 using rules;
 using option;
@@ -19,19 +17,17 @@ namespace chess {
         CantGetKingPossibleMoves,
         CantGetMoveInfos,
         CantGetPieceMovements,
-        CantGetLinearLength,
         CantGetCircularPoint,
-        CantGetPossibleMoves,
         CantGetNotOpeningMoves,
         CantGetСoveringMoves,
         CantCheckDraw,
         ListIsNull,
     }
+
     public enum GameStatus {
         None,
         Check,
         CheckMate,
-        StaleMate,
         Draw
     }
 
@@ -98,8 +94,8 @@ namespace chess {
                     return (notOpenning, ChessErrors.None);
                 }
             }
-            var (moveInfos, err6) = Move.GetMoveInfos(movementList.Item1, pos, board);
-            if (err6 != MoveErrors.None) {
+            var (moveInfos, getMoveInfosErr) = Move.GetMoveInfos(movementList.Item1, pos, board);
+            if (getMoveInfosErr != MoveErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
             return (moveInfos, ChessErrors.None);
@@ -183,6 +179,7 @@ namespace chess {
                     }
                 }
             }
+
             return (moveInfos, ChessErrors.None);
         }
 
@@ -275,8 +272,8 @@ namespace chess {
                     }
                     if (board.board[i, j].Peel().color == color) {
                         var piecePos = new Vector2Int(i, j);
-                        var (moves, err3) = GetPossibleMoves(piecePos, board);
-                        if (err3 != ChessErrors.None) {
+                        var (moves, getPossibleMovesErr) = GetPossibleMoves(piecePos, board);
+                        if (getPossibleMovesErr != ChessErrors.None) {
                             return (gameStatus, ChessErrors.CantGetPieceMovements);
                         }
                         if (moves.Count != 0) {
@@ -290,8 +287,8 @@ namespace chess {
             if (!noCheckMate) {
                 gameStatus = GameStatus.CheckMate;
             }
-            var (checkDraw, err4) = CheckDraw(movesHistory, noTakeMoves);
-            if (err4 != ChessErrors.None) {
+            var (checkDraw, checkDrawErr) = CheckDraw(movesHistory, noTakeMoves);
+            if (checkDrawErr != ChessErrors.None) {
                 return (gameStatus, ChessErrors.CantCheckDraw);
             }
             if (checkDraw) {
@@ -300,7 +297,7 @@ namespace chess {
             return (gameStatus, ChessErrors.None);
         }
 
-        public static void InsertPieceWithOneColor (Option<Piece>[,] board, PieceColor color) {
+        private static void InsertPieceWithOneColor (Option<Piece>[,] board, PieceColor color) {
             board[(int)color * 7, 0] = Option<Piece>.Some(Piece.Mk(PieceType.Rook, color, 0));
             board[(int)color * 7, 1] = Option<Piece>.Some(Piece.Mk(PieceType.Knight, color, 0));
             board[(int)color * 7, 2] = Option<Piece>.Some(Piece.Mk(PieceType.Bishop, color, 0));

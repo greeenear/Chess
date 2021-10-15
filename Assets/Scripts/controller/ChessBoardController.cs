@@ -7,7 +7,6 @@ using option;
 using rules;
 using json;
 using move;
-using board;
 
 namespace controller {
     enum PlayerAction {
@@ -87,8 +86,11 @@ namespace controller {
                 case PlayerAction.Select:
                     DestroyHighlightCell(resources.storageHighlightCells.transform);
                     possibleMoves.Clear();
-                    var newPossibleMoves = Chess.GetPossibleMoves(selectedPos, board);
-                    possibleMoves = Chess.GetPossibleMoves(selectedPos, board).Item1;
+                    var (newPossibleMoves, err) = Chess.GetPossibleMoves(selectedPos, board);
+                    if (err != ChessErrors.None) {
+                        return;
+                    }
+                    possibleMoves = newPossibleMoves;
 
                     playerAction = PlayerAction.Move;
                     HighlightCells(possibleMoves);

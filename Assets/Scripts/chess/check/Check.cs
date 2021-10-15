@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using board;
@@ -16,15 +15,13 @@ namespace check {
         CantGetCircularMoves,
         CantGetLinearMoves,
         CantGetLinearLength,
-        CantGetAttackMovements
+        CantGetAttackMovements,
+        CantCheckKing
     }
+
     public struct CheckInfo {
         public FixedMovement attackInfo;
         public Vector2Int? coveringPos;
-
-        public static CheckInfo Mk(FixedMovement attackInfo) {
-            return new CheckInfo { attackInfo = attackInfo };
-        }
     }
 
     public static class Check {
@@ -109,8 +106,8 @@ namespace check {
                 var cell = possibleCell.Value;
                 if (board[cell.x, cell.y].IsSome()) {
                     var type = board[cell.x, cell.y].Peel().type;
-                    var (movement, err2) = MovementEngine.GetPieceMovements(board, type, cell);
-                    if (err2 != MovementErrors.None) {
+                    var (movement, error) = MovementEngine.GetPieceMovements(board, type, cell);
+                    if (error != MovementErrors.None) {
                         return (null, CheckErrors.CantGetPieceMovements);
                     }
                     var pieceMovement = PieceMovement.Circular(radius, cell, MovementType.Attack);
@@ -175,7 +172,7 @@ namespace check {
             var checkInfo = new List<CheckInfo>();
             foreach (var info in attackInfo) {
                 if (info.movement.circular.HasValue) {
-                    checkInfo.Add(CheckInfo.Mk(info));
+                    checkInfo.Add(new CheckInfo { attackInfo = info });
                     continue;
                 }
                 if (info.movement.linear.HasValue) {
@@ -190,7 +187,7 @@ namespace check {
                         continue;
                     }
                     if (board[cell.x, cell.y].Peel().color != color) {
-                        checkInfo.Add(CheckInfo.Mk(info));
+                        checkInfo.Add(new CheckInfo { attackInfo = info });
                         continue;
                     } else {
                         (length, err) = Board.GetLinearLength(cell, linear, board);
@@ -232,7 +229,11 @@ namespace check {
             return (checkInfo, CheckErrors.None);
         }
 
-        public static (bool, CheckErrors) IsCheck(Option<Piece>[,] board, Vector2Int pos, PieceColor color) {
+        public static (bool, CheckErrors) IsCheck(
+            Option<Piece>[,] board,
+            Vector2Int pos,
+            PieceColor color
+        ) {
             var (infos, err) = GetCheckInfo(board, color, pos);
             if (err != CheckErrors.None) {
                 return (false, CheckErrors.CantCheckKing);

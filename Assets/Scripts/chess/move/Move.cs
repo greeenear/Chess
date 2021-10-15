@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using board;
 using rules;
 using option;
 using check;
@@ -122,13 +121,13 @@ namespace move {
             Option<Piece>[,] boardOpt,
             PieceColor color
         ) {
-            var (checkInfos, err) = Check.GetCheckInfo(boardOpt, color, pos);
-            if (err != CheckErrors.None) {
+            var (check1, err1) = Check.IsCheck(boardOpt, pos, color);
+            if (err1 != CheckErrors.None) {
                 return false;
             }
-            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, tracePos).Item1);
-            checkInfos.AddRange(Check.GetCheckInfo(boardOpt, color, (pos + tracePos) / 2).Item1);
-            if(Check.IsCheck(checkInfos).Item1) {
+            var (check2, err2) = Check.IsCheck(boardOpt, tracePos, color);
+            var (check3, err3) = Check.IsCheck(boardOpt, (pos + tracePos) / 2, color);
+            if(check1 || check2 || check3) {
                 return false;
             } else {
                 return true;
