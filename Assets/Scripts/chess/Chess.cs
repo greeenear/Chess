@@ -49,16 +49,12 @@ namespace chess {
             }
             var piece = boardOpt[pos.x, pos.y].Peel();
 
-            var (kingPos, err1) = Check.FindKing(boardOpt, piece.color);
-            if (err1 != CheckErrors.None) {
+            var (kingPos, findKingErr) = Check.FindKing(boardOpt, piece.color);
+            if (findKingErr != CheckErrors.None) {
                 return (null, ChessErrors.CantFindKing);
             }
-            var (checkInfos, err2) = Check.GetCheckInfo(boardOpt, piece.color, kingPos);
-            if (err2 != CheckErrors.None) {
-                return (null, ChessErrors.CantGetCheckInfo);
-            }
-            var (isCheck, err3) = Check.IsCheck(checkInfos);
-            if (err3 != CheckErrors.None) {
+            var (isCheck, isCheckErr) = Check.IsCheck(boardOpt, kingPos, piece.color);
+            if (isCheckErr != CheckErrors.None) {
                 return (null, ChessErrors.CantGetCheckInfo);
             }
             var movementList = MovementEngine.GetPieceMovements(boardOpt, piece.type, pos);
@@ -73,12 +69,8 @@ namespace chess {
                     var king = board.board[pos.x, pos.y];
                     board.board[pos.x, pos.y] = Option<Piece>.None();
                     var moveTo = move.doubleMove.first.to;
-                    var (checkCellInfos, err4) = Check.GetCheckInfo(boardOpt, piece.color, moveTo);
-                    if (err4 != CheckErrors.None) {
-                        return (null, ChessErrors.CantGetCheckInfo);
-                    }
                     board.board[pos.x, pos.y] = king;
-                    if (check.Check.IsCheck(checkCellInfos).Item1) {
+                    if (check.Check.IsCheck(boardOpt, moveTo, piece.color).Item1) {
                         kingMoves.Remove(move);
                         continue;
                     }
@@ -86,10 +78,14 @@ namespace chess {
                 return (kingMoves, ChessErrors.None);
             }
 
+            var (checkInfos, getCheckInfoErr) = Check.GetCheckInfo(boardOpt, piece.color, kingPos);
+            if (getCheckInfoErr != CheckErrors.None) {
+                return (null, ChessErrors.CantGetCheckInfo);
+            }
             foreach (var checkInfo in checkInfos) {
                 if (!checkInfo.coveringPos.HasValue) {
-                    var (coveringMoves, err4) = GetСoveringMoves(pos, board, checkInfo);
-                    if (err4 != ChessErrors.None) {
+                    var (coveringMoves, coveringErr) = GetСoveringMoves(pos, board, checkInfo);
+                    if (coveringErr != ChessErrors.None) {
                         return (null, ChessErrors.CantGetСoveringMoves);
                     }
                     return (coveringMoves, ChessErrors.None);
@@ -264,15 +260,11 @@ namespace chess {
         ) {
             bool noCheckMate = false;
             var gameStatus = GameStatus.None;
-            var (kingPos, err) = Check.FindKing(board.board, color);
-            if (err != CheckErrors.None) {
+            var (kingPos, findKingErr) = Check.FindKing(board.board, color);
+            if (findKingErr != CheckErrors.None) {
                 return (gameStatus, ChessErrors.CantFindKing);
             }
-            var (checkInfo, err2) = Check.GetCheckInfo(board.board, color, kingPos);
-            if (err2 != CheckErrors.None) {
-                return (gameStatus, ChessErrors.CantGetCheckInfo);
-            }
-            if (Check.IsCheck(checkInfo).Item1) {
+            if (Check.IsCheck(board.board, kingPos, color).Item1) {
                 gameStatus = GameStatus.Check;
             }
 

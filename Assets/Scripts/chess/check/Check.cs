@@ -232,11 +232,12 @@ namespace check {
             return (checkInfo, CheckErrors.None);
         }
 
-        public static (bool, CheckErrors) IsCheck(List<CheckInfo> checkInfos) {
-            if (checkInfos == null) {
-                return (false, CheckErrors.ListIsNull);
+        public static (bool, CheckErrors) IsCheck(Option<Piece>[,] board, Vector2Int pos, PieceColor color) {
+            var (infos, err) = GetCheckInfo(board, color, pos);
+            if (err != CheckErrors.None) {
+                return (false, CheckErrors.CantCheckKing);
             }
-            foreach (var info in checkInfos) {
+            foreach (var info in infos) {
                 if (!info.coveringPos.HasValue) {
                     return (true, CheckErrors.None);
                 }
